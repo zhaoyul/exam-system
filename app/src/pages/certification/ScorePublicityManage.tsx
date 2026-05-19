@@ -1,0 +1,184 @@
+import { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { toast } from 'sonner'
+import {
+  Eye, Clock, CheckCircle, Calendar, AlertTriangle
+} from 'lucide-react'
+
+interface PublicityBatch {
+  id: number
+  planName: string
+  profession: string
+  level: string
+  candidateCount: number
+  publicityStart: string
+  publicityEnd: string
+  status: 'pending' | 'publicizing' | 'done'
+  appealCount: number
+}
+
+const mockBatches: PublicityBatch[] = [
+  { id: 1, planName: '大亚湾核电2026年第1批认定', profession: '核反应堆操作员', level: '三级', candidateCount: 45, publicityStart: '2026-04-20', publicityEnd: '2026-04-27', status: 'publicizing', appealCount: 0 },
+  { id: 2, planName: '阳江核电2026年第1批认定', profession: '电气维修工', level: '四级', candidateCount: 32, publicityStart: '2026-04-15', publicityEnd: '2026-04-22', status: 'done', appealCount: 1 },
+  { id: 3, planName: '台山核电2026年第2批认定', profession: '仪表维修工', level: '三级', candidateCount: 28, publicityStart: '2026-05-01', publicityEnd: '2026-05-08', status: 'pending', appealCount: 0 },
+]
+
+const statusMap: Record<string, { label: string; color: string }> = {
+  pending: { label: '待公示', color: 'bg-yellow-100 text-yellow-700' },
+  publicizing: { label: '公示中', color: 'bg-blue-100 text-blue-700' },
+  done: { label: '已结束', color: 'bg-green-100 text-green-700' },
+}
+
+export default function ScorePublicityManage() {
+  const [batches, setBatches] = useState<PublicityBatch[]>(mockBatches)
+  const [publicityDays, setPublicityDays] = useState(7)
+
+  const handleStartPublicity = (id: number) => {
+    const start = new Date().toISOString().split('T')[0]
+    const end = new Date(Date.now() + publicityDays * 86400000).toISOString().split('T')[0]
+    setBatches(prev => prev.map(b => b.id === id ? { ...b, status: 'publicizing' as const, publicityStart: start, publicityEnd: end } : b))
+    toast.success('成绩公示已开始')
+  }
+
+  const handleEndPublicity = (id: number) => {
+    setBatches(prev => prev.map(b => b.id === id ? { ...b, status: 'done' as const } : b))
+    toast.success('成绩公示已结束')
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">成绩公示</h1>
+          <p className="text-sm text-gray-500 mt-1">管理成绩公示期，设置公示时间，处理申诉</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">待公示</p>
+                <p className="text-2xl font-bold text-yellow-600 mt-1">{batches.filter(b => b.status === 'pending').length}</p>
+              </div>
+              <div className="w-10 h-10 rounded-lg bg-yellow-50 flex items-center justify-center">
+                <Clock className="w-5 h-5 text-yellow-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">公示中</p>
+                <p className="text-2xl font-bold text-blue-600 mt-1">{batches.filter(b => b.status === 'publicizing').length}</p>
+              </div>
+              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                <Eye className="w-5 h-5 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">已结束</p>
+                <p className="text-2xl font-bold text-green-600 mt-1">{batches.filter(b => b.status === 'done').length}</p>
+              </div>
+              <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Publicity Settings */}
+      <Card className="border-0 shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-blue-600" />
+            公示设置
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Label className="text-sm">公示天数：</Label>
+              <Input type="number" value={publicityDays} onChange={e => setPublicityDays(Number(e.target.value))} className="w-20" />
+              <span className="text-sm text-gray-500">天</span>
+            </div>
+            <div className="text-xs text-gray-400">（公示期从点击"开始公示"之日起算）</div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Batch List */}
+      <div className="bg-white rounded-lg border border-gray-200">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">计划名称</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">职业/等级</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">考生数</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">公示开始</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">公示结束</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">申诉</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">状态</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">操作</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {batches.map(b => (
+              <tr key={b.id} className="hover:bg-gray-50">
+                <td className="px-4 py-3 font-medium">{b.planName}</td>
+                <td className="px-4 py-3 text-xs">{b.profession}/{b.level}</td>
+                <td className="px-4 py-3">{b.candidateCount}人</td>
+                <td className="px-4 py-3 text-xs text-gray-500">{b.publicityStart}</td>
+                <td className="px-4 py-3 text-xs text-gray-500">{b.publicityEnd}</td>
+                <td className="px-4 py-3">
+                  {b.appealCount > 0 ? (
+                    <Badge variant="outline" className="text-[10px] bg-red-100 text-red-700">
+                      <AlertTriangle className="w-2.5 h-2.5 mr-1" />{b.appealCount}条
+                    </Badge>
+                  ) : (
+                    <span className="text-xs text-gray-400">0</span>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${statusMap[b.status].color}`}>
+                    {statusMap[b.status].label}
+                  </span>
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                      <Eye className="w-3 h-3 mr-1" /> 查看
+                    </Button>
+                    {b.status === 'pending' && (
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-blue-600" onClick={() => handleStartPublicity(b.id)}>
+                        <Clock className="w-3 h-3 mr-1" /> 开始公示
+                      </Button>
+                    )}
+                    {b.status === 'publicizing' && (
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-green-600" onClick={() => handleEndPublicity(b.id)}>
+                        <CheckCircle className="w-3 h-3 mr-1" /> 结束
+                      </Button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}

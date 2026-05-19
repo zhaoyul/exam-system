@@ -1,198 +1,96 @@
 import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useNavigate } from 'react-router-dom'
+import { AlertTriangle, ArrowRight, Award, BarChart3, CheckCircle2, FileSearch, Link2, Search, ShieldAlert, TrendingUp, User, Workflow } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { useNavigate } from 'react-router-dom'
-import {
-  Link2, Search, FileSearch, TrendingUp, CheckCircle,
-  ArrowRight, Shield, User, Award, AlertTriangle
-} from 'lucide-react'
+import { findTraceCase, stageOrder, traceAlerts, traceCases, traceSummary } from '@/pages/traceability/traceabilityData'
 
-const stats = [
-  { label: '追溯记录总数', value: 15820, icon: FileSearch, color: 'text-blue-600', bg: 'bg-blue-50' },
-  { label: '本月追溯', value: 486, icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50' },
-  { label: '完整追溯链', value: 15240, icon: CheckCircle, color: 'text-purple-600', bg: 'bg-purple-50' },
-  { label: '异常记录', value: 23, icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50' },
-]
-
-const recentTraces = [
-  { id: 'TR-2026-0001', name: '张三', certNo: 'CGN-2026-001', type: '证书溯源', org: '大亚湾核电', date: '2026-05-18', status: 'complete' },
-  { id: 'TR-2026-0002', name: '李四', certNo: 'CGN-2026-002', type: '成绩溯源', org: '阳江核电', date: '2026-05-17', status: 'complete' },
-  { id: 'TR-2026-0003', name: '王五', certNo: 'CGN-2026-003', type: '认定溯源', org: '台山核电', date: '2026-05-17', status: 'processing' },
-  { id: 'TR-2026-0004', name: '赵六', certNo: 'CGN-2026-004', type: '证书溯源', org: '防城港核电', date: '2026-05-16', status: 'complete' },
-  { id: 'TR-2026-0005', name: '孙七', certNo: 'CGN-2026-005', type: '评价溯源', org: '宁德核电', date: '2026-05-16', status: 'abnormal' },
-]
+const summary = traceSummary()
 
 const orgStats = [
-  { name: '大亚湾核电', total: 4250, thisMonth: 128 },
-  { name: '阳江核电', total: 3560, thisMonth: 95 },
-  { name: '台山核电', total: 3120, thisMonth: 82 },
-  { name: '防城港核电', total: 2800, thisMonth: 76 },
-  { name: '宁德核电', total: 2090, thisMonth: 55 },
+  { name: '大亚湾核电', total: 4250, complete: 98, abnormal: 2 },
+  { name: '阳江核电', total: 3560, complete: 94, abnormal: 6 },
+  { name: '台山核电', total: 3120, complete: 91, abnormal: 9 },
+  { name: '防城港核电', total: 2800, complete: 96, abnormal: 3 },
 ]
-
-const statusMap: Record<string, { label: string; color: string }> = {
-  complete: { label: '完整', color: 'bg-green-100 text-green-700' },
-  processing: { label: '进行中', color: 'bg-blue-100 text-blue-700' },
-  abnormal: { label: '异常', color: 'bg-red-100 text-red-700' },
-}
 
 export default function TraceabilityWorkbench() {
   const navigate = useNavigate()
-  const [searchQuery, setSearchQuery] = useState('')
+  const [query, setQuery] = useState('')
+  const quickSearch = () => {
+    const match = findTraceCase(query)
+    navigate(match ? `/traceability?q=${encodeURIComponent(query)}` : '/traceability')
+  }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">溯源中心工作台</h1>
-          <p className="text-sm text-gray-500 mt-1">职业技能等级认定全流程追溯与查询</p>
+          <h1 className="text-xl font-bold text-gray-900">溯源中心</h1>
+          <p className="mt-1 text-sm text-gray-500">对认定计划、报名、考场、实施、成绩、证书和归档进行全过程追溯</p>
         </div>
-        <Button onClick={() => navigate('/traceability')}>
-          <Link2 className="w-4 h-4 mr-2" /> 进入溯源查询
-        </Button>
+        <Button onClick={() => navigate('/traceability')} className="bg-[#1A56DB] hover:bg-[#1748B5]"><Link2 className="mr-2 h-4 w-4" />进入溯源查询</Button>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
-        {stats.map((s, i) => (
-          <Card key={i} className="border-0 shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">{s.label}</p>
-                  <p className={`text-2xl font-bold ${s.color} mt-1`}>{s.value.toLocaleString()}</p>
-                </div>
-                <div className={`w-10 h-10 rounded-lg ${s.bg} flex items-center justify-center`}>
-                  <s.icon className={`w-5 h-5 ${s.color}`} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="grid grid-cols-4 gap-3">
+        <Stat label="追溯记录总数" value={summary.records.toLocaleString()} icon={FileSearch} tone="blue" />
+        <Stat label="本月追溯" value={summary.thisMonth.toLocaleString()} icon={TrendingUp} tone="green" />
+        <Stat label="链路完整率" value={`${summary.completeRate}%`} icon={CheckCircle2} tone="indigo" />
+        <Stat label="待处理异常" value={summary.alerts.toString()} icon={AlertTriangle} tone="red" />
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="col-span-2 border-0 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <FileSearch className="w-4 h-4 text-blue-600" />
-              最近追溯记录
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="border rounded-lg overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-3 py-2.5 text-left font-medium text-gray-600">追溯编号</th>
-                    <th className="px-3 py-2.5 text-left font-medium text-gray-600">姓名</th>
-                    <th className="px-3 py-2.5 text-left font-medium text-gray-600">证书编号</th>
-                    <th className="px-3 py-2.5 text-left font-medium text-gray-600">类型</th>
-                    <th className="px-3 py-2.5 text-left font-medium text-gray-600">单位</th>
-                    <th className="px-3 py-2.5 text-left font-medium text-gray-600">状态</th>
-                    <th className="px-3 py-2.5 text-left font-medium text-gray-600">操作</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {recentTraces.map(t => (
-                    <tr key={t.id} className="hover:bg-gray-50">
-                      <td className="px-3 py-2.5 text-xs font-mono text-gray-600">{t.id}</td>
-                      <td className="px-3 py-2.5 font-medium">{t.name}</td>
-                      <td className="px-3 py-2.5 text-xs font-mono text-gray-500">{t.certNo}</td>
-                      <td className="px-3 py-2.5 text-xs">{t.type}</td>
-                      <td className="px-3 py-2.5 text-xs text-gray-500">{t.org}</td>
-                      <td className="px-3 py-2.5">
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium ${statusMap[t.status].color}`}>
-                          {statusMap[t.status].label}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => navigate('/traceability')}>
-                          查看 <ArrowRight className="w-3 h-3 ml-1" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 xl:grid-cols-[1.3fr_0.9fr]">
+        <section className="rounded-lg border border-gray-200 bg-white">
+          <div className="flex items-center justify-between border-b border-gray-100 p-4">
+            <div className="flex items-center gap-2 font-semibold text-gray-900"><Workflow className="h-4 w-4 text-[#1A56DB]" />全流程节点覆盖</div>
+            <Badge className="bg-blue-50 text-blue-700">7 个关键环节</Badge>
+          </div>
+          <div className="grid grid-cols-7 gap-2 p-4">
+            {stageOrder.map((stage, index) => <button key={stage.key} onClick={() => navigate('/traceability')} className="rounded-md border border-gray-200 bg-[#F9FAFB] p-3 text-left hover:border-[#1A56DB] hover:bg-blue-50"><div className="mb-2 flex h-7 w-7 items-center justify-center rounded-full bg-white text-xs font-semibold text-[#1A56DB]">{index + 1}</div><div className="text-sm font-medium text-gray-900">{stage.label}</div><div className="mt-1 text-xs text-gray-500">日志、材料、人员</div></button>)}
+          </div>
+        </section>
 
-        <div className="space-y-4">
-          <Card className="border-0 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Shield className="w-4 h-4 text-blue-600" />
-                快速溯源查询
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  placeholder="输入证书编号或身份证号"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" size="sm" className="text-xs" onClick={() => navigate('/traceability')}>
-                  <Award className="w-3 h-3 mr-1" /> 证书溯源
-                </Button>
-                <Button variant="outline" size="sm" className="text-xs" onClick={() => navigate('/traceability')}>
-                  <User className="w-3 h-3 mr-1" /> 人员溯源
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-green-600" />
-                各单位追溯量
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {orgStats.map((o, i) => (
-                <div key={i} className="flex items-center justify-between text-sm">
-                  <span className="text-gray-700">{o.name}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400">{o.total.toLocaleString()}</span>
-                    <Badge variant="outline" className="text-[10px]">+{o.thisMonth}</Badge>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
+        <section className="rounded-lg border border-gray-200 bg-white p-4">
+          <div className="mb-3 flex items-center gap-2 font-semibold text-gray-900"><ShieldAlert className="h-4 w-4 text-[#1A56DB]" />快速溯源查询</div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input value={query} onChange={event => setQuery(event.target.value)} onKeyDown={event => event.key === 'Enter' && quickSearch()} placeholder="身份证号 / 证书编号 / 溯源编号" className="h-10 w-full rounded-md border border-gray-200 pl-9 pr-3 text-sm focus:border-[#1A56DB] focus:outline-none" />
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate('/traceability')}><Award className="mr-1 h-3.5 w-3.5" />证书</Button>
+            <Button variant="outline" size="sm" onClick={() => navigate('/traceability')}><User className="mr-1 h-3.5 w-3.5" />人员</Button>
+            <Button variant="outline" size="sm" onClick={() => navigate('/traceability')}><FileSearch className="mr-1 h-3.5 w-3.5" />认定</Button>
+          </div>
+        </section>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
-        {[
-          { label: '证书溯源', path: '/traceability', icon: Award, desc: '按证书编号追溯' },
-          { label: '人员溯源', path: '/traceability', icon: User, desc: '按人员信息追溯' },
-          { label: '认定溯源', path: '/traceability', icon: FileSearch, desc: '认定全流程追溯' },
-          { label: '异常处理', path: '/traceability', icon: AlertTriangle, desc: '异常记录处理' },
-        ].map((item, i) => (
-          <Card key={i} className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(item.path)}>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                  <item.icon className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">{item.label}</p>
-                  <p className="text-xs text-gray-500">{item.desc}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
+        <section className="rounded-lg border border-gray-200 bg-white">
+          <div className="border-b border-gray-100 p-4 font-semibold text-gray-900">最近追溯记录</div>
+          <div className="overflow-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-[#F9FAFB] text-gray-600"><tr><th className="px-4 py-3 text-left font-medium">溯源编号</th><th className="px-4 py-3 text-left font-medium">考生</th><th className="px-4 py-3 text-left font-medium">证书编号</th><th className="px-4 py-3 text-left font-medium">类型</th><th className="px-4 py-3 text-left font-medium">机构</th><th className="px-4 py-3 text-left font-medium">状态</th><th className="px-4 py-3 text-left font-medium">操作</th></tr></thead>
+              <tbody className="divide-y divide-gray-100">{traceCases.map(item => <tr key={item.id} className="hover:bg-gray-50"><td className="px-4 py-3 font-mono text-xs text-gray-600">{item.traceNo}</td><td className="px-4 py-3 font-medium text-gray-900">{item.candidateName}</td><td className="px-4 py-3 font-mono text-xs text-gray-600">{item.certNo}</td><td className="px-4 py-3 text-gray-600">{item.traceType}</td><td className="px-4 py-3 text-gray-600">{item.org}</td><td className="px-4 py-3"><Badge className={item.status === '已完成' ? 'bg-green-50 text-green-700' : item.status === '异常' ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'}>{item.status}</Badge></td><td className="px-4 py-3"><button onClick={() => navigate(`/traceability?q=${encodeURIComponent(item.traceNo)}`)} className="text-xs text-[#1A56DB] hover:underline">查看 <ArrowRight className="inline h-3.5 w-3.5" /></button></td></tr>)}</tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <div className="rounded-lg border border-gray-200 bg-white p-4">
+            <div className="mb-3 flex items-center gap-2 font-semibold text-gray-900"><BarChart3 className="h-4 w-4 text-[#1A56DB]" />各单位追溯质量</div>
+            <div className="space-y-3">{orgStats.map(item => <div key={item.name}><div className="mb-1 flex items-center justify-between text-sm"><span>{item.name}</span><span className="text-xs text-gray-500">{item.total.toLocaleString()} 条 / 异常 {item.abnormal}</span></div><div className="h-2 overflow-hidden rounded-full bg-gray-100"><div className="h-full rounded-full bg-[#1A56DB]" style={{ width: `${item.complete}%` }} /></div></div>)}</div>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white p-4">
+            <div className="mb-3 flex items-center gap-2 font-semibold text-gray-900"><AlertTriangle className="h-4 w-4 text-red-600" />异常记录</div>
+            <div className="space-y-2">{traceAlerts.map(item => <button key={item.id} onClick={() => navigate(`/traceability?q=${encodeURIComponent(item.traceNo)}`)} className="w-full rounded-md border border-gray-100 px-3 py-2 text-left hover:bg-gray-50"><div className="flex items-center justify-between"><span className="text-sm font-medium text-gray-900">{item.candidateName} / {item.stage}</span><Badge className={item.level === '高' ? 'bg-red-50 text-red-700' : item.level === '中' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'}>{item.level}</Badge></div><div className="mt-1 text-xs text-gray-500">{item.problem}</div></button>)}</div>
+          </div>
+        </section>
       </div>
     </div>
   )
+}
+
+function Stat({ label, value, icon: Icon, tone }: { label: string; value: string; icon: any; tone: 'blue' | 'green' | 'indigo' | 'red' }) {
+  const color = { blue: 'bg-blue-50 text-blue-700', green: 'bg-green-50 text-green-700', indigo: 'bg-indigo-50 text-indigo-700', red: 'bg-red-50 text-red-700' }[tone]
+  return <div className="rounded-lg border border-gray-200 bg-white p-4"><div className="flex items-center justify-between"><div><div className="text-sm text-gray-500">{label}</div><div className="mt-1 text-2xl font-bold text-gray-900">{value}</div></div><div className={`rounded-lg p-2 ${color}`}><Icon className="h-5 w-5" /></div></div></div>
 }

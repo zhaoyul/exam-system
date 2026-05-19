@@ -1,67 +1,39 @@
-import { useState } from 'react'
-import { Search, Plus, Edit3, Trash2, Save, UserPlus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useMemo, useState } from 'react'
+import { Award, FileText, Search, UserCheck, UserX } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-
-const hires = [
-  { id: '1', name: '陈专家', type: '外部督导', idCard: '440301198001011234', hireDate: '2026-01-01', expireDate: '2026-12-31', status: 'active' },
-  { id: '2', name: '刘专家', type: '外部考评员', idCard: '440301198002022345', hireDate: '2026-01-01', expireDate: '2026-12-31', status: 'active' },
-]
+import { Badge } from '@/components/ui/badge'
+import { toast } from 'sonner'
+import { experts, type ExpertProfile, type ExpertRole, type ExpertStatus } from './expertData'
 
 export default function HiringPage() {
-  const [items, setItems] = useState(hires)
+  const [items, setItems] = useState<ExpertProfile[]>(experts)
   const [search, setSearch] = useState('')
-  const [showAdd, setShowAdd] = useState(false)
-  const [showEdit, setShowEdit] = useState<any>(null)
-  const [showDelete, setShowDelete] = useState<string | null>(null)
-  const [form, setForm] = useState({ name: '', type: '外部督导', idCard: '', hireDate: '', expireDate: '', status: 'active' })
+  const [role, setRole] = useState<'全部' | ExpertRole>('全部')
+  const [active, setActive] = useState<ExpertProfile | null>(null)
 
-  const filtered = items.filter(i => !search || i.name.includes(search) || i.idCard.includes(search))
-  const openAdd = () => { setForm({ name: '', type: '外部督导', idCard: '', hireDate: '', expireDate: '', status: 'active' }); setShowAdd(true) }
-  const openEdit = (i: any) => { setForm(i); setShowEdit(i) }
-  const handleSave = () => {
-    if (!form.name) return
-    if (showEdit) { setItems(prev => prev.map(i => i.id === showEdit.id ? { ...form, id: showEdit.id } : i)); setShowEdit(null) }
-    else { setItems(prev => [{ ...form, id: Date.now().toString() }, ...prev]); setShowAdd(false) }
+  const filtered = useMemo(() => items.filter(item => {
+    const byRole = role === '全部' || item.role === role
+    const bySearch = !search || item.name.includes(search) || item.idCard.includes(search) || item.certificateNo.includes(search)
+    return byRole && bySearch
+  }), [items, role, search])
+
+  const setStatus = (expert: ExpertProfile, status: ExpertStatus) => {
+    setItems(prev => prev.map(item => item.id === expert.id ? { ...item, status, hireDate: status === '在聘' ? '2026-05-19' : item.hireDate, expireDate: status === '在聘' ? '2027-05-18' : item.expireDate } : item))
+    toast.success(status === '在聘' ? '专家已聘用' : '专家已解聘')
   }
-  const handleDelete = (id: string) => { setItems(prev => prev.filter(i => i.id !== id)); setShowDelete(null) }
-  const toggleStatus = (id: string) => { setItems(prev => prev.map(i => i.id === id ? { ...i, status: i.status === 'active' ? 'expired' : 'active' } : i)) }
 
   return (
-    <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-4">人员聘用</h1>
-      <div className="flex items-center justify-between mb-3">
-        <div className="relative"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="搜索..." className="h-9 pl-9 pr-4 border border-gray-200 rounded-md text-sm w-64 focus:outline-none focus:border-[#1A56DB]" /></div>
-        <Button onClick={openAdd} className="h-9 px-4 bg-[#1A56DB] text-white rounded-md text-sm flex items-center gap-1.5 hover:bg-[#1748B5]"><Plus className="w-4 h-4" /> 添加聘用</Button>
-      </div>
-      <div className="bg-white rounded-lg border border-gray-200 overflow-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-[#F9FAFB] text-gray-600 font-medium"><tr><th className="px-4 py-3 text-left">姓名</th><th className="px-4 py-3 text-left">类型</th><th className="px-4 py-3 text-left">身份证号</th><th className="px-4 py-3 text-left">聘用日期</th><th className="px-4 py-3 text-left">到期日期</th><th className="px-4 py-3 text-left">状态</th><th className="px-4 py-3 text-left">操作</th></tr></thead>
-          <tbody className="divide-y divide-gray-100">
-            {filtered.map(i => (
-              <tr key={i.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium text-gray-900 flex items-center gap-2"><UserPlus className="w-4 h-4 text-[#1A56DB]" />{i.name}</td>
-                <td className="px-4 py-3 text-gray-600">{i.type}</td>
-                <td className="px-4 py-3 text-gray-600">{i.idCard}</td>
-                <td className="px-4 py-3 text-gray-600">{i.hireDate}</td>
-                <td className="px-4 py-3 text-gray-600">{i.expireDate}</td>
-                <td className="px-4 py-3"><button onClick={() => toggleStatus(i.id)} className={`px-2 py-0.5 rounded text-xs ${i.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{i.status === 'active' ? '有效' : '过期'}</button></td>
-                <td className="px-4 py-3"><div className="flex items-center gap-2"><button onClick={() => openEdit(i)} className="text-gray-500 hover:text-amber-600"><Edit3 className="w-3.5 h-3.5" /></button><button onClick={() => setShowDelete(i.id)} className="text-gray-500 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button></div></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <Dialog open={showAdd} onOpenChange={setShowAdd}><DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>添加聘用</DialogTitle></DialogHeader>
-        <div className="space-y-3">
-          <div><label className="text-sm font-medium text-gray-700">姓名</label><input value={form.name} onChange={e => setForm({...form,name:e.target.value})} className="w-full mt-1 h-9 px-3 border border-gray-200 rounded-md text-sm" placeholder="输入姓名" /></div>
-          <div><label className="text-sm font-medium text-gray-700">类型</label><select value={form.type} onChange={e => setForm({...form,type:e.target.value})} className="w-full mt-1 h-9 px-3 border border-gray-200 rounded-md text-sm"><option>外部督导</option><option>外部考评员</option></select></div>
-          <div><label className="text-sm font-medium text-gray-700">身份证号</label><input value={form.idCard} onChange={e => setForm({...form,idCard:e.target.value})} className="w-full mt-1 h-9 px-3 border border-gray-200 rounded-md text-sm" placeholder="输入身份证号" /></div>
-          <div className="grid grid-cols-2 gap-2"><div><label className="text-xs text-gray-500">聘用日期</label><input type="date" value={form.hireDate} onChange={e => setForm({...form,hireDate:e.target.value})} className="w-full mt-1 h-9 px-2 border border-gray-200 rounded-md text-sm" /></div><div><label className="text-xs text-gray-500">到期日期</label><input type="date" value={form.expireDate} onChange={e => setForm({...form,expireDate:e.target.value})} className="w-full mt-1 h-9 px-2 border border-gray-200 rounded-md text-sm" /></div></div>
-        </div>
-        <div className="flex justify-end gap-2 mt-4"><Button variant="outline" onClick={() => setShowAdd(false)}>取消</Button><Button onClick={handleSave} className="bg-[#1A56DB] hover:bg-[#1748B5]"><Save className="w-4 h-4 mr-1" />保存</Button></div>
-      </DialogContent></Dialog>
-      <Dialog open={!!showDelete} onOpenChange={() => setShowDelete(null)}><DialogContent className="sm:max-w-sm"><DialogHeader><DialogTitle>确认删除</DialogTitle></DialogHeader><p className="text-sm text-gray-500">确定要删除此聘用记录吗？</p><div className="flex justify-end gap-2 mt-4"><Button variant="outline" onClick={() => setShowDelete(null)}>取消</Button><Button variant="destructive" onClick={() => showDelete && handleDelete(showDelete)}>删除</Button></div></DialogContent></Dialog>
+    <div className="space-y-4">
+      <div><h1 className="text-xl font-bold text-gray-900">专家聘用</h1><p className="mt-1 text-sm text-gray-500">对培训合格获得证书的督导人员、考评人员进行聘用或解聘</p></div>
+      <div className="grid grid-cols-4 gap-3"><Stat label="待聘人员" value={items.filter(item => item.status === '待聘').length} /><Stat label="在聘人员" value={items.filter(item => item.status === '在聘').length} /><Stat label="本月聘用" value={2} /><Stat label="即将到期" value={1} /></div>
+      <section className="rounded-lg border border-gray-200 bg-white">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 p-3"><div className="flex gap-2">{(['全部', '督导人员', '考评人员', '督导/考评'] as const).map(item => <button key={item} onClick={() => setRole(item)} className={`h-8 rounded-md px-3 text-xs font-medium ${role === item ? 'bg-[#1A56DB] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{item}</button>)}</div><div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" /><input value={search} onChange={event => setSearch(event.target.value)} placeholder="姓名 / 证件号码 / 培训证书" className="h-9 w-80 rounded-md border border-gray-200 pl-9 pr-3 text-sm focus:border-[#1A56DB] focus:outline-none" /></div></div>
+        <div className="overflow-auto"><table className="w-full text-sm"><thead className="bg-[#F9FAFB] text-gray-600"><tr><th className="px-4 py-3 text-left font-medium">姓名</th><th className="px-4 py-3 text-left font-medium">类型</th><th className="px-4 py-3 text-left font-medium">培训证书</th><th className="px-4 py-3 text-left font-medium">聘用日期</th><th className="px-4 py-3 text-left font-medium">到期日期</th><th className="px-4 py-3 text-left font-medium">状态</th><th className="px-4 py-3 text-left font-medium">操作</th></tr></thead><tbody className="divide-y divide-gray-100">{filtered.map(item => <tr key={item.id} className="hover:bg-gray-50"><td className="px-4 py-3 font-medium text-gray-900"><Award className="mr-2 inline h-4 w-4 text-[#1A56DB]" />{item.name}</td><td className="px-4 py-3 text-gray-600">{item.role}</td><td className="px-4 py-3 font-mono text-xs text-gray-600">{item.certificateNo}</td><td className="px-4 py-3 text-gray-600">{item.hireDate}</td><td className="px-4 py-3 text-gray-600">{item.expireDate}</td><td className="px-4 py-3"><Badge className={item.status === '在聘' ? 'bg-green-50 text-green-700' : item.status === '已解聘' ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-700'}>{item.status}</Badge></td><td className="px-4 py-3"><div className="flex gap-2"><button onClick={() => setActive(item)} className="text-xs text-[#1A56DB] hover:underline"><FileText className="mr-0.5 inline h-3.5 w-3.5" />查看</button><button onClick={() => setStatus(item, '在聘')} className="text-xs text-green-600 hover:underline"><UserCheck className="mr-0.5 inline h-3.5 w-3.5" />聘用</button><button onClick={() => setStatus(item, '已解聘')} className="text-xs text-red-600 hover:underline"><UserX className="mr-0.5 inline h-3.5 w-3.5" />解聘</button></div></td></tr>)}</tbody></table></div>
+      </section>
+      <Dialog open={!!active} onOpenChange={() => setActive(null)}><DialogContent><DialogHeader><DialogTitle>聘用信息</DialogTitle></DialogHeader>{active && <div className="space-y-2 text-sm"><Info label="姓名" value={active.name} /><Info label="证件号码" value={active.idCard} /><Info label="培训证书" value={active.certificateNo} /><Info label="聘用周期" value={`${active.hireDate} 至 ${active.expireDate}`} /><Info label="可聘类型" value={active.role} /></div>}</DialogContent></Dialog>
     </div>
   )
 }
+
+function Stat({ label, value }: { label: string; value: number }) { return <div className="rounded-lg border border-gray-200 bg-white p-4"><div className="text-sm text-gray-500">{label}</div><div className="mt-1 text-2xl font-bold text-gray-900">{value}</div></div> }
+function Info({ label, value }: { label: string; value: string }) { return <div className="flex justify-between rounded-md border border-gray-100 px-3 py-2"><span className="text-gray-500">{label}</span><span className="font-medium text-gray-900">{value}</span></div> }

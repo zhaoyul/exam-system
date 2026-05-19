@@ -1,197 +1,231 @@
-import { useState } from 'react'
-import { Search, Link2, CheckCircle2, AlertCircle, Clock, MapPin, FileText, Award, UserCheck, Download, ChevronRight, RotateCcw } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import {
+  AlertCircle,
+  Award,
+  ChevronRight,
+  Clock3,
+  Download,
+  FileArchive,
+  FileText,
+  Link2,
+  MapPin,
+  RotateCcw,
+  Search,
+  ShieldAlert,
+  UserCheck,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Badge } from '@/components/ui/badge'
+import { toast } from 'sonner'
+import { findTraceCase, stageOrder, traceAlerts, traceCases, type TraceCase, type TraceStage, type TraceStageKey, type TraceStatus } from './traceabilityData'
 
-interface TraceNode {
-  id: string
-  stage: string
-  title: string
-  date: string
-  status: 'completed' | 'processing' | 'pending' | 'exception'
-  org: string
-  operator: string
-  detail: string
+const stageIcons: Record<TraceStageKey, typeof FileText> = {
+  plan: FileText,
+  register: UserCheck,
+  arrange: MapPin,
+  execute: Clock3,
+  score: FileText,
+  cert: Award,
+  archive: FileArchive,
 }
 
-const mockChains: Record<string, TraceNode[]> = {
-  '440301199001011234': [
-    { id: 't1', stage: 'plan', title: '评价计划发布', date: '2026-04-01', status: 'completed', org: '集团', operator: '管理员', detail: '2026年第一批技能认定计划已发布' },
-    { id: 't2', stage: 'register', title: '考生报名', date: '2026-04-05', status: 'completed', org: '大亚湾核电', operator: '张三', detail: '张三完成在线报名，报考核反应堆运行值班员三级' },
-    { id: 't3', stage: 'register', title: '报名审核', date: '2026-04-06', status: 'completed', org: '大亚湾核电', operator: '考务员A', detail: '报名资格审核通过' },
-    { id: 't4', stage: 'arrange', title: '考场编排', date: '2026-04-15', status: 'completed', org: '集团', operator: '管理员', detail: '分配至第一考场（培训中心A栋301）' },
-    { id: 't5', stage: 'arrange', title: '准考证发放', date: '2026-04-18', status: 'completed', org: '大亚湾核电', operator: '考务员B', detail: '准考证已打印并通知考生' },
-    { id: 't6', stage: 'exam', title: '理论考试', date: '2026-05-20 09:00', status: 'completed', org: '第一考场', operator: '监考员甲', detail: '理论考试参加，成绩85分' },
-    { id: 't7', stage: 'exam', title: '实操考试', date: '2026-05-20 14:00', status: 'completed', org: '实操考场1', operator: '考评员乙', detail: '实操考试参加，成绩88分' },
-    { id: 't8', stage: 'score', title: '成绩录入', date: '2026-05-21', status: 'completed', org: '集团', operator: '管理员', detail: '理论85分，实操88分，综合86.8分' },
-    { id: 't9', stage: 'score', title: '成绩复核', date: '2026-05-22', status: 'completed', org: '集团', operator: '督导员', detail: '成绩复核通过' },
-    { id: 't10', stage: 'publicity', title: '成绩公示', date: '2026-05-25', status: 'completed', org: '集团', operator: '管理员', detail: '公示期7天，无异议' },
-    { id: 't11', stage: 'cert', title: '证书颁发', date: '2026-06-01', status: 'completed', org: '集团', operator: '管理员', detail: '证书编号CGN-2026-001，已颁发' },
-  ],
-  '440301199002022345': [
-    { id: 't1', stage: 'plan', title: '评价计划发布', date: '2026-04-01', status: 'completed', org: '集团', operator: '管理员', detail: '2026年第一批技能认定计划已发布' },
-    { id: 't2', stage: 'register', title: '考生报名', date: '2026-04-08', status: 'completed', org: '阳江核电', operator: '李四', detail: '李四完成报名，报考电气试验员四级' },
-    { id: 't3', stage: 'register', title: '报名审核', date: '2026-04-09', status: 'completed', org: '阳江核电', operator: '考务员C', detail: '报名资格审核通过' },
-    { id: 't4', stage: 'arrange', title: '考场编排', date: '2026-04-15', status: 'completed', org: '集团', operator: '管理员', detail: '分配至第二考场' },
-    { id: 't5', stage: 'exam', title: '理论考试', date: '2026-05-20 09:00', status: 'completed', org: '第二考场', operator: '监考员乙', detail: '理论考试成绩78分' },
-    { id: 't6', stage: 'exam', title: '实操考试', date: '2026-05-20 14:00', status: 'completed', org: '实操考场2', operator: '考评员丙', detail: '实操考试成绩82分' },
-    { id: 't7', stage: 'score', title: '成绩录入', date: '2026-05-21', status: 'processing', org: '集团', operator: '管理员', detail: '成绩录入中，等待复核' },
-    { id: 't8', stage: 'publicity', title: '成绩公示', date: '--', status: 'pending', org: '--', operator: '--', detail: '等待成绩复核通过后公示' },
-    { id: 't9', stage: 'cert', title: '证书颁发', date: '--', status: 'pending', org: '--', operator: '--', detail: '等待公示结束后颁发证书' },
-  ],
-  '440301199003033456': [
-    { id: 't1', stage: 'plan', title: '评价计划发布', date: '2026-04-01', status: 'completed', org: '集团', operator: '管理员', detail: '2026年第一批技能认定计划已发布' },
-    { id: 't2', stage: 'register', title: '考生报名', date: '2026-04-10', status: 'completed', org: '台山核电', operator: '王五', detail: '王五完成报名' },
-    { id: 't3', stage: 'register', title: '报名审核', date: '2026-04-11', status: 'exception', org: '台山核电', operator: '考务员D', detail: '报名材料不完整，缺少工作年限证明' },
-  ],
-}
-
-const stageMeta: Record<string, { label: string; color: string; icon: typeof CheckCircle2 }> = {
-  plan: { label: '计划', color: 'bg-blue-50 text-blue-700 border-blue-200', icon: FileText },
-  register: { label: '报名', color: 'bg-cyan-50 text-cyan-700 border-cyan-200', icon: UserCheck },
-  arrange: { label: '编排', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', icon: MapPin },
-  exam: { label: '考试', color: 'bg-amber-50 text-amber-700 border-amber-200', icon: Clock },
-  score: { label: '成绩', color: 'bg-purple-50 text-purple-700 border-purple-200', icon: FileText },
-  publicity: { label: '公示', color: 'bg-pink-50 text-pink-700 border-pink-200', icon: UserCheck },
-  cert: { label: '证书', color: 'bg-green-50 text-green-700 border-green-200', icon: Award },
+const statusClass: Record<TraceStatus, string> = {
+  已完成: 'bg-green-50 text-green-700',
+  进行中: 'bg-blue-50 text-blue-700',
+  待处理: 'bg-gray-100 text-gray-600',
+  异常: 'bg-red-50 text-red-700',
 }
 
 export default function TraceabilityCenter() {
-  const [searchId, setSearchId] = useState('')
-  const [chain, setChain] = useState<TraceNode[] | null>(null)
-  const [searched, setSearched] = useState(false)
-  const [viewNode, setViewNode] = useState<TraceNode | null>(null)
-  const [filter, setFilter] = useState('全部')
+  const [params] = useSearchParams()
+  const initialQuery = params.get('q') || ''
+  const [query, setQuery] = useState(initialQuery)
+  const [activeType, setActiveType] = useState<'全部' | TraceCase['traceType']>('全部')
+  const [activeStatus, setActiveStatus] = useState<'全部' | TraceStatus>('全部')
+  const [selected, setSelected] = useState<TraceCase | null>(initialQuery ? findTraceCase(initialQuery) : traceCases[0])
+  const [searched, setSearched] = useState(Boolean(initialQuery))
+  const [viewStage, setViewStage] = useState<TraceStage | null>(null)
+  const [alertDialog, setAlertDialog] = useState(false)
 
-  const handleSearch = () => {
+  const filteredCases = useMemo(() => traceCases.filter(item => {
+    const byType = activeType === '全部' || item.traceType === activeType
+    const byStatus = activeStatus === '全部' || item.status === activeStatus
+    const byQuery = !query || [item.traceNo, item.candidateName, item.idCard, item.certNo, item.ticketNo, item.planName].some(value => value.includes(query))
+    return byType && byStatus && byQuery
+  }), [activeStatus, activeType, query])
+
+  const runSearch = () => {
     setSearched(true)
-    setChain(mockChains[searchId] || null)
+    const result = findTraceCase(query)
+    if (result) setSelected(result)
+    else setSelected(null)
   }
-  const reset = () => { setSearchId(''); setChain(null); setSearched(false); setFilter('全部') }
 
-  const completedCount = chain?.filter(n => n.status === 'completed').length || 0
-  const exceptionCount = chain?.filter(n => n.status === 'exception').length || 0
-  const totalCount = chain?.length || 0
-
-  const filteredChain = chain?.filter(n => filter === '全部' || n.status === filter) || []
-
-  const statusCls: Record<string, string> = {
-    completed: 'bg-green-50 text-green-700',
-    processing: 'bg-blue-50 text-blue-700',
-    pending: 'bg-gray-100 text-gray-500',
-    exception: 'bg-red-50 text-red-700',
+  const reset = () => {
+    setQuery('')
+    setActiveType('全部')
+    setActiveStatus('全部')
+    setSelected(traceCases[0])
+    setSearched(false)
   }
 
   const exportReport = () => {
-    if (!chain) return
-    const text = chain.map(n => `${n.date} | ${n.title} | ${n.org} | ${n.operator} | ${n.detail}`).join('\n')
-    const blob = new Blob([text], { type: 'text/plain' })
+    if (!selected) return
+    const content = [
+      `溯源编号：${selected.traceNo}`,
+      `考生：${selected.candidateName} ${selected.idCard}`,
+      `认定计划：${selected.planName}`,
+      `证书编号：${selected.certNo}`,
+      '',
+      ...selected.stages.map(stage => `${stage.date} | ${stage.name} | ${stage.status} | ${stage.org} | ${stage.operator} | ${stage.detail}${stage.exception ? ` | 异常：${stage.exception}` : ''}`),
+    ].join('\n')
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url; a.download = `溯源报告_${searchId}.txt`; a.click()
+    a.href = url
+    a.download = `溯源报告_${selected.traceNo}.txt`
+    a.click()
     URL.revokeObjectURL(url)
+    toast.success('溯源报告已导出')
   }
 
-  return (
-    <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2"><Link2 className="w-6 h-6 text-[#1A56DB]" />溯源中心</h1>
+  const stageStats = selected ? {
+    total: selected.stages.length,
+    completed: selected.stages.filter(item => item.status === '已完成').length,
+    pending: selected.stages.filter(item => item.status === '待处理' || item.status === '进行中').length,
+    abnormal: selected.stages.filter(item => item.status === '异常').length,
+  } : { total: 0, completed: 0, pending: 0, abnormal: 0 }
 
-      {/* 搜索区 */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-        <div className="flex items-center gap-3">
-          <div className="flex-1 relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input value={searchId} onChange={e => setSearchId(e.target.value)} placeholder="输入身份证号或证书编号查询认定链路..." className="w-full h-10 pl-9 pr-4 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-[#1A56DB]" />
-          </div>
-          <Button onClick={handleSearch} className="h-10 px-6 bg-[#1A56DB] hover:bg-[#1748B5]">查询</Button>
-          <Button onClick={reset} variant="outline" className="h-10"><RotateCcw className="w-4 h-4" /></Button>
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="flex items-center gap-2 text-xl font-bold text-gray-900"><Link2 className="h-5 w-5 text-[#1A56DB]" />溯源查询</h1>
+          <p className="mt-1 text-sm text-gray-500">按身份证号、证书编号、准考证号、溯源编号或计划名称追踪认定全流程</p>
         </div>
-        <p className="text-xs text-gray-400 mt-2">示例身份证号：440301199001011234（完整链路）、440301199002022345（进行中）、440301199003033456（异常）</p>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setAlertDialog(true)}><ShieldAlert className="mr-2 h-4 w-4" />异常处理</Button>
+          <Button variant="outline" onClick={exportReport} disabled={!selected}><Download className="mr-2 h-4 w-4" />导出报告</Button>
+        </div>
       </div>
 
-      {chain && (
-        <>
-          {/* 统计 */}
-          <div className="grid grid-cols-4 gap-3 mb-4">
-            <div className="bg-white rounded-lg border border-gray-200 p-3 text-center"><div className="text-2xl font-bold text-[#1A56DB]">{totalCount}</div><div className="text-xs text-gray-500">总环节数</div></div>
-            <div className="bg-white rounded-lg border border-gray-200 p-3 text-center"><div className="text-2xl font-bold text-green-600">{completedCount}</div><div className="text-xs text-gray-500">已完成</div></div>
-            <div className="bg-white rounded-lg border border-gray-200 p-3 text-center"><div className="text-2xl font-bold text-blue-600">{totalCount - completedCount - exceptionCount}</div><div className="text-xs text-gray-500">进行中/待处理</div></div>
-            <div className="bg-white rounded-lg border border-gray-200 p-3 text-center"><div className="text-2xl font-bold text-red-600">{exceptionCount}</div><div className="text-xs text-gray-500">异常</div></div>
+      <section className="rounded-lg border border-gray-200 bg-white p-4">
+        <div className="grid gap-3 lg:grid-cols-[1fr_auto_auto]">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input value={query} onChange={event => setQuery(event.target.value)} onKeyDown={event => event.key === 'Enter' && runSearch()} placeholder="身份证号 / 证书编号 / 准考证号 / 溯源编号 / 姓名 / 计划名称" className="h-10 w-full rounded-md border border-gray-200 pl-9 pr-3 text-sm focus:border-[#1A56DB] focus:outline-none" />
           </div>
-
-          {/* 筛选 */}
-          <div className="flex items-center gap-2 mb-3">
-            {['全部', 'completed', 'processing', 'pending', 'exception'].map(s => (
-              <button key={s} onClick={() => setFilter(s)} className={`px-3 py-1.5 rounded-md text-xs font-medium ${filter === s ? 'bg-[#1A56DB] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                {s === '全部' ? '全部' : s === 'completed' ? '已完成' : s === 'processing' ? '进行中' : s === 'pending' ? '待处理' : '异常'}
-              </button>
-            ))}
-            <Button onClick={exportReport} variant="outline" className="h-8 text-xs ml-auto"><Download className="w-3.5 h-3.5 mr-1" />导出报告</Button>
-          </div>
-
-          {/* 时间线 */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="relative">
-              <div className="absolute left-[18px] top-0 bottom-0 w-0.5 bg-gray-200" />
-              <div className="space-y-0">
-                {filteredChain.map((node) => {
-                  const meta = stageMeta[node.stage] || stageMeta.plan
-                  const Icon = meta.icon
-                  return (
-                    <div key={node.id} className="flex items-start gap-4 relative py-3">
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 z-10 border-2 ${node.status === 'completed' ? 'bg-green-500 border-green-500 text-white' : node.status === 'exception' ? 'bg-red-500 border-red-500 text-white' : node.status === 'processing' ? 'bg-blue-500 border-blue-500 text-white' : 'bg-white border-gray-300 text-gray-400'}`}>
-                        {node.status === 'completed' ? <CheckCircle2 className="w-5 h-5" /> : node.status === 'exception' ? <AlertCircle className="w-5 h-5" /> : <Icon className="w-4 h-4" />}
-                      </div>
-                      <div className="flex-1 border border-gray-100 rounded-lg p-3 hover:bg-gray-50 cursor-pointer" onClick={() => setViewNode(node)}>
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${meta.color}`}>{meta.label}</span>
-                            <span className="text-sm font-semibold text-gray-900">{node.title}</span>
-                            {node.status === 'exception' && <span className="px-2 py-0.5 bg-red-50 text-red-700 rounded text-xs">异常</span>}
-                          </div>
-                          <span className="text-xs text-gray-400">{node.date}</span>
-                        </div>
-                        <p className="text-xs text-gray-500">{node.detail}</p>
-                        <div className="flex items-center gap-4 mt-1 text-xs text-gray-400">
-                          <span>{node.org}</span>
-                          <span>{node.operator}</span>
-                          <ChevronRight className="w-3 h-3 ml-auto" />
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {searched && !chain && (
-        <div className="bg-gray-50 rounded-lg border border-gray-200 p-12 text-center">
-          <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <div className="text-gray-500 text-sm">未找到该身份证号的认定记录</div>
-          <div className="text-gray-400 text-xs mt-1">请检查输入是否正确</div>
+          <Button onClick={runSearch} className="h-10 bg-[#1A56DB] hover:bg-[#1748B5]">查询</Button>
+          <Button onClick={reset} variant="outline" className="h-10"><RotateCcw className="h-4 w-4" /></Button>
         </div>
-      )}
+        <div className="mt-3 flex flex-wrap gap-2 text-xs">
+          {['440301199001011234', 'CGN-2026-001', 'TR-2026-0003'].map(item => <button key={item} onClick={() => { setQuery(item); setSelected(findTraceCase(item)) }} className="rounded border border-gray-200 px-2 py-1 text-gray-600 hover:border-[#1A56DB] hover:text-[#1A56DB]">{item}</button>)}
+        </div>
+      </section>
 
-      <Dialog open={!!viewNode} onOpenChange={() => setViewNode(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>环节详情</DialogTitle></DialogHeader>
-          {viewNode && (
-            <div className="space-y-3 text-sm">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-2 bg-gray-50 rounded"><div className="text-xs text-gray-500">环节名称</div><div className="font-medium">{viewNode.title}</div></div>
-                <div className="p-2 bg-gray-50 rounded"><div className="text-xs text-gray-500">日期</div><div className="font-medium">{viewNode.date}</div></div>
-                <div className="p-2 bg-gray-50 rounded"><div className="text-xs text-gray-500">机构</div><div className="font-medium">{viewNode.org}</div></div>
-                <div className="p-2 bg-gray-50 rounded"><div className="text-xs text-gray-500">操作人</div><div className="font-medium">{viewNode.operator}</div></div>
+      <div className="grid gap-4 xl:grid-cols-[360px_1fr]">
+        <aside className="space-y-3">
+          <section className="rounded-lg border border-gray-200 bg-white">
+            <div className="border-b border-gray-100 p-3">
+              <div className="mb-3 flex flex-wrap gap-2">
+                {(['全部', '证书溯源', '人员溯源', '认定溯源'] as const).map(item => <button key={item} onClick={() => setActiveType(item)} className={`h-8 rounded-md px-3 text-xs font-medium ${activeType === item ? 'bg-[#1A56DB] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{item}</button>)}
               </div>
-              <div className="p-2 bg-gray-50 rounded"><div className="text-xs text-gray-500">状态</div><span className={`px-2 py-0.5 rounded text-xs ${statusCls[viewNode.status]}`}>{viewNode.status === 'completed' ? '已完成' : viewNode.status === 'processing' ? '进行中' : viewNode.status === 'pending' ? '待处理' : '异常'}</span></div>
-              <div className="p-2 bg-gray-50 rounded"><div className="text-xs text-gray-500">详细说明</div><div className="font-medium">{viewNode.detail}</div></div>
+              <div className="flex flex-wrap gap-2">
+                {(['全部', '已完成', '进行中', '待处理', '异常'] as const).map(item => <button key={item} onClick={() => setActiveStatus(item)} className={`h-8 rounded-md px-3 text-xs font-medium ${activeStatus === item ? 'border border-[#1A56DB] text-[#1A56DB]' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>{item}</button>)}
+              </div>
             </div>
+            <div className="max-h-[620px] overflow-auto p-2">
+              {filteredCases.map(item => <button key={item.id} onClick={() => { setSelected(item); setSearched(true) }} className={`mb-2 w-full rounded-md border p-3 text-left ${selected?.id === item.id ? 'border-[#1A56DB] bg-blue-50' : 'border-gray-100 hover:bg-gray-50'}`}><div className="flex items-center justify-between gap-2"><span className="font-medium text-gray-900">{item.candidateName}</span><Badge className={statusClass[item.status]}>{item.status}</Badge></div><div className="mt-1 text-xs text-gray-500">{item.traceNo} / {item.certNo}</div><div className="mt-1 text-xs text-gray-500">{item.occupation} · {item.level}</div></button>)}
+            </div>
+          </section>
+        </aside>
+
+        <main className="space-y-4">
+          {selected ? (
+            <>
+              <section className="rounded-lg border border-gray-200 bg-white p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-lg font-semibold text-gray-900">{selected.candidateName} - {selected.occupation}</h2>
+                      <Badge className={statusClass[selected.status]}>{selected.status}</Badge>
+                      <Badge className="bg-blue-50 text-blue-700">{selected.traceType}</Badge>
+                    </div>
+                    <div className="mt-2 grid gap-x-6 gap-y-1 text-sm text-gray-600 md:grid-cols-2">
+                      <span>身份证号：{selected.idCard}</span>
+                      <span>证书编号：{selected.certNo}</span>
+                      <span>准考证号：{selected.ticketNo}</span>
+                      <span>评价机构：{selected.org}</span>
+                      <span className="md:col-span-2">认定计划：{selected.planName}</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 text-center">
+                    <Metric label="环节" value={stageStats.total} />
+                    <Metric label="完成" value={stageStats.completed} />
+                    <Metric label="待处理" value={stageStats.pending} />
+                    <Metric label="异常" value={stageStats.abnormal} tone="red" />
+                  </div>
+                </div>
+              </section>
+
+              <section className="rounded-lg border border-gray-200 bg-white p-4">
+                <div className="mb-4 flex items-center justify-between"><div className="font-semibold text-gray-900">全过程追溯链条</div><div className="text-xs text-gray-500">评价计划 → 考生报名 → 考场安排 → 组织实施 → 成绩管理 → 证书颁发 → 档案归档</div></div>
+                <div className="grid gap-2 lg:grid-cols-7">
+                  {stageOrder.map(order => {
+                    const stage = selected.stages.find(item => item.key === order.key)
+                    const Icon = stageIcons[order.key]
+                    return <button key={order.key} onClick={() => stage && setViewStage(stage)} className={`rounded-md border p-3 text-left ${stage?.status === '已完成' ? 'border-green-200 bg-green-50' : stage?.status === '异常' ? 'border-red-200 bg-red-50' : stage?.status === '进行中' ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50'}`}><Icon className={`mb-2 h-5 w-5 ${stage?.status === '异常' ? 'text-red-600' : stage?.status === '已完成' ? 'text-green-600' : 'text-[#1A56DB]'}`} /><div className="text-sm font-medium text-gray-900">{order.label}</div><div className="mt-1 text-xs text-gray-500">{stage?.status || '待处理'}</div></button>
+                  })}
+                </div>
+              </section>
+
+              <section className="rounded-lg border border-gray-200 bg-white">
+                <div className="border-b border-gray-100 p-4 font-semibold text-gray-900">环节日志</div>
+                <div className="divide-y divide-gray-100">
+                  {selected.stages.map(stage => {
+                    const Icon = stageIcons[stage.key]
+                    return <button key={stage.id} onClick={() => setViewStage(stage)} className="grid w-full grid-cols-[36px_1fr_120px] items-start gap-3 px-4 py-3 text-left hover:bg-gray-50"><div className={`mt-1 flex h-8 w-8 items-center justify-center rounded-full ${statusClass[stage.status]}`}><Icon className="h-4 w-4" /></div><div><div className="flex flex-wrap items-center gap-2"><span className="font-medium text-gray-900">{stage.name}</span><Badge className={statusClass[stage.status]}>{stage.status}</Badge>{stage.exception && <Badge className="bg-red-50 text-red-700">异常标记</Badge>}</div><div className="mt-1 text-sm text-gray-500">{stage.detail}</div>{stage.exception && <div className="mt-1 text-sm text-red-600">异常说明：{stage.exception}</div>}<div className="mt-1 text-xs text-gray-400">{stage.businessNo} / {stage.dataSource} / {stage.material}</div></div><div className="text-right text-xs text-gray-500">{stage.date}<ChevronRight className="ml-auto mt-2 h-4 w-4" /></div></button>
+                  })}
+                </div>
+              </section>
+            </>
+          ) : (
+            <section className="rounded-lg border border-gray-200 bg-gray-50 p-12 text-center">
+              <AlertCircle className="mx-auto mb-3 h-12 w-12 text-gray-300" />
+              <div className="text-sm text-gray-600">{searched ? '未找到匹配的认定溯源记录' : '请输入查询条件或选择左侧记录'}</div>
+            </section>
           )}
+        </main>
+      </div>
+
+      <Dialog open={!!viewStage} onOpenChange={() => setViewStage(null)}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader><DialogTitle>环节详情</DialogTitle></DialogHeader>
+          {viewStage && <div className="space-y-3 text-sm">
+            <div className="grid grid-cols-2 gap-3"><Info label="环节名称" value={viewStage.name} /><Info label="业务编号" value={viewStage.businessNo} /><Info label="处理时间" value={viewStage.date} /><Info label="处理机构" value={viewStage.org} /><Info label="操作人" value={viewStage.operator} /><Info label="数据来源" value={viewStage.dataSource} /></div>
+            <Info label="关联材料" value={viewStage.material} />
+            <Info label="处理说明" value={viewStage.detail} />
+            {viewStage.exception && <div className="rounded-md border border-red-100 bg-red-50 px-3 py-2 text-red-700"><div className="text-xs">异常说明</div><div className="font-medium">{viewStage.exception}</div></div>}
+          </div>}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={alertDialog} onOpenChange={setAlertDialog}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader><DialogTitle>异常处理</DialogTitle></DialogHeader>
+          <div className="space-y-2">{traceAlerts.map(item => <div key={item.id} className="grid grid-cols-[1fr_80px_80px] items-center gap-3 rounded-md border border-gray-100 px-3 py-2 text-sm"><div><div className="font-medium text-gray-900">{item.candidateName} / {item.traceNo} / {item.stage}</div><div className="text-xs text-gray-500">{item.org}：{item.problem}</div></div><Badge className={item.level === '高' ? 'bg-red-50 text-red-700' : item.level === '中' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'}>{item.level}</Badge><Button size="sm" variant="outline" onClick={() => toast.success('异常处理状态已更新')}>{item.status}</Button></div>)}</div>
         </DialogContent>
       </Dialog>
     </div>
   )
+}
+
+function Metric({ label, value, tone = 'blue' }: { label: string; value: number; tone?: 'blue' | 'red' }) {
+  return <div className="min-w-16 rounded-md border border-gray-100 px-3 py-2"><div className={`text-xl font-bold ${tone === 'red' ? 'text-red-600' : 'text-[#1A56DB]'}`}>{value}</div><div className="text-xs text-gray-500">{label}</div></div>
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return <div className="rounded-md bg-[#F9FAFB] px-3 py-2"><div className="text-xs text-gray-500">{label}</div><div className="font-medium text-gray-900">{value}</div></div>
 }

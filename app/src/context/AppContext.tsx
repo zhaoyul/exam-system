@@ -17,20 +17,33 @@ interface AppContextType {
 }
 
 const AppContext = createContext<AppContextType | null>(null)
+const SESSION_KEY = 'exam-system-session-user'
+
+function readSessionUser(): AppState['user'] {
+  try {
+    const raw = window.sessionStorage.getItem(SESSION_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const sessionUser = readSessionUser()
   const [state, setState] = useState<AppState>({
-    isLoggedIn: false,
-    user: null,
+    isLoggedIn: !!sessionUser,
+    user: sessionUser,
     sidebarCollapsed: false,
     notifications: 3,
   })
 
   const login = useCallback((user: { name: string; role: UserRole; org: string }) => {
+    window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(user))
     setState(s => ({ ...s, isLoggedIn: true, user }))
   }, [])
 
   const logout = useCallback(() => {
+    window.sessionStorage.removeItem(SESSION_KEY)
     setState(s => ({ ...s, isLoggedIn: false, user: null }))
   }, [])
 
@@ -43,6 +56,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ...s,
       user: s.user ? { ...s.user, role } : null,
     }))
+    const user = readSessionUser()
+    if (user) {
+      window.sessionStorage.setItem(SESSION_KEY, JSON.stringify({ ...user, role }))
+    }
   }, [])
 
   return (

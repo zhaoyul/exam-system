@@ -1,160 +1,161 @@
-import { useState } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
+import { ChevronDown, ChevronRight, Edit3, FileText, Plus, Search, Shuffle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-import { Plus, Search, CheckCircle, XCircle, Eye } from 'lucide-react'
+import { levels, theorySubjects } from './theoryData'
 
-interface PaperReq {
-  id: number
-  title: string
-  subject: string
+type ReqSource = '系统推送' | '手动建立'
+type ReqStatus = '新需求' | '已配置' | '已抽卷'
+
+interface PaperRequirement {
+  id: string
+  name: string
+  source: ReqSource
+  subjectId: string
   level: string
-  paperCount: number
   useType: string
-  status: string
-  applicant: string
-  applyDate: string
+  paperCount: number
+  status: ReqStatus
+  items: Array<{ id: string; rule: string; count: number; purpose: string }>
 }
 
-const mockReqs: PaperReq[] = [
-  { id: 1, title: '2026年4月大亚湾核电认定A卷', subject: '核反应堆运行值班员', level: '三级', paperCount: 3, useType: '正式考试', status: 'approved', applicant: '张工', applyDate: '2026-03-10' },
-  { id: 2, title: '2026年4月阳江核电认定B卷', subject: '电气值班员', level: '四级', paperCount: 2, useType: '正式考试', status: 'pending', applicant: '李工', applyDate: '2026-03-12' },
-  { id: 3, title: '2026年5月台山核电补考卷', subject: '汽轮机运行值班员', level: '三级', paperCount: 1, useType: '补考', status: 'rejected', applicant: '王工', applyDate: '2026-03-15' },
+const initialReqs: PaperRequirement[] = [
+  { id: 'rq1', name: '2026年5月中广核测试理论A卷', source: '系统推送', subjectId: 's1', level: '三级', useType: '正式考试', paperCount: 2, status: '新需求', items: [{ id: 'i1', rule: '核反应堆运行三级-A卷规则', count: 2, purpose: '正式考试' }] },
+  { id: 'rq2', name: '阳江核电补考理论卷', source: '手动建立', subjectId: 's2', level: '四级', useType: '补考', paperCount: 1, status: '已配置', items: [{ id: 'i2', rule: '电气值班四级规则', count: 1, purpose: '补考' }] },
 ]
 
-const statusMap: Record<string, { label: string; color: string }> = {
-  approved: { label: '已通过', color: 'bg-green-100 text-green-700' },
-  pending: { label: '待审批', color: 'bg-yellow-100 text-yellow-700' },
-  rejected: { label: '已驳回', color: 'bg-red-100 text-red-700' },
-}
-
 export default function PaperRequirements() {
-  const [reqs, setReqs] = useState<PaperReq[]>(mockReqs)
+  const [reqs, setReqs] = useState<PaperRequirement[]>(initialReqs)
   const [search, setSearch] = useState('')
-  const [addOpen, setAddOpen] = useState(false)
+  const [source, setSource] = useState<'全部' | ReqSource>('全部')
+  const [expanded, setExpanded] = useState<string[]>([])
+  const [dialog, setDialog] = useState<'add' | 'item' | 'paper' | null>(null)
+  const [active, setActive] = useState<PaperRequirement | null>(null)
 
-  const filtered = reqs.filter(r => !search || r.title.includes(search) || r.subject.includes(search))
+  const filtered = useMemo(() => reqs.filter(req => {
+    const bySource = source === '全部' || req.source === source
+    const bySearch = !search || req.name.includes(search) || subjectName(req.subjectId).includes(search)
+    return bySource && bySearch
+  }), [reqs, search, source])
 
-  const handleApprove = (id: number) => {
-    setReqs(prev => prev.map(r => r.id === id ? { ...r, status: 'approved' } : r))
-    toast.success('试卷需求已通过')
+  const saveReq = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const fd = new FormData(event.currentTarget)
+    const next: PaperRequirement = {
+      id: active?.id || String(Date.now()),
+      name: String(fd.get('name') || ''),
+      source: active?.source || '手动建立',
+      subjectId: String(fd.get('subjectId') || theorySubjects[0].id),
+      level: String(fd.get('level') || '三级'),
+      useType: String(fd.get('useType') || '正式考试'),
+      paperCount: Number(fd.get('paperCount') || 1),
+      status: active?.status || '新需求',
+      items: active?.items || [],
+    }
+    if (!next.name) {
+      toast.error('请填写需求名称')
+      return
+    }
+    setReqs(prev => active ? prev.map(item => item.id === active.id ? next : item) : [next, ...prev])
+    setDialog(null)
+    setActive(null)
+    toast.success(active ? '试卷需求已更新' : '试卷需求已添加')
   }
 
-  const handleReject = (id: number) => {
-    setReqs(prev => prev.map(r => r.id === id ? { ...r, status: 'rejected' } : r))
-    toast.success('试卷需求已驳回')
+  const saveItem = () => {
+    if (!active) return
+    const item = { id: String(Date.now()), rule: '核反应堆运行三级-A卷规则', count: active.paperCount, purpose: active.useType }
+    setReqs(prev => prev.map(req => req.id === active.id ? { ...req, items: [...req.items, item], status: '已配置' } : req))
+    setDialog(null)
+    toast.success('需求项已保存')
+  }
+
+  const extractPaper = () => {
+    if (!active) return
+    setReqs(prev => prev.map(req => req.id === active.id ? { ...req, status: '已抽卷' } : req))
+    setDialog(null)
+    toast.success('试卷抽取完成')
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-gray-900">试卷需求</h1>
-          <p className="text-sm text-gray-500 mt-1">申请和管理试卷需求，审批后自动生成试卷</p>
+          <p className="mt-1 text-sm text-gray-500">管理系统推送和手动建立的试卷需求，配置需求项并抽取考试用试卷</p>
         </div>
-        <Button onClick={() => setAddOpen(true)}><Plus className="w-4 h-4 mr-2" />申请试卷</Button>
+        <Button onClick={() => { setActive(null); setDialog('add') }}><Plus className="mr-2 h-4 w-4" />添加</Button>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="p-4 border-b border-gray-100">
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input placeholder="搜索需求标题、科目..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
-          </div>
+      <div className="rounded-lg border border-gray-200 bg-white">
+        <div className="flex items-center justify-between gap-3 border-b border-gray-100 p-3">
+          <div className="flex gap-2">{(['全部', '系统推送', '手动建立'] as const).map(item => <button key={item} onClick={() => setSource(item)} className={`h-8 rounded-md px-3 text-xs font-medium ${source === item ? 'bg-[#1A56DB] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{item}</button>)}</div>
+          <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" /><input value={search} onChange={event => setSearch(event.target.value)} placeholder="需求名称 / 科目" className="h-9 w-72 rounded-md border border-gray-200 pl-9 pr-3 text-sm focus:border-[#1A56DB] focus:outline-none" /></div>
         </div>
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">序号</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">需求标题</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">科目</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">等级</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">套数</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">用途</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">申请人</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">申请日期</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">状态</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">操作</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {filtered.map((r, idx) => (
-              <tr key={r.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 text-xs">{idx + 1}</td>
-                <td className="px-4 py-3 font-medium">{r.title}</td>
-                <td className="px-4 py-3 text-xs">{r.subject}</td>
-                <td className="px-4 py-3"><Badge variant="outline" className="text-[10px]">{r.level}</Badge></td>
-                <td className="px-4 py-3 text-xs">{r.paperCount}套</td>
-                <td className="px-4 py-3 text-xs">{r.useType}</td>
-                <td className="px-4 py-3 text-xs">{r.applicant}</td>
-                <td className="px-4 py-3 text-xs text-gray-500">{r.applyDate}</td>
-                <td className="px-4 py-3"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium ${statusMap[r.status].color}`}>{statusMap[r.status].label}</span></td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"><Eye className="w-3 h-3" /></Button>
-                    {r.status === 'pending' && (
-                      <>
-                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-green-600" onClick={() => handleApprove(r.id)}><CheckCircle className="w-3 h-3" /></Button>
-                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-red-600" onClick={() => handleReject(r.id)}><XCircle className="w-3 h-3" /></Button>
-                      </>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-[#F9FAFB] text-gray-600"><tr><th className="w-12 px-4 py-3"></th><th className="px-4 py-3 text-left font-medium">需求名称</th><th className="px-4 py-3 text-left font-medium">来源</th><th className="px-4 py-3 text-left font-medium">科目</th><th className="px-4 py-3 text-left font-medium">等级</th><th className="px-4 py-3 text-right font-medium">套数</th><th className="px-4 py-3 text-left font-medium">用途</th><th className="px-4 py-3 text-left font-medium">状态</th><th className="px-4 py-3 text-left font-medium">操作</th></tr></thead>
+            <tbody className="divide-y divide-gray-100">
+              {filtered.map(req => (
+                <>
+                  <tr key={req.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3"><button onClick={() => setExpanded(prev => prev.includes(req.id) ? prev.filter(id => id !== req.id) : [...prev, req.id])}>{expanded.includes(req.id) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}</button></td>
+                    <td className="px-4 py-3 font-medium text-gray-900"><span className="inline-flex items-center gap-2"><FileText className="h-4 w-4 text-[#1A56DB]" />{req.name}</span></td>
+                    <td className="px-4 py-3"><Badge className={req.source === '系统推送' ? 'bg-orange-50 text-orange-700' : 'bg-blue-50 text-blue-700'}>{req.source}</Badge></td>
+                    <td className="px-4 py-3 text-gray-600">{subjectName(req.subjectId)}</td>
+                    <td className="px-4 py-3 text-gray-600">{req.level}</td>
+                    <td className="px-4 py-3 text-right">{req.paperCount}</td>
+                    <td className="px-4 py-3 text-gray-600">{req.useType}</td>
+                    <td className="px-4 py-3"><Badge className={req.status === '已抽卷' ? 'bg-green-50 text-green-700' : req.status === '已配置' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'}>{req.status}</Badge></td>
+                    <td className="px-4 py-3"><div className="flex gap-2"><button onClick={() => { setActive(req); setDialog('add') }} className="text-xs text-gray-600 hover:text-[#1A56DB]"><Edit3 className="mr-0.5 inline h-3.5 w-3.5" />编辑</button><button onClick={() => { setActive(req); setDialog('item') }} className="text-xs text-[#1A56DB] hover:underline">需求项</button><button onClick={() => { setActive(req); setDialog('paper') }} className="text-xs text-green-600 hover:underline"><Shuffle className="mr-0.5 inline h-3.5 w-3.5" />试卷</button></div></td>
+                  </tr>
+                  {expanded.includes(req.id) && <tr key={`${req.id}-items`}><td></td><td colSpan={8} className="bg-[#F9FAFB] px-4 py-3"><div className="space-y-2">{req.items.length ? req.items.map(item => <div key={item.id} className="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm">规则：{item.rule} / 套数：{item.count} / 用途：{item.purpose}</div>) : <div className="text-sm text-gray-500">暂无需求项，点击“需求项”进行配置。</div>}</div></td></tr>}
+                </>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>申请试卷</DialogTitle></DialogHeader>
-          <form onSubmit={(e) => { e.preventDefault(); setAddOpen(false); toast.success('试卷需求已提交'); }} className="space-y-3">
-            <div className="space-y-1"><Label>需求标题 *</Label><Input name="title" placeholder="如：2026年4月认定A卷" required /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><Label>科目 *</Label>
-                <Select defaultValue="reactor">
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="reactor">核反应堆运行值班员</SelectItem>
-                    <SelectItem value="electrical">电气值班员</SelectItem>
-                    <SelectItem value="turbine">汽轮机运行值班员</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1"><Label>等级 *</Label>
-                <Select defaultValue="三级">
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="三级">三级</SelectItem>
-                    <SelectItem value="四级">四级</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><Label>试卷套数 *</Label><Input type="number" defaultValue="1" /></div>
-              <div className="space-y-1"><Label>用途 *</Label>
-                <Select defaultValue="exam">
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="exam">正式考试</SelectItem>
-                    <SelectItem value="makeup">补考</SelectItem>
-                    <SelectItem value="practice">模拟练习</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-1"><Label>备注</Label><Textarea placeholder="可选填" /></div>
-            <DialogFooter><Button type="button" variant="outline" onClick={() => setAddOpen(false)}>取消</Button><Button type="submit">提交申请</Button></DialogFooter>
+      <Dialog open={dialog === 'add'} onOpenChange={() => { setDialog(null); setActive(null) }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{active ? '编辑试卷需求' : '添加试卷需求'}</DialogTitle></DialogHeader>
+          <form onSubmit={saveReq} className="space-y-3 text-sm">
+            <Field label="需求名称" name="name" defaultValue={active?.name} />
+            <label className="block"><span className="font-medium text-gray-700">科目</span><select name="subjectId" defaultValue={active?.subjectId || theorySubjects[0].id} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-2">{theorySubjects.map(subject => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select></label>
+            <div className="grid grid-cols-3 gap-3"><SelectField label="等级" name="level" defaultValue={active?.level || '三级'} options={levels} /><Field label="套数" name="paperCount" defaultValue={String(active?.paperCount || 1)} type="number" /><SelectField label="用途" name="useType" defaultValue={active?.useType || '正式考试'} options={['正式考试', '补考', '模拟练习']} /></div>
+            <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setDialog(null)}>取消</Button><Button type="submit">保存</Button></div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={dialog === 'item'} onOpenChange={() => setDialog(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>编辑需求项</DialogTitle></DialogHeader>
+          <div className="space-y-3 text-sm"><Field label="组卷规则" name="rule" defaultValue="核反应堆运行三级-A卷规则" /><Field label="抽卷套数" name="count" defaultValue={String(active?.paperCount || 1)} type="number" /><div className="flex justify-end"><Button onClick={saveItem}>保存</Button></div></div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={dialog === 'paper'} onOpenChange={() => setDialog(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>抽取试卷</DialogTitle></DialogHeader>
+          <div className="space-y-3 text-sm"><div className="rounded-md bg-[#F9FAFB] p-3">需求：{active?.name}</div><div className="rounded-md border border-dashed border-[#1A56DB] p-5 text-center text-[#1A56DB]">点击“抽取”后按需求项生成考试用试卷</div><div className="flex justify-end"><Button onClick={extractPaper}>抽取</Button></div></div>
         </DialogContent>
       </Dialog>
     </div>
   )
+}
+
+function subjectName(id: string) {
+  return theorySubjects.find(subject => subject.id === id)?.name || id
+}
+
+function Field({ label, name, defaultValue, type = 'text' }: { label: string; name: string; defaultValue?: string; type?: string }) {
+  return <label className="block"><span className="font-medium text-gray-700">{label}</span><input name={name} type={type} defaultValue={defaultValue} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3" /></label>
+}
+
+function SelectField({ label, name, defaultValue, options }: { label: string; name: string; defaultValue: string; options: string[] }) {
+  return <label className="block"><span className="font-medium text-gray-700">{label}</span><select name={name} defaultValue={defaultValue} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-2">{options.map(option => <option key={option}>{option}</option>)}</select></label>
 }

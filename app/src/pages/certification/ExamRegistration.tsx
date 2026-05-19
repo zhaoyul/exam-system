@@ -10,7 +10,8 @@ import { toast } from 'sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Users, Plus, Upload, Download, CheckCircle, Trash2,
-  FileSpreadsheet, AlertTriangle, ChevronRight, UserPlus, RotateCcw
+  FileSpreadsheet, AlertTriangle, ChevronRight, UserPlus, RotateCcw,
+  Camera, FileUp
 } from 'lucide-react'
 
 interface RegistrationPlan {
@@ -44,6 +45,8 @@ interface Candidate {
   type: 'normal' | 'makeup'
   orgName: string
   batchId: number
+  conditionNo: string
+  materials: boolean
 }
 
 const mockPlans: RegistrationPlan[] = [
@@ -58,11 +61,11 @@ const mockBatches: RegBatch[] = [
 ]
 
 const mockCandidates: Candidate[] = [
-  { id: 1, name: '张三', gender: '男', idCard: '440301199001011234', profession: '核反应堆操作员', level: '三级', photo: true, type: 'normal', orgName: '运行一部', batchId: 1 },
-  { id: 2, name: '李四', gender: '女', idCard: '440301199205063456', profession: '电气维修工', level: '四级', photo: true, type: 'normal', orgName: '运行一部', batchId: 1 },
-  { id: 3, name: '王五', gender: '男', idCard: '440301198803127890', profession: '仪表维修工', level: '三级', photo: false, type: 'normal', orgName: '维修部', batchId: 2 },
-  { id: 4, name: '赵六', gender: '男', idCard: '440301199511224567', profession: '汽轮机操作员', level: '四级', photo: true, type: 'makeup', orgName: '维修部', batchId: 2 },
-  { id: 5, name: '孙七', gender: '女', idCard: '440301199307088901', profession: '化学分析员', level: '三级', photo: true, type: 'normal', orgName: '运行一部', batchId: 1 },
+  { id: 1, name: '张三', gender: '男', idCard: '440301199001011234', profession: '核反应堆操作员', level: '三级', photo: true, type: 'normal', orgName: '运行一部', batchId: 1, conditionNo: '1', materials: true },
+  { id: 2, name: '李四', gender: '女', idCard: '440301199205063456', profession: '电气维修工', level: '四级', photo: true, type: 'normal', orgName: '运行一部', batchId: 1, conditionNo: '2', materials: true },
+  { id: 3, name: '王五', gender: '男', idCard: '440301198803127890', profession: '仪表维修工', level: '三级', photo: false, type: 'normal', orgName: '维修部', batchId: 2, conditionNo: '1', materials: false },
+  { id: 4, name: '赵六', gender: '男', idCard: '440301199511224567', profession: '汽轮机操作员', level: '四级', photo: true, type: 'makeup', orgName: '维修部', batchId: 2, conditionNo: '3', materials: true },
+  { id: 5, name: '孙七', gender: '女', idCard: '440301199307088901', profession: '化学分析员', level: '三级', photo: true, type: 'normal', orgName: '运行一部', batchId: 1, conditionNo: '2', materials: true },
 ]
 
 const statusMap: Record<string, { label: string; color: string }> = {
@@ -81,10 +84,22 @@ export default function ExamRegistration() {
   const [addBatchOpen, setAddBatchOpen] = useState(false)
   const [addCandidateOpen, setAddCandidateOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
+  const [photoImportOpen, setPhotoImportOpen] = useState(false)
+  const [materialImportOpen, setMaterialImportOpen] = useState(false)
+  const [candidateDetail, setCandidateDetail] = useState<Candidate | null>(null)
+  const [photoFilter, setPhotoFilter] = useState<'全部' | '有照片' | '无照片'>('全部')
+  const [selectedProfession, setSelectedProfession] = useState('核反应堆操作员 / 三级')
+  const [photoRecognized, setPhotoRecognized] = useState(false)
+  const [feeDialog, setFeeDialog] = useState<'缴费' | '记账' | null>(null)
   const [checkMultiCert, setCheckMultiCert] = useState(false)
   const [activeTab, setActiveTab] = useState('todo')
+  const [registrationMode, setRegistrationMode] = useState<'window' | 'online'>('window')
+  const [importMode, setImportMode] = useState<'clear' | 'cover' | 'ignore'>('cover')
 
-  const filteredCandidates = candidates.filter(c => c.batchId === selectedBatch)
+  const filteredCandidates = candidates.filter(c =>
+    c.batchId === selectedBatch &&
+    (photoFilter === '全部' || (photoFilter === '有照片' ? c.photo : !c.photo))
+  )
 
   const handleAddBatch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -119,6 +134,8 @@ export default function ExamRegistration() {
       type: fd.get('type') as 'normal' | 'makeup' ?? 'normal',
       orgName: batches.find(b => b.id === selectedBatch)?.orgName || '',
       batchId: selectedBatch,
+      conditionNo: fd.get('conditionNo') as string || '1',
+      materials: false,
     }
     setCandidates(prev => [...prev, newCandidate])
     setBatches(prev => prev.map(b => b.id === selectedBatch ? { ...b, candidateCount: b.candidateCount + 1 } : b))
@@ -138,9 +155,22 @@ export default function ExamRegistration() {
     setActiveTab('done')
   }
 
+  const handleCancelRegistration = (id: number) => {
+    setCandidates(prev => prev.filter(c => c.id !== id))
+    setBatches(prev => prev.map(b => b.id === selectedBatch ? { ...b, candidateCount: Math.max(0, b.candidateCount - 1) } : b))
+    toast.success('已取消报名')
+  }
+
   const handleCheckMultiCert = () => {
     setCheckMultiCert(true)
     toast.success('一人多证检查完成，未发现异常')
+  }
+
+  const handleDeleteAllCandidates = () => {
+    const deletedCount = candidates.filter(c => c.batchId === selectedBatch).length
+    setCandidates(prev => prev.filter(c => c.batchId !== selectedBatch))
+    setBatches(prev => prev.map(b => b.id === selectedBatch ? { ...b, candidateCount: 0 } : b))
+    toast.success(`已删除当前批次 ${deletedCount} 条报名信息`)
   }
 
   return (
@@ -156,7 +186,13 @@ export default function ExamRegistration() {
               <AlertTriangle className="w-4 h-4 mr-2" /> 检查一人多证
             </Button>
             <Button variant="outline" onClick={() => setImportOpen(true)}>
-              <Upload className="w-4 h-4 mr-2" /> 导入
+              <Upload className="w-4 h-4 mr-2" /> 导入考生
+            </Button>
+            <Button variant="outline" onClick={() => setPhotoImportOpen(true)}>
+              <Camera className="w-4 h-4 mr-2" /> 导入照片
+            </Button>
+            <Button variant="outline" onClick={() => setMaterialImportOpen(true)}>
+              <FileUp className="w-4 h-4 mr-2" /> 导入申报材料
             </Button>
             <Button onClick={() => setAddCandidateOpen(true)}>
               <UserPlus className="w-4 h-4 mr-2" /> 添加考生
@@ -204,9 +240,14 @@ export default function ExamRegistration() {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <Button size="sm" onClick={() => setSelectedPlan(plan.id)}>
-                          集体报名 <ChevronRight className="w-3 h-3 ml-1" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button size="sm" onClick={() => setSelectedPlan(plan.id)}>
+                            进入集体报名 <ChevronRight className="w-3 h-3 ml-1" />
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => toast.success('更多：集体报名、查看批复、报名报表')}>
+                            更多
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -219,9 +260,39 @@ export default function ExamRegistration() {
                 <Button variant="outline" size="sm" onClick={() => setSelectedPlan(null)}>
                   <RotateCcw className="w-3 h-3 mr-1" /> 返回计划列表
                 </Button>
-                <span className="text-sm text-gray-500">
-                  当前计划：{plans.find(p => p.id === selectedPlan)?.planName}
-                </span>
+                  <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 text-xs text-gray-600">
+                    请选择职业（工种）级别
+                    <select
+                      value={selectedProfession}
+                      onChange={e => setSelectedProfession(e.target.value)}
+                      className="h-8 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700"
+                    >
+                      <option>核反应堆操作员 / 三级</option>
+                      <option>电气维修工 / 四级</option>
+                      <option>仪表维修工 / 三级</option>
+                      <option>汽轮机操作员 / 四级</option>
+                      <option>化学分析员 / 三级</option>
+                    </select>
+                  </label>
+                  <div className="flex rounded-md border border-gray-200 bg-white p-0.5">
+                    <button
+                      className={`px-3 py-1 text-xs rounded ${registrationMode === 'window' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                      onClick={() => setRegistrationMode('window')}
+                    >
+                      窗口报名
+                    </button>
+                    <button
+                      className={`px-3 py-1 text-xs rounded ${registrationMode === 'online' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                      onClick={() => setRegistrationMode('online')}
+                    >
+                      在线报名
+                    </button>
+                  </div>
+                  <span className="text-sm text-gray-500">
+                    当前计划：{plans.find(p => p.id === selectedPlan)?.planName}
+                  </span>
+                </div>
               </div>
 
               <div className="grid grid-cols-12 gap-4">
@@ -258,6 +329,8 @@ export default function ExamRegistration() {
                   {/* Actions */}
                   <div className="pt-2 space-y-2 border-t mt-2">
                     <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => toast.success('申报表已导出')}>导出申报表</Button>
+                    <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => toast.success('全部电子表格已导出')}>导出全部电子表格</Button>
+                    <Button variant="outline" size="sm" className="w-full text-xs text-red-600" onClick={handleDeleteAllCandidates}>删除所有报名信息</Button>
                     <Button variant="default" size="sm" className="w-full text-xs" onClick={handleEndRegistration}>结束报名</Button>
                   </div>
                 </div>
@@ -270,8 +343,20 @@ export default function ExamRegistration() {
                         <CardTitle className="text-sm flex items-center gap-2">
                           <Users className="w-4 h-4 text-blue-600" />
                           考生列表 ({filteredCandidates.length})
+                          <Badge variant="outline" className="text-[10px]">
+                            {registrationMode === 'window' ? '窗口报名' : '在线报名'}
+                          </Badge>
                         </CardTitle>
                         <div className="flex gap-2">
+                          <select
+                            value={photoFilter}
+                            onChange={e => setPhotoFilter(e.target.value as typeof photoFilter)}
+                            className="h-8 rounded-md border border-gray-200 bg-white px-2 text-xs"
+                          >
+                            <option>全部</option>
+                            <option>有照片</option>
+                            <option>无照片</option>
+                          </select>
                           <Button variant="outline" size="sm" className="text-xs h-8" onClick={() => toast.success('报名报表已导出')}>
                             <FileSpreadsheet className="w-3 h-3 mr-1" /> 报名报表
                           </Button>
@@ -337,7 +422,11 @@ export default function ExamRegistration() {
                                   <td className="px-3 py-2">
                                     <div className="flex gap-1">
                                       <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-blue-600">查看</Button>
+                                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-blue-600" onClick={() => setCandidateDetail(c)}>编辑</Button>
                                       <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">申报表</Button>
+                                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-amber-600" onClick={() => handleCancelRegistration(c.id)}>
+                                        取消报名
+                                      </Button>
                                       <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-red-600" onClick={() => handleDeleteCandidate(c.id)}>
                                         <Trash2 className="w-3 h-3" />
                                       </Button>
@@ -393,6 +482,9 @@ export default function ExamRegistration() {
                     </td>
                     <td className="px-4 py-3">
                       <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">查看详情</Button>
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-amber-600" onClick={() => setFeeDialog('缴费')}>缴费</Button>
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-blue-600" onClick={() => setFeeDialog('记账')}>记账</Button>
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-red-600" onClick={() => toast.success('已取消报名，可重新编辑')}>取消报名</Button>
                     </td>
                   </tr>
                 ))}
@@ -401,6 +493,28 @@ export default function ExamRegistration() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Add Batch Dialog */}
+      <Dialog open={!!feeDialog} onOpenChange={() => setFeeDialog(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{feeDialog}</DialogTitle></DialogHeader>
+          <div className="space-y-3 text-sm">
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-amber-700">
+              当前批次存在非 0 元收费项目，需在财务系统完成收费或记账后继续。
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1"><Label>费用总数</Label><Input value="3200.00" readOnly /></div>
+              <div className="space-y-1"><Label>收费方式</Label><Input value={feeDialog || ''} readOnly /></div>
+            </div>
+            {feeDialog === '缴费' && <div className="space-y-1"><Label>缴费凭证</Label><Input placeholder="请输入凭证号或上传凭证说明" /></div>}
+            {feeDialog === '记账' && <div className="space-y-1"><Label>记账说明</Label><Input placeholder="请输入日后清账说明" /></div>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFeeDialog(null)}>取消</Button>
+            <Button onClick={() => { setFeeDialog(null); toast.success('收费处理已保存，可在收费清单/记账清单查看') }}>保存</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Batch Dialog */}
       <Dialog open={addBatchOpen} onOpenChange={setAddBatchOpen}>
@@ -447,6 +561,7 @@ export default function ExamRegistration() {
               </div>
               <div className="space-y-1"><Label>身份证号 *</Label><Input name="idCard" required /></div>
               <div className="space-y-1"><Label>职业工种 *</Label><Input name="profession" required /></div>
+              <div className="space-y-1"><Label>申报条件编号</Label><Input name="conditionNo" defaultValue="1" /></div>
               <div className="space-y-1"><Label>技能等级 *</Label>
                 <Select name="level" defaultValue="三级">
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -484,6 +599,26 @@ export default function ExamRegistration() {
             <DialogTitle>批量导入考生</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <Button variant="outline" size="sm" onClick={() => toast.success('导入模板已下载')}>
+              <Download className="w-4 h-4 mr-2" /> 导入模板下载
+            </Button>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { key: 'clear', label: '清空后导入', desc: '先清空当前批次，再写入上传数据' },
+                { key: 'cover', label: '相同覆盖导入', desc: '证件号相同的考生用新数据覆盖' },
+                { key: 'ignore', label: '相同忽略导入', desc: '证件号相同的考生保留原数据' },
+              ].map(item => (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setImportMode(item.key as typeof importMode)}
+                  className={`rounded-md border p-3 text-left ${importMode === item.key ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}
+                >
+                  <div className="text-sm font-medium text-gray-900">{item.label}</div>
+                  <div className="mt-1 text-xs text-gray-500">{item.desc}</div>
+                </button>
+              ))}
+            </div>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
               <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
               <p className="text-sm text-gray-600">点击或拖拽Excel文件到此处上传</p>
@@ -497,7 +632,92 @@ export default function ExamRegistration() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setImportOpen(false)}>取消</Button>
-            <Button onClick={() => { setImportOpen(false); toast.success('成功导入考生信息') }}>确认导入</Button>
+            <Button onClick={() => { setImportOpen(false); toast.success(`已按「${importMode === 'clear' ? '清空后导入' : importMode === 'cover' ? '相同覆盖导入' : '相同忽略导入'}」处理考生数据`) }}>确认导入</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Photo Import Dialog */}
+      <Dialog open={photoImportOpen} onOpenChange={setPhotoImportOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>导入考生照片</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-2 text-center text-xs">
+              {['选择照片压缩包', '识别证件号码', '上传照片'].map((step, index) => (
+                <div key={step} className="rounded-md border border-gray-200 bg-gray-50 p-3">
+                  <div className="mx-auto mb-2 flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white">{index + 1}</div>
+                  {step}
+                </div>
+              ))}
+            </div>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+              <Camera className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+              <p className="text-sm text-gray-600">上传以身份证号命名的照片压缩包</p>
+              <p className="text-xs text-gray-400 mt-1">支持 .zip，照片格式支持 jpg/png</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPhotoImportOpen(false)}>取消</Button>
+            <Button variant="outline" onClick={() => { setPhotoRecognized(true); toast.success('照片识别完成，全部匹配成功') }}>识别</Button>
+            <Button onClick={() => { setPhotoImportOpen(false); setPhotoRecognized(false); setCandidates(prev => prev.map(c => c.batchId === selectedBatch ? { ...c, photo: true } : c)); toast.success(photoRecognized ? '照片上传完成' : '已跳过识别并上传照片') }}>上传</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Candidate Detail/Edit Dialog */}
+      <Dialog open={!!candidateDetail} onOpenChange={() => setCandidateDetail(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>编辑考生信息</DialogTitle>
+          </DialogHeader>
+          {candidateDetail && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label>姓名</Label><Input value={candidateDetail.name} onChange={e => setCandidateDetail({ ...candidateDetail, name: e.target.value })} /></div>
+                <div className="space-y-1"><Label>性别</Label><Input value={candidateDetail.gender} onChange={e => setCandidateDetail({ ...candidateDetail, gender: e.target.value })} /></div>
+                <div className="space-y-1"><Label>证件号码</Label><Input value={candidateDetail.idCard} onChange={e => setCandidateDetail({ ...candidateDetail, idCard: e.target.value })} /></div>
+                <div className="space-y-1"><Label>职业工种</Label><Input value={candidateDetail.profession} onChange={e => setCandidateDetail({ ...candidateDetail, profession: e.target.value })} /></div>
+                <div className="space-y-1"><Label>技能等级</Label><Input value={candidateDetail.level} onChange={e => setCandidateDetail({ ...candidateDetail, level: e.target.value })} /></div>
+                <div className="space-y-1"><Label>申报条件编号</Label><Input value={candidateDetail.conditionNo} onChange={e => setCandidateDetail({ ...candidateDetail, conditionNo: e.target.value })} /></div>
+              </div>
+              <div className="rounded-md border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600">
+                照片：{candidateDetail.photo ? '已上传' : '未上传'}；申报材料：{candidateDetail.materials ? '完整' : '缺失'}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCandidateDetail(null)}>返回</Button>
+            <Button onClick={() => {
+              if (!candidateDetail) return
+              setCandidates(prev => prev.map(c => c.id === candidateDetail.id ? candidateDetail : c))
+              setCandidateDetail(null)
+              toast.success('考生信息已保存')
+            }}>保存</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Material Import Dialog */}
+      <Dialog open={materialImportOpen} onOpenChange={setMaterialImportOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>导入申报材料</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+              <FileUp className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+              <p className="text-sm text-gray-600">上传考生申报材料压缩包</p>
+              <p className="text-xs text-gray-400 mt-1">按计划/批次归档，支持一人一档材料包</p>
+            </div>
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
+              材料导入后可在考生行中查看申报表和附件完整性，异常材料会进入待处理列表。
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMaterialImportOpen(false)}>取消</Button>
+            <Button onClick={() => { setMaterialImportOpen(false); toast.success('申报材料已导入') }}>确认导入</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

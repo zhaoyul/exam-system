@@ -36,8 +36,6 @@ import HistoricalPage from '@/pages/certification/HistoricalPage'
 import ApprovalSettingsPage from '@/pages/certification/ApprovalSettingsPage'
 import Plans from '@/pages/certification/Plans'
 import ExamRoomPage from '@/pages/certification/ExamRoomPage'
-import RegistrationOrgPage from '@/pages/certification/RegistrationOrgPage'
-import ExamStaffPage from '@/pages/certification/ExamStaffPage'
 import FeeSettingsPage from '@/pages/certification/FeeSettingsPage'
 import CertificatesGroup from '@/pages/certification/CertificatesGroup'
 import CertificatesPrint from '@/pages/certification/CertificatesPrint'
@@ -61,6 +59,7 @@ import ExamArrangement from '@/pages/certification/ExamArrangement'
 import ExamSessionArrange from '@/pages/certification/ExamSessionArrange'
 import CertDeclaration from '@/pages/certification/CertDeclaration'
 import EvaluatorStaff from '@/pages/certification/EvaluatorStaff'
+import MarkingLeadPage from '@/pages/certification/MarkingLeadPage'
 import FinanceWorkbench from '@/pages/finance/FinanceWorkbench'
 import FeeChargePage from '@/pages/finance/FeeChargePage'
 import FeeListPage from '@/pages/finance/FeeListPage'
@@ -68,6 +67,7 @@ import FeeLedgerPage from '@/pages/finance/FeeLedgerPage'
 import FeeStandardPage from '@/pages/finance/FeeStandardPage'
 import ScorePublicityManage from '@/pages/certification/ScorePublicityManage'
 import SupervisorManage from '@/pages/certification/SupervisorManage'
+import VideoMonitorPage from '@/pages/certification/VideoMonitorPage'
 
 // Grading
 import GradingPage from '@/pages/grading/GradingPage'
@@ -85,10 +85,12 @@ import CertReissue from '@/pages/certificate/CertReissue'
 
 // Supervision
 import TrainingPage from '@/pages/supervision/TrainingPage'
+import EvaluatorTrainingPage from '@/pages/supervision/EvaluatorTrainingPage'
 import ExpertInfoPage from '@/pages/supervision/ExpertInfoPage'
 import HiringPage from '@/pages/supervision/HiringPage'
 import DispatchPage from '@/pages/supervision/DispatchPage'
 import FormsPage from '@/pages/supervision/FormsPage'
+import PersonnelStatisticsPage from '@/pages/supervision/PersonnelStatisticsPage'
 
 // Report
 import ScoreReport from '@/pages/report/ScoreReport'
@@ -209,8 +211,6 @@ export default function App() {
           <Route path="/cert/approval-settings" element={<ApprovalSettingsPage />} />
           <Route path="/cert/plans" element={<Plans />} />
           <Route path="/cert/exam-rooms" element={<ExamRoomPage />} />
-          <Route path="/cert/registration-orgs" element={<RegistrationOrgPage />} />
-          <Route path="/cert/exam-staff" element={<ExamStaffPage />} />
           <Route path="/cert/fee-settings" element={<FeeSettingsPage />} />
           <Route path="/cert/certificates-group" element={<CertificatesGroup />} />
           <Route path="/cert/certificates-print" element={<CertificatesPrint />} />
@@ -229,6 +229,7 @@ export default function App() {
           <Route path="/cert/registration-orgs" element={<RegistrationOrgManage />} />
           <Route path="/cert/exam-staff" element={<ExamStaffManage />} />
           <Route path="/cert/evaluator-staff" element={<EvaluatorStaff />} />
+          <Route path="/cert/marking-lead" element={<MarkingLeadPage />} />
           <Route path="/cert/declaration" element={<CertDeclaration />} />
           {/* Finance System */}
           <Route path="/finance/workbench" element={<FinanceWorkbench />} />
@@ -259,10 +260,12 @@ export default function App() {
           <Route path="/certificate/reissue" element={<CertReissue />} />
           {/* Supervision */}
           <Route path="/supervision/training" element={<TrainingPage />} />
+          <Route path="/supervision/evaluator-training" element={<EvaluatorTrainingPage />} />
           <Route path="/supervision/expert-info" element={<ExpertInfoPage />} />
           <Route path="/supervision/hiring" element={<HiringPage />} />
           <Route path="/supervision/dispatch" element={<DispatchPage />} />
           <Route path="/supervision/forms" element={<FormsPage />} />
+          <Route path="/supervision/personnel-statistics" element={<PersonnelStatisticsPage />} />
           {/* Report */}
           <Route path="/report/score" element={<ScoreReport />} />
           <Route path="/report/statistics" element={<StatisticsReport />} />
@@ -275,6 +278,7 @@ export default function App() {
           <Route path="/traceability" element={<TraceabilityCenter />} />
           {/* Monitor */}
           <Route path="/monitor" element={<ExamMonitor />} />
+          <Route path="/cert/video-monitor" element={<VideoMonitorPage />} />
           {/* Messages */}
           <Route path="/messages" element={<MessageCenter />} />
           {/* Exam Center */}

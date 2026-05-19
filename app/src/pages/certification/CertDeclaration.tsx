@@ -139,6 +139,7 @@ export default function CertDeclaration() {
               <th className="px-4 py-3 text-left font-medium text-gray-600">站点</th>
               <th className="px-4 py-3 text-left font-medium text-gray-600">职业(工种)</th>
               <th className="px-4 py-3 text-left font-medium text-gray-600">人数</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">申报材料</th>
               <th className="px-4 py-3 text-left font-medium text-gray-600">状态</th>
               <th className="px-4 py-3 text-left font-medium text-gray-600">操作</th>
             </tr>
@@ -159,6 +160,11 @@ export default function CertDeclaration() {
                   <td className="px-4 py-3 text-gray-600">{decl.site}</td>
                   <td className="px-4 py-3 text-gray-600">{decl.profession}（{decl.level}）</td>
                   <td className="px-4 py-3 text-gray-600">{decl.count}人</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-0.5 rounded text-xs ${decl.materials.length >= 2 ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+                      {decl.materials.length}份
+                    </span>
+                  </td>
                   <td className="px-4 py-3"><Badge className={`text-[10px] ${statusMap[decl.status].color}`}>{statusMap[decl.status].label}</Badge></td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
@@ -171,7 +177,7 @@ export default function CertDeclaration() {
                 </tr>
                 {expandedId === decl.id && (
                   <tr className="bg-gray-50">
-                    <td colSpan={10} className="px-4 py-4">
+                    <td colSpan={11} className="px-4 py-4">
                       <div className="text-xs text-gray-500 mb-2 font-medium">申报材料</div>
                       <div className="flex gap-2 flex-wrap">
                         {decl.materials.map((m, i) => (

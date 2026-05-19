@@ -1,214 +1,242 @@
-import { useState } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
+import { Building2, Edit3, KeyRound, Lock, LockOpen, Plus, Search, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import {
-  Building2, Plus, Search, Trash2, Edit3, Eye
-} from 'lucide-react'
 
-interface RegOrg {
-  id: number
+interface EnrollUnit {
+  id: string
+  loginName: string
+  password: string
   name: string
-  contact: string
+  code: string
   phone: string
-  address: string
-  batchCount: number
-  candidateCount: number
-  status: 'active' | 'inactive'
-  createdAt: string
+  contact: string
+  site: string
+  description: string
+  locked: boolean
 }
 
-const mockOrgs: RegOrg[] = [
-  { id: 1, name: '运行一部', contact: '张主任', phone: '0755-12345678', address: '大亚湾基地1号厂房', batchCount: 2, candidateCount: 45, status: 'active', createdAt: '2025-01-15' },
-  { id: 2, name: '维修部', contact: '李部长', phone: '0755-12345679', address: '大亚湾基地维修楼', batchCount: 1, candidateCount: 32, status: 'active', createdAt: '2025-02-20' },
-  { id: 3, name: '仪控部', contact: '王主任', phone: '0755-12345680', address: '大亚湾基地仪控楼', batchCount: 1, candidateCount: 28, status: 'active', createdAt: '2025-03-10' },
-  { id: 4, name: '运行二部', contact: '赵主任', phone: '0755-12345681', address: '阳江基地运行楼', batchCount: 0, candidateCount: 0, status: 'inactive', createdAt: '2025-04-05' },
+const initialUnits: EnrollUnit[] = [
+  { id: 'eu-1', loginName: 'dyw_yxbm', password: '123456', name: '大亚湾核电运行一部', code: 'DYW-YX01', phone: '0755-82345678', contact: '张主任', site: '中广核职业技能培训中心', description: '窗口报名与在线报名', locked: false },
+  { id: 'eu-2', loginName: 'yj_wxbm', password: '123456', name: '阳江核电维修部', code: 'YJ-WX01', phone: '0662-2234567', contact: '李部长', site: '阳江实操训练基地', description: '负责维修工种报名', locked: false },
+  { id: 'eu-3', loginName: 'ts_ykbm', password: '123456', name: '台山核电仪控部', code: 'TS-YK01', phone: '0750-5566778', contact: '王主任', site: '台山培训考点', description: '仅在线报名', locked: true },
 ]
 
+const emptyForm = {
+  loginName: '',
+  password: '',
+  name: '',
+  code: '',
+  phone: '',
+  contact: '',
+  site: '中广核职业技能培训中心',
+  description: '',
+}
+
 export default function RegistrationOrgManage() {
-  const [orgs, setOrgs] = useState<RegOrg[]>(mockOrgs)
+  const [units, setUnits] = useState<EnrollUnit[]>(initialUnits)
   const [search, setSearch] = useState('')
-  const [addOpen, setAddOpen] = useState(false)
-  const [editOrg, setEditOrg] = useState<RegOrg | null>(null)
+  const [siteFilter, setSiteFilter] = useState('全部')
+  const [editing, setEditing] = useState<EnrollUnit | null>(null)
+  const [adding, setAdding] = useState(false)
+  const [resetTarget, setResetTarget] = useState<EnrollUnit | null>(null)
 
-  const filtered = orgs.filter(o => !search || o.name.includes(search) || o.contact.includes(search) || o.phone.includes(search))
+  const sites = useMemo(() => ['全部', ...Array.from(new Set(units.map(unit => unit.site)))], [units])
+  const filtered = units.filter(unit => {
+    const bySite = siteFilter === '全部' || unit.site === siteFilter
+    const bySearch = !search || [unit.loginName, unit.name, unit.code, unit.phone, unit.contact].some(value => value.includes(search))
+    return bySite && bySearch
+  })
 
-  const handleAdd = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const form = e.currentTarget
-    const fd = new FormData(form)
-    const newOrg: RegOrg = {
-      id: Date.now(),
-      name: fd.get('name') as string,
-      contact: fd.get('contact') as string,
-      phone: fd.get('phone') as string,
-      address: fd.get('address') as string,
-      batchCount: 0,
-      candidateCount: 0,
-      status: 'active',
-      createdAt: new Date().toISOString().split('T')[0],
+  const saveUnit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const fd = new FormData(event.currentTarget)
+    const next = {
+      loginName: String(fd.get('loginName') || ''),
+      password: String(fd.get('password') || ''),
+      name: String(fd.get('name') || ''),
+      code: String(fd.get('code') || ''),
+      phone: String(fd.get('phone') || ''),
+      contact: String(fd.get('contact') || ''),
+      site: String(fd.get('site') || ''),
+      description: String(fd.get('description') || ''),
     }
-    setOrgs(prev => [...prev, newOrg])
-    setAddOpen(false)
-    toast.success(`新增报名机构：${newOrg.name}`)
-    form.reset()
+    if (editing) {
+      setUnits(prev => prev.map(unit => unit.id === editing.id ? { ...unit, ...next } : unit))
+      setEditing(null)
+      toast.success('报名机构已更新')
+    } else {
+      setUnits(prev => [{ ...next, id: `eu-${Date.now()}`, locked: false }, ...prev])
+      setAdding(false)
+      toast.success(`新增报名机构：${next.name}`)
+    }
   }
 
-  const handleEdit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (!editOrg) return
-    const form = e.currentTarget
-    const fd = new FormData(form)
-    setOrgs(prev => prev.map(o => o.id === editOrg.id ? {
-      ...o,
-      name: fd.get('name') as string,
-      contact: fd.get('contact') as string,
-      phone: fd.get('phone') as string,
-      address: fd.get('address') as string,
-    } : o))
-    setEditOrg(null)
-    toast.success('机构信息已更新')
+  const resetPassword = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!resetTarget) return
+    const fd = new FormData(event.currentTarget)
+    const password = String(fd.get('password') || '')
+    setUnits(prev => prev.map(unit => unit.id === resetTarget.id ? { ...unit, password } : unit))
+    setResetTarget(null)
+    toast.success('重置密码成功')
   }
 
-  const handleDelete = (id: number) => {
-    setOrgs(prev => prev.filter(o => o.id !== id))
-    toast.success('机构已删除')
+  const toggleLock = (unit: EnrollUnit) => {
+    setUnits(prev => prev.map(item => item.id === unit.id ? { ...item, locked: !item.locked } : item))
+    toast.success(unit.locked ? '用户已解锁' : '用户已锁定')
   }
 
-  const handleToggleStatus = (id: number) => {
-    setOrgs(prev => prev.map(o => o.id === id ? { ...o, status: o.status === 'active' ? 'inactive' as const : 'active' as const } : o))
-    toast.success('状态已更新')
+  const remove = (id: string) => {
+    setUnits(prev => prev.filter(unit => unit.id !== id))
+    toast.success('报名机构已删除')
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-gray-900">报名机构</h1>
-          <p className="text-sm text-gray-500 mt-1">管理报名机构信息，机构下的报名批次</p>
+          <p className="mt-1 text-sm text-gray-500">维护所属站点下的报名机构账号，支持新增、编辑、重置密码、锁定/解锁和删除</p>
         </div>
-        <Button onClick={() => setAddOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" /> 新增机构
+        <Button onClick={() => setAdding(true)} className="bg-[#1A56DB] hover:bg-[#1748B5]">
+          <Plus className="mr-2 h-4 w-4" />新增报名机构
         </Button>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="text-sm text-gray-500">机构总数</div>
-          <div className="text-2xl font-bold text-gray-900 mt-1">{orgs.length}</div>
-        </div>
-        <div className="bg-white p-4 rounded-lg border border-green-200">
-          <div className="text-sm text-green-600">启用中</div>
-          <div className="text-2xl font-bold text-green-700 mt-1">{orgs.filter(o => o.status === 'active').length}</div>
-        </div>
-        <div className="bg-white p-4 rounded-lg border border-blue-200">
-          <div className="text-sm text-blue-600">报名批次</div>
-          <div className="text-2xl font-bold text-blue-700 mt-1">{orgs.reduce((a, o) => a + o.batchCount, 0)}</div>
-        </div>
-        <div className="bg-white p-4 rounded-lg border border-purple-200">
-          <div className="text-sm text-purple-600">考生总数</div>
-          <div className="text-2xl font-bold text-purple-700 mt-1">{orgs.reduce((a, o) => a + o.candidateCount, 0)}</div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="p-4 border-b border-gray-100">
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input placeholder="搜索机构名称、联系人、电话..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+      <section className="rounded-lg border border-gray-200 bg-white">
+        <div className="flex items-center gap-2 border-b border-gray-100 p-4">
+          <select value={siteFilter} onChange={event => setSiteFilter(event.target.value)} className="h-9 rounded-md border border-gray-200 px-3 text-sm">
+            {sites.map(site => <option key={site}>{site}</option>)}
+          </select>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input value={search} onChange={event => setSearch(event.target.value)} placeholder="机构名称 / 登录名 / 联系人" className="h-9 w-80 rounded-md border border-gray-200 pl-9 pr-3 text-sm focus:border-[#1A56DB] focus:outline-none" />
           </div>
+          <span className="ml-auto text-sm text-gray-500">共计 {filtered.length} 条数据</span>
         </div>
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">机构名称</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">联系人</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">联系电话</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">地址</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">报名批次</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">考生数</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">状态</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">操作</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {filtered.map(o => (
-              <tr key={o.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-blue-500" />
-                    <span className="font-medium">{o.name}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-sm">{o.contact}</td>
-                <td className="px-4 py-3 text-xs text-gray-500">{o.phone}</td>
-                <td className="px-4 py-3 text-xs text-gray-500">{o.address}</td>
-                <td className="px-4 py-3">{o.batchCount}个</td>
-                <td className="px-4 py-3">{o.candidateCount}人</td>
-                <td className="px-4 py-3">
-                  <button onClick={() => handleToggleStatus(o.id)}>
-                    <Badge className={`text-[10px] cursor-pointer ${o.status === 'active' ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                      {o.status === 'active' ? '启用' : '停用'}
-                    </Badge>
-                  </button>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setEditOrg(o)}>
-                      <Edit3 className="w-3 h-3" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-blue-600">
-                      <Eye className="w-3 h-3 mr-1" /> 查看
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-red-600" onClick={() => handleDelete(o.id)}>
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
 
-      {/* Add Dialog */}
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>新增报名机构</DialogTitle></DialogHeader>
-          <form onSubmit={handleAdd} className="space-y-3">
-            <div className="space-y-1"><Label>机构名称 *</Label><Input name="name" required /></div>
-            <div className="space-y-1"><Label>联系人 *</Label><Input name="contact" required /></div>
-            <div className="space-y-1"><Label>联系电话 *</Label><Input name="phone" required /></div>
-            <div className="space-y-1"><Label>地址</Label><Input name="address" /></div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>取消</Button>
+        <div className="overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-[#F9FAFB] text-gray-600">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium">序号</th>
+                <th className="px-4 py-3 text-left font-medium">机构名称</th>
+                <th className="px-4 py-3 text-left font-medium">所属站点</th>
+                <th className="px-4 py-3 text-left font-medium">登录名</th>
+                <th className="px-4 py-3 text-left font-medium">机构编码</th>
+                <th className="px-4 py-3 text-left font-medium">联系电话</th>
+                <th className="px-4 py-3 text-left font-medium">联系人</th>
+                <th className="px-4 py-3 text-left font-medium">状态</th>
+                <th className="px-4 py-3 text-left font-medium">操作</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filtered.map((unit, index) => (
+                <tr key={unit.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-gray-500">{index + 1}</td>
+                  <td className="px-4 py-3 font-medium text-gray-900"><Building2 className="mr-2 inline h-4 w-4 text-[#1A56DB]" />{unit.name}</td>
+                  <td className="px-4 py-3 text-gray-600">{unit.site}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-600">{unit.loginName}</td>
+                  <td className="px-4 py-3 text-gray-600">{unit.code}</td>
+                  <td className="px-4 py-3 text-gray-600">{unit.phone}</td>
+                  <td className="px-4 py-3 text-gray-600">{unit.contact}</td>
+                  <td className="px-4 py-3">
+                    <Badge className={unit.locked ? 'bg-gray-100 text-gray-700' : 'bg-green-50 text-green-700'}>
+                      {unit.locked ? '锁定' : '有效'}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-2">
+                      <button onClick={() => setEditing(unit)} className="text-xs text-[#1A56DB] hover:underline"><Edit3 className="mr-1 inline h-3.5 w-3.5" />编辑</button>
+                      <button onClick={() => setResetTarget(unit)} className="text-xs text-gray-600 hover:text-[#1A56DB]"><KeyRound className="mr-1 inline h-3.5 w-3.5" />重置密码</button>
+                      <button onClick={() => toggleLock(unit)} className="text-xs text-gray-600 hover:text-[#1A56DB]">
+                        {unit.locked ? <LockOpen className="mr-1 inline h-3.5 w-3.5" /> : <Lock className="mr-1 inline h-3.5 w-3.5" />}{unit.locked ? '解锁' : '锁定'}
+                      </button>
+                      <button onClick={() => remove(unit.id)} className="text-xs text-red-600 hover:underline"><Trash2 className="mr-1 inline h-3.5 w-3.5" />删除</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <UnitDialog open={adding || !!editing} title={editing ? '编辑报名机构' : '新增报名机构'} initial={editing || emptyForm} onClose={() => { setAdding(false); setEditing(null) }} onSubmit={saveUnit} />
+
+      <Dialog open={!!resetTarget} onOpenChange={() => setResetTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>重置密码</DialogTitle></DialogHeader>
+          <form onSubmit={resetPassword} className="space-y-3 text-sm">
+            <div className="text-gray-500">用户：{resetTarget?.loginName}</div>
+            <label className="block">
+              <span className="font-medium text-gray-700">新密码：</span>
+              <input name="password" required defaultValue="123456" className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3" />
+            </label>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setResetTarget(null)}>返回</Button>
               <Button type="submit">保存</Button>
-            </DialogFooter>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
-
-      {/* Edit Dialog */}
-      <Dialog open={!!editOrg} onOpenChange={() => setEditOrg(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>编辑机构</DialogTitle></DialogHeader>
-          {editOrg && (
-            <form onSubmit={handleEdit} className="space-y-3">
-              <div className="space-y-1"><Label>机构名称 *</Label><Input name="name" defaultValue={editOrg.name} required /></div>
-              <div className="space-y-1"><Label>联系人 *</Label><Input name="contact" defaultValue={editOrg.contact} required /></div>
-              <div className="space-y-1"><Label>联系电话 *</Label><Input name="phone" defaultValue={editOrg.phone} required /></div>
-              <div className="space-y-1"><Label>地址</Label><Input name="address" defaultValue={editOrg.address} /></div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setEditOrg(null)}>取消</Button>
-                <Button type="submit">保存</Button>
-              </DialogFooter>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
+  )
+}
+
+function UnitDialog({
+  open,
+  title,
+  initial,
+  onClose,
+  onSubmit,
+}: {
+  open: boolean
+  title: string
+  initial: Partial<EnrollUnit>
+  onClose: () => void
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
+        <form onSubmit={onSubmit} className="space-y-3 text-sm">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="登录名：" name="loginName" defaultValue={initial.loginName} required placeholder="请输入登录名" />
+            <Field label="登录密码：" name="password" defaultValue={initial.password} required placeholder="请输入登录密码" />
+            <Field label="机构名称：" name="name" defaultValue={initial.name} required placeholder="请输入机构名称" />
+            <Field label="机构编码：" name="code" defaultValue={initial.code} required placeholder="请输入机构编码" />
+            <Field label="联系电话：" name="phone" defaultValue={initial.phone} required placeholder="请输入联系电话" />
+            <Field label="联系人：" name="contact" defaultValue={initial.contact} required placeholder="请输入联系人" />
+            <label className="block">
+              <span className="font-medium text-gray-700">所属站点：</span>
+              <select name="site" defaultValue={initial.site || emptyForm.site} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3">
+                <option>中广核职业技能培训中心</option>
+                <option>阳江实操训练基地</option>
+                <option>台山培训考点</option>
+              </select>
+            </label>
+            <Field label="描述：" name="description" defaultValue={initial.description} placeholder="请输入描述" />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={onClose}>返回</Button>
+            <Button type="submit" className="bg-[#1A56DB] hover:bg-[#1748B5]">保存</Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function Field({ label, name, defaultValue, required, placeholder }: { label: string; name: string; defaultValue?: string; required?: boolean; placeholder?: string }) {
+  return (
+    <label className="block">
+      <span className="font-medium text-gray-700">{label}</span>
+      <input name={name} defaultValue={defaultValue || ''} required={required} placeholder={placeholder} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3 focus:border-[#1A56DB] focus:outline-none" />
+    </label>
   )
 }

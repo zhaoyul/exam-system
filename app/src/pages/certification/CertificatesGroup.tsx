@@ -8,7 +8,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import {
-  Search, Award, FileText, ChevronDown, ChevronRight, Eye, FileSpreadsheet, MoreHorizontal
+  Search, Award, FileText, ChevronDown, ChevronRight, Eye, FileSpreadsheet, MoreHorizontal, Download, CheckCircle
 } from 'lucide-react'
 
 interface CertPlan {
@@ -17,7 +17,8 @@ interface CertPlan {
   name: string
   filingOrg: string
   examMonth: string
-  status: string
+  status: '待生成' | '已生成' | '部分生成'
+  certCount: number
   children: CertChild[]
 }
 
@@ -44,7 +45,7 @@ interface CandidateCert {
 
 const mockPlans: CertPlan[] = [
   {
-    id: '1', planNo: '22118800880003', name: '20220324中国同辐股份有限公司第2批认定', filingOrg: '北京市', examMonth: '2022年04月', status: '--',
+    id: '1', planNo: '22118800880003', name: '20220324中国同辐股份有限公司第2批认定', filingOrg: '北京市', examMonth: '2022年04月', status: '部分生成', certCount: 2,
     children: [
       { id: 'c1', profession: '道路客运汽车驾驶员', level: '五级/初级工', theoryEnrolled: 0, groupEnrolled: 1, examSubjects: '理论（知识）技能（实操）' },
       { id: 'c2', profession: '抄表核算收费员', level: '五级/初级工', theoryEnrolled: 0, groupEnrolled: 1, examSubjects: '理论（知识）技能（实操）' },
@@ -52,7 +53,7 @@ const mockPlans: CertPlan[] = [
     ]
   },
   {
-    id: '2', planNo: '22119999660044', name: '2021-04-27年第28批认定', filingOrg: '北京市', examMonth: '2021年04月', status: '--',
+    id: '2', planNo: '22119999660044', name: '2021-04-27年第28批认定', filingOrg: '北京市', examMonth: '2021年04月', status: '已生成', certCount: 3,
     children: [
       { id: 'c4', profession: '秘书', level: '五级/初级工', theoryEnrolled: 0, groupEnrolled: 1, examSubjects: '理论（知识）技能（实操）' },
     ]
@@ -66,8 +67,9 @@ const mockCandidateCerts: CandidateCert[] = [
 ]
 
 export default function CertificatesGroup() {
-  const [plans] = useState<CertPlan[]>(mockPlans)
+  const [plans, setPlans] = useState<CertPlan[]>(mockPlans)
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'全部' | CertPlan['status']>('全部')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [showGenerate, setShowGenerate] = useState(false)
   const [showCandidates, setShowCandidates] = useState(false)
@@ -75,9 +77,14 @@ export default function CertificatesGroup() {
   const [issueDate, setIssueDate] = useState('2022-03-27')
   const [candidateCerts] = useState<CandidateCert[]>(mockCandidateCerts)
 
-  const filtered = plans.filter(p => !search || p.name.includes(search) || p.planNo.includes(search))
+  const filtered = plans.filter(p => {
+    const bySearch = !search || p.name.includes(search) || p.planNo.includes(search)
+    const byStatus = statusFilter === '全部' || p.status === statusFilter
+    return bySearch && byStatus
+  })
 
   const handleGenerate = () => {
+    setPlans(prev => prev.map(p => selectedPlan && p.id !== selectedPlan.id ? p : { ...p, status: '已生成' as const, certCount: Math.max(p.certCount, 3) }))
     setShowGenerate(false)
     toast.success(`证书生成成功！发证日期：${issueDate}`)
   }
@@ -89,18 +96,32 @@ export default function CertificatesGroup() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">证书管理</h1>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">证书管理</h1>
+          <p className="text-sm text-gray-500 mt-1">生成职业技能等级证书，查看考生证书编号和成绩</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => toast.success('证书数据已导出')}><Download className="w-4 h-4 mr-2" />导出证书数据</Button>
+          <Button onClick={() => setShowGenerate(true)} className="bg-[#1A56DB] hover:bg-[#1748B5]">
+            <Award className="w-4 h-4 mr-2" />批量生成证书
+          </Button>
+        </div>
+      </div>
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)} className="h-9 rounded-md border border-gray-200 px-3 text-sm">
+            <option>全部</option>
+            <option>待生成</option>
+            <option>部分生成</option>
+            <option>已生成</option>
+          </select>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input placeholder="计划名称" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 w-64" />
           </div>
         </div>
-        <Button onClick={() => setShowGenerate(true)} className="bg-[#1A56DB] hover:bg-[#1748B5]">
-          <Award className="w-4 h-4 mr-2" />生成证书
-        </Button>
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -113,6 +134,7 @@ export default function CertificatesGroup() {
               <th className="px-3 py-3 text-left font-medium text-gray-600">计划名称</th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">备案地</th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">考试月份</th>
+              <th className="px-3 py-3 text-left font-medium text-gray-600">证书数</th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">状态</th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">操作</th>
             </tr>
@@ -131,7 +153,10 @@ export default function CertificatesGroup() {
                   <td className="px-3 py-3 font-medium text-gray-900">{plan.name}</td>
                   <td className="px-3 py-3 text-gray-600">{plan.filingOrg}</td>
                   <td className="px-3 py-3 text-gray-600">{plan.examMonth}</td>
-                  <td className="px-3 py-3 text-gray-500">{plan.status}</td>
+                  <td className="px-3 py-3 text-gray-600">{plan.certCount}本</td>
+                  <td className="px-3 py-3">
+                    <Badge className={`text-[10px] ${plan.status === '已生成' ? 'bg-green-50 text-green-700' : plan.status === '部分生成' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'}`}>{plan.status}</Badge>
+                  </td>
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-2">
                       <button onClick={() => openCandidates(plan)} className="text-blue-600 hover:underline text-xs flex items-center gap-0.5">
@@ -139,6 +164,9 @@ export default function CertificatesGroup() {
                       </button>
                       <button onClick={() => { setSelectedPlan(plan); setShowGenerate(true) }} className="text-blue-600 hover:underline text-xs flex items-center gap-0.5">
                         <Award className="w-3 h-3" />生成证书
+                      </button>
+                      <button onClick={() => toast.success('证书生成状态已确认')} className="text-blue-600 hover:underline text-xs flex items-center gap-0.5">
+                        <CheckCircle className="w-3 h-3" />确认
                       </button>
                       <button onClick={() => toast.success('申报表已导出')} className="text-blue-600 hover:underline text-xs flex items-center gap-0.5">
                         <FileSpreadsheet className="w-3 h-3" />申报表
@@ -151,7 +179,7 @@ export default function CertificatesGroup() {
                 </tr>
                 {expandedId === plan.id && (
                   <tr className="bg-gray-50">
-                    <td colSpan={8} className="px-3 py-3">
+                    <td colSpan={9} className="px-3 py-3">
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="text-xs text-gray-500">
@@ -192,8 +220,11 @@ export default function CertificatesGroup() {
       {/* Generate Certificate Dialog */}
       <Dialog open={showGenerate} onOpenChange={setShowGenerate}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>选择发证日期</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>生成证书</DialogTitle></DialogHeader>
           <div className="space-y-3">
+            <div className="rounded-md bg-gray-50 p-3 text-sm text-gray-600">
+              {selectedPlan ? `当前计划：${selectedPlan.name}` : '批量生成当前筛选范围内的证书'}
+            </div>
             <div className="space-y-1">
               <Label><span className="text-red-500">*</span> 发证日期</Label>
               <Input type="date" value={issueDate} onChange={e => setIssueDate(e.target.value)} />

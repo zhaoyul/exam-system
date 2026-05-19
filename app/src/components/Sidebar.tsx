@@ -9,7 +9,7 @@ import {
   Upload, ChevronDown, ChevronRight, ChevronLeft, Atom,
   Settings, Database, GraduationCap, Printer, FileSpreadsheet,
   Archive, Receipt, AlertTriangle, Clock, PenTool,
-  MapPin, UserCheck, DollarSign, Eye, Link2, Monitor, Bell,
+  MapPin, UserCheck, Eye, Link2, Monitor, Bell,
   Ticket, Search, Globe, UserPlus, Calendar, Megaphone,
   Building2, LayoutGrid, SlidersHorizontal, Wrench, Layers,
   ShieldCheck
@@ -32,8 +32,10 @@ const moduleGroups = [
       { label: '认定机构', path: '/cert/organizations', icon: BuildingIcon },
       { label: '认定监督', path: '/cert/supervision', icon: Shield },
       { label: '认定统计', path: '/cert/statistics', icon: BarChart3 },
+      { label: '统计报表', path: '/report/statistics', icon: FileSpreadsheet },
       { label: '集团证书', path: '/certificate/issue', icon: Award },
       { label: '历次认定', path: '/cert/historical', icon: Clock },
+      { label: '视频监控', path: '/cert/video-monitor', icon: Monitor },
       { label: '批复设置', path: '/cert/approval-settings', icon: Settings },
       { label: '认定批复', path: '/cert/approval', icon: FileCheck },
       { label: '证书上报', path: '/cert/cert-report', icon: Upload },
@@ -47,7 +49,7 @@ const moduleGroups = [
     path: '/wb/theory',
     icon: BookOpen,
     children: [
-      { label: '工作台', path: '/wb/theory', icon: LayoutDashboard },
+      { label: '科目分类', path: '/wb/theory', icon: LayoutDashboard },
       { label: '科目管理', path: '/question/subjects', icon: BookOpen },
       { label: '知识结构', path: '/question/knowledge', icon: Layers },
       { label: '试题管理', path: '/question/theory', icon: FileText },
@@ -63,7 +65,7 @@ const moduleGroups = [
     path: '/wb/skill',
     icon: Wrench,
     children: [
-      { label: '工作台', path: '/wb/skill', icon: LayoutDashboard },
+      { label: '科目分类', path: '/wb/skill', icon: LayoutDashboard },
       { label: '技能科目', path: '/question/skill-subjects', icon: BookOpen },
       { label: '技能模块', path: '/question/skill-modules', icon: Layers },
       { label: '技能试题', path: '/question/skill', icon: PenTool },
@@ -74,35 +76,21 @@ const moduleGroups = [
   },
   {
     key: 'cert-org',
-    label: '等级认定(机构)',
+    label: '等级认定',
     path: '/cert/exec/plans',
     icon: Users,
     children: [
-      { label: '工作台', path: '/cert/exec/plans', icon: LayoutDashboard },
-      { label: '认定申报', path: '/cert/declaration', icon: FileCheck },
-      { label: '考评人员', path: '/cert/evaluator-staff', icon: Award },
+      { label: '工作台', path: '/wb/cert', icon: LayoutDashboard },
+      { label: '等级认定', path: '/cert/exec/plans', icon: LayoutDashboard },
       { label: '考场信息', path: '/cert/exam-rooms', icon: MapPin },
       { label: '报名机构', path: '/cert/registration-orgs', icon: Globe },
       { label: '考务人员', path: '/cert/exam-staff', icon: UserCheck },
       { label: '监考人员', path: '/cert/supervisors', icon: Shield },
-      { label: '认定统计', path: '/cert/statistics', icon: BarChart3 },
-      { label: '统计报表', path: '/report/statistics', icon: FileSpreadsheet },
+      { label: '阅卷负责', path: '/cert/marking-lead', icon: PenTool },
       { label: '历次认定', path: '/cert/historical', icon: Clock },
-      {
-    label: '财务系统',
-    path: '/finance/workbench',
-    icon: DollarSign,
-    children: [
-      { label: '工作台', path: '/finance/workbench', icon: LayoutDashboard },
-      { label: '财务收费', path: '/finance/charge', icon: DollarSign },
-      { label: '收费清单', path: '/finance/list', icon: FileText },
-      { label: '记账清单', path: '/finance/ledger', icon: FileSpreadsheet },
-      { label: '收费标准', path: '/finance/standard', icon: Settings },
-    ],
-  },
+      { label: '视频监控', path: '/cert/video-monitor', icon: Monitor },
       { label: '报名修改', path: '/personal/register', icon: PenTool },
       { label: '申请特办', path: '/cert/special', icon: Receipt },
-      { label: '年度计划', path: '/cert/plans', icon: Calendar },
     ],
   },
   {
@@ -124,9 +112,11 @@ const moduleGroups = [
       { label: '工作台', path: '/wb/expert', icon: LayoutDashboard },
       { label: '专家信息', path: '/supervision/expert-info', icon: User },
       { label: '专家聘用', path: '/supervision/hiring', icon: Award },
-      { label: '专家派遣', path: '/supervision/dispatch', icon: ClipboardCheck },
       { label: '督导培训', path: '/supervision/training', icon: Shield },
+      { label: '考评培训', path: '/supervision/evaluator-training', icon: GraduationCap },
+      { label: '专家派遣', path: '/supervision/dispatch', icon: ClipboardCheck },
       { label: '表单管理', path: '/supervision/forms', icon: FileSpreadsheet },
+      { label: '人员统计', path: '/supervision/personnel-statistics', icon: BarChart3 },
     ],
   },
   {
@@ -284,15 +274,16 @@ export default function Sidebar() {
 
   // Filter menus by role
   const filteredModuleGroups = useMemo(() => {
-    if (hasMenuAccess(currentRole, '/dashboard')) return moduleGroups
+    if (currentRole === 'group_admin') return moduleGroups
     return moduleGroups.filter(g => {
+      if (g.key === 'cert') return false
       // Check if any child has access
       return g.children.some(c => hasMenuAccess(currentRole, c.path))
     })
   }, [currentRole])
 
   const filteredOtherMenus = useMemo(() => {
-    if (hasMenuAccess(currentRole, '/dashboard')) return otherMenus
+    if (currentRole === 'group_admin') return otherMenus
     return otherMenus.filter(m => {
       if (hasMenuAccess(currentRole, m.path)) return true
       if (m.children) return m.children.some(c => hasMenuAccess(currentRole, c.path))

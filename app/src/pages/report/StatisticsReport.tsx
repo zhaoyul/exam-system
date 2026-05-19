@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Search, Download, BarChart3, TrendingUp, Users, Award } from 'lucide-react'
+import { Search, BarChart3, TrendingUp, Users, Award, FileText, FileSpreadsheet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const data = [
@@ -12,7 +12,7 @@ const data = [
 
 export default function StatisticsReport() {
   const [search, setSearch] = useState('')
-  const [period, setPeriod] = useState('本年')
+  const [period, setPeriod] = useState('2026 年')
   const [items, setItems] = useState(data)
 
   const refresh = () => { setItems(prev => prev.map(d => ({ ...d, total: d.total + Math.floor(Math.random() * 5) }))) }
@@ -31,9 +31,17 @@ export default function StatisticsReport() {
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-semibold text-gray-900">机构认定统计</h2>
           <div className="flex items-center gap-2">
-            <select value={period} onChange={e => { setPeriod(e.target.value); refresh() }} className="h-8 px-2 border border-gray-200 rounded-md text-sm"><option>本年</option><option>本季度</option><option>本月</option></select>
-            <Button onClick={refresh} variant="outline" className="h-8 text-xs"><Download className="w-3.5 h-3.5 mr-1" />导出</Button>
+            <select value={period} onChange={e => { setPeriod(e.target.value); refresh() }} className="h-8 px-2 border border-gray-200 rounded-md text-sm">
+              <option>2026 年</option>
+              <option>2025 年</option>
+              <option>2024 年</option>
+            </select>
+            <Button onClick={refresh} variant="outline" className="h-8 text-xs"><FileText className="w-3.5 h-3.5 mr-1" />下载PDF</Button>
+            <Button onClick={refresh} variant="outline" className="h-8 text-xs"><FileSpreadsheet className="w-3.5 h-3.5 mr-1" />下载XLS</Button>
           </div>
+        </div>
+        <div className="mb-4 rounded-lg border border-dashed border-blue-200 bg-blue-50/40 p-4 text-sm text-gray-600">
+          当前报表年度：<span className="font-semibold text-gray-900">{period}</span>。支持按真实系统入口导出年度统计报表 PDF 或 XLS。
         </div>
         <div className="relative mb-3"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="搜索机构..." className="h-9 pl-9 pr-4 border border-gray-200 rounded-md text-sm w-64 focus:outline-none focus:border-[#1A56DB]" /></div>
         <table className="w-full text-sm">

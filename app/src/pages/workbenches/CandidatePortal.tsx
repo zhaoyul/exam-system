@@ -119,7 +119,7 @@ export default function CandidatePortal() {
             <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
               <Award className="w-4 h-4 text-emerald-500" /> 我的证书
             </h2>
-            <button onClick={() => navigate('/personal/cert-query')} className="text-xs text-[#1A56DB] hover:underline">查看全部</button>
+            <button onClick={() => navigate('/personal/cert')} className="text-xs text-[#1A56DB] hover:underline">查看全部</button>
           </div>
           {myCertificates.length > 0 ? (
             myCertificates.map(c => (
@@ -143,7 +143,7 @@ export default function CandidatePortal() {
             <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-purple-500" /> 成绩查询
             </h2>
-            <button onClick={() => navigate('/personal/score-query')} className="text-xs text-[#1A56DB] hover:underline">查看全部</button>
+            <button onClick={() => navigate('/personal/score')} className="text-xs text-[#1A56DB] hover:underline">查看全部</button>
           </div>
           {examResults.map(r => (
             <div key={r.id} className="p-3 bg-purple-50 border border-purple-100 rounded-lg">
@@ -179,8 +179,8 @@ export default function CandidatePortal() {
           {[
             { label: '个人网报', icon: FileText, path: '/personal/register' },
             { label: '准考证', icon: Award, path: '/personal/ticket' },
-            { label: '成绩查询', icon: BarChart3, path: '/personal/score-query' },
-            { label: '证书查询', icon: Award, path: '/personal/cert-query' },
+            { label: '成绩查询', icon: BarChart3, path: '/personal/score' },
+            { label: '证书查询', icon: Award, path: '/personal/cert' },
           ].map(action => (
             <button
               key={action.path}

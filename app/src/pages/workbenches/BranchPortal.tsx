@@ -3,12 +3,12 @@ import { Building2, LayoutGrid, PenTool, Award, AlertCircle, Clock, ChevronRight
 
 const flowSteps = [
   { id: 1, label: '制定计划', count: 1, status: 'completed', path: '/cert/exec/plans' },
-  { id: 2, label: '考试报名', count: 2, status: 'active', path: '/cert/exec/register' },
-  { id: 3, label: '考场编排', count: 1, status: 'active', path: '/cert/exec/room-arrange' },
-  { id: 4, label: '考务安排', count: 0, status: 'pending', path: '/cert/exec/exam-arrange' },
-  { id: 5, label: '成绩管理', count: 0, status: 'pending', path: '/cert/exec/score-manage' },
+  { id: 2, label: '考试报名', count: 2, status: 'active', path: '/cert/exec/registration' },
+  { id: 3, label: '考场编排', count: 1, status: 'active', path: '/cert/exec/arrangement' },
+  { id: 4, label: '考务安排', count: 0, status: 'pending', path: '/cert/exec/session' },
+  { id: 5, label: '成绩管理', count: 0, status: 'pending', path: '/cert/exec/score' },
   { id: 6, label: '成绩公示', count: 0, status: 'pending', path: '/cert/exec/publicity' },
-  { id: 7, label: '证书管理', count: 0, status: 'pending', path: '/cert/exec/cert-manage' },
+  { id: 7, label: '证书管理', count: 0, status: 'pending', path: '/cert/exec/cert' },
   { id: 8, label: '证书打印', count: 0, status: 'pending', path: '/cert/exec/print' },
 ]
 
@@ -131,9 +131,9 @@ export default function BranchPortal() {
             <h3 className="text-xs font-medium text-gray-700 mb-3">常用功能</h3>
             <div className="space-y-2">
               {[
-                { label: '考试报名管理', path: '/cert/exec/register', icon: FileText },
-                { label: '考场编排', path: '/cert/exec/room-arrange', icon: LayoutGrid },
-                { label: '成绩录入', path: '/score/entry', icon: PenTool },
+                { label: '考试报名管理', path: '/cert/exec/registration', icon: FileText },
+                { label: '考场编排', path: '/cert/exec/arrangement', icon: LayoutGrid },
+                { label: '成绩录入', path: '/cert/exec/score', icon: PenTool },
                 { label: '证书打印', path: '/cert/exec/print', icon: Award },
               ].map(link => (
                 <button

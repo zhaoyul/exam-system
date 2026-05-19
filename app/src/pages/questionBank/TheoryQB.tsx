@@ -1,78 +1,181 @@
-import { useState } from 'react'
-import { Search, Plus, Edit3, Trash2, Save, BookOpen } from 'lucide-react'
+import { useMemo, useState, type FormEvent } from 'react'
+import { BarChart3, BookOpen, Edit3, FileUp, MoveRight, Plus, Search, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-
-const questions = [
-  { id: '1', content: '核反应堆运行值班员的主要职责是什么？', type: '单选题', occupation: '核反应堆运行值班员', level: '三级', status: 'published' },
-  { id: '2', content: '核安全文化的核心理念包括哪些？', type: '多选题', occupation: '核反应堆运行值班员', level: '三级', status: 'published' },
-  { id: '3', content: '简述核反应堆控制棒的作用。', type: '简答题', occupation: '核反应堆运行值班员', level: '三级', status: 'draft' },
-  { id: '4', content: '电气试验的基本步骤有哪些？', type: '单选题', occupation: '电气试验员', level: '四级', status: 'published' },
-]
+import { Badge } from '@/components/ui/badge'
+import { toast } from 'sonner'
+import { knowledgeNodes, questionTypes, subjectName, theoryQuestions, theorySubjects, type QuestionStatus, type TheoryQuestion } from '@/pages/question/theoryData'
 
 export default function TheoryQB() {
-  const [items, setItems] = useState(questions)
-  const [search, setSearch] = useState('')
+  const [items, setItems] = useState<TheoryQuestion[]>(theoryQuestions)
+  const [subjectId, setSubjectId] = useState(theorySubjects[0].id)
   const [typeFilter, setTypeFilter] = useState('全部')
-  const [showAdd, setShowAdd] = useState(false)
-  const [showEdit, setShowEdit] = useState<any>(null)
-  const [showDelete, setShowDelete] = useState<string | null>(null)
-  const [form, setForm] = useState({ content: '', type: '单选题', occupation: '', level: '三级', status: 'draft' })
+  const [statusFilter, setStatusFilter] = useState<'全部' | QuestionStatus>('全部')
+  const [search, setSearch] = useState('')
+  const [dialog, setDialog] = useState<'add' | 'import' | 'stats' | 'transfer' | null>(null)
+  const [editing, setEditing] = useState<TheoryQuestion | null>(null)
+  const [selected, setSelected] = useState<string[]>([])
 
-  const filtered = items.filter(i => {
-    const m = !search || i.content.includes(search) || i.occupation.includes(search)
-    const t = typeFilter === '全部' || i.type === typeFilter
-    return m && t
-  })
-  const openAdd = () => { setForm({ content: '', type: '单选题', occupation: '', level: '三级', status: 'draft' }); setShowAdd(true) }
-  const openEdit = (i: any) => { setForm(i); setShowEdit(i) }
-  const handleSave = () => {
-    if (!form.content) return
-    if (showEdit) { setItems(prev => prev.map(i => i.id === showEdit.id ? { ...form, id: showEdit.id } : i)); setShowEdit(null) }
-    else { setItems(prev => [{ ...form, id: Date.now().toString() }, ...prev]); setShowAdd(false) }
+  const filtered = useMemo(() => items.filter(item => {
+    const bySubject = item.subjectId === subjectId
+    const byType = typeFilter === '全部' || item.type === typeFilter
+    const byStatus = statusFilter === '全部' || item.status === statusFilter
+    const bySearch = !search || item.content.includes(search) || item.knowledge.includes(search)
+    return bySubject && byType && byStatus && bySearch
+  }), [items, search, statusFilter, subjectId, typeFilter])
+
+  const saveQuestion = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const fd = new FormData(event.currentTarget)
+    const next: TheoryQuestion = {
+      id: editing?.id || String(Date.now()),
+      subjectId,
+      knowledge: String(fd.get('knowledge') || ''),
+      type: String(fd.get('type') || '单选题'),
+      content: String(fd.get('content') || ''),
+      difficulty: String(fd.get('difficulty') || '中等') as TheoryQuestion['difficulty'],
+      score: Number(fd.get('score') || 1),
+      status: String(fd.get('status') || '有效') as QuestionStatus,
+      updatedAt: new Date().toISOString().slice(0, 10),
+    }
+    if (!next.content) {
+      toast.error('请填写试题内容')
+      return
+    }
+    setItems(prev => editing ? prev.map(item => item.id === editing.id ? next : item) : [next, ...prev])
+    setDialog(null)
+    setEditing(null)
+    toast.success(editing ? '试题已更新' : '试题已添加')
   }
-  const handleDelete = (id: string) => { setItems(prev => prev.filter(i => i.id !== id)); setShowDelete(null) }
-  const publish = (id: string) => { setItems(prev => prev.map(i => i.id === id ? { ...i, status: 'published' } : i)) }
 
-  const FormFields = () => (
-    <div className="space-y-3">
-      <div><label className="text-sm font-medium text-gray-700">题目内容</label><textarea value={form.content} onChange={e => setForm({...form,content:e.target.value})} className="w-full mt-1 p-3 border border-gray-200 rounded-md text-sm min-h-[80px]" placeholder="输入题目内容" /></div>
-      <div><label className="text-sm font-medium text-gray-700">题型</label><select value={form.type} onChange={e => setForm({...form,type:e.target.value})} className="w-full mt-1 h-9 px-3 border border-gray-200 rounded-md text-sm"><option>单选题</option><option>多选题</option><option>判断题</option><option>简答题</option></select></div>
-      <div><label className="text-sm font-medium text-gray-700">职业(工种)</label><input value={form.occupation} onChange={e => setForm({...form,occupation:e.target.value})} className="w-full mt-1 h-9 px-3 border border-gray-200 rounded-md text-sm" placeholder="输入职业(工种)" /></div>
-      <div><label className="text-sm font-medium text-gray-700">等级</label><select value={form.level} onChange={e => setForm({...form,level:e.target.value})} className="w-full mt-1 h-9 px-3 border border-gray-200 rounded-md text-sm"><option>一级</option><option>二级</option><option>三级</option><option>四级</option><option>五级</option></select></div>
-    </div>
-  )
+  const deleteSelected = () => {
+    if (selected.length === 0) {
+      toast.error('请先选择试题')
+      return
+    }
+    setItems(prev => prev.filter(item => !selected.includes(item.id)))
+    setSelected([])
+    toast.success('试题已删除')
+  }
+
+  const toggleStatus = (question: TheoryQuestion) => {
+    setItems(prev => prev.map(item => item.id === question.id ? { ...item, status: item.status === '有效' ? '无效' : '有效' } : item))
+    toast.success('试题有效性已更新')
+  }
+
+  const transferSelected = () => {
+    if (selected.length === 0) {
+      toast.error('请先选择试题')
+      return
+    }
+    setDialog('transfer')
+  }
+
+  const statusBadge = (status: QuestionStatus) => {
+    if (status === '有效') return <Badge className="bg-green-50 text-green-700">{status}</Badge>
+    if (status === '无效') return <Badge className="bg-gray-100 text-gray-600">{status}</Badge>
+    return <Badge className="bg-amber-50 text-amber-700">{status}</Badge>
+  }
 
   return (
-    <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-4">理论题库</h1>
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className="relative"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="搜索题目..." className="h-9 pl-9 pr-4 border border-gray-200 rounded-md text-sm w-64 focus:outline-none focus:border-[#1A56DB]" /></div>
-          <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="h-9 px-2 border border-gray-200 rounded-md text-sm"><option>全部</option><option>单选题</option><option>多选题</option><option>判断题</option><option>简答题</option></select>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">试题管理</h1>
+          <p className="mt-1 text-sm text-gray-500">维护当前科目试题，支持添加、文本导入、删除、题量统计和层级转移</p>
         </div>
-        <Button onClick={openAdd} className="h-9 px-4 bg-[#1A56DB] text-white rounded-md text-sm flex items-center gap-1.5 hover:bg-[#1748B5]"><Plus className="w-4 h-4" /> 添加题目</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setDialog('import')}><FileUp className="mr-2 h-4 w-4" />文本导入</Button>
+          <Button variant="outline" onClick={() => setDialog('stats')}><BarChart3 className="mr-2 h-4 w-4" />题量统计</Button>
+          <Button variant="outline" onClick={transferSelected}><MoveRight className="mr-2 h-4 w-4" />层级转移</Button>
+          <Button variant="outline" onClick={deleteSelected}><Trash2 className="mr-2 h-4 w-4" />删除当前试题</Button>
+          <Button onClick={() => { setEditing(null); setDialog('add') }}><Plus className="mr-2 h-4 w-4" />添加试题</Button>
+        </div>
       </div>
-      <div className="bg-white rounded-lg border border-gray-200 overflow-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-[#F9FAFB] text-gray-600 font-medium"><tr><th className="px-4 py-3 text-left">题目内容</th><th className="px-4 py-3 text-left">题型</th><th className="px-4 py-3 text-left">职业(工种)</th><th className="px-4 py-3 text-left">等级</th><th className="px-4 py-3 text-left">状态</th><th className="px-4 py-3 text-left">操作</th></tr></thead>
-          <tbody className="divide-y divide-gray-100">
-            {filtered.map(i => (
-              <tr key={i.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 text-gray-900 max-w-[300px] truncate flex items-center gap-2"><BookOpen className="w-4 h-4 text-[#1A56DB] flex-shrink-0" />{i.content}</td>
-                <td className="px-4 py-3"><span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs">{i.type}</span></td>
-                <td className="px-4 py-3 text-gray-600">{i.occupation}</td>
-                <td className="px-4 py-3"><span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{i.level}</span></td>
-                <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs ${i.status === 'published' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>{i.status === 'published' ? '已发布' : '草稿'}</span></td>
-                <td className="px-4 py-3"><div className="flex items-center gap-2">{i.status === 'draft' && <button onClick={() => publish(i.id)} className="text-xs text-green-600 hover:underline">发布</button>}<button onClick={() => openEdit(i)} className="text-gray-500 hover:text-amber-600"><Edit3 className="w-3.5 h-3.5" /></button><button onClick={() => setShowDelete(i.id)} className="text-gray-500 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button></div></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+
+      <div className="grid grid-cols-[280px_1fr] gap-4">
+        <aside className="rounded-lg border border-gray-200 bg-white p-3">
+          <div className="mb-3 text-sm font-semibold text-gray-900">选择科目资源</div>
+          <div className="space-y-2">{theorySubjects.map(subject => <button key={subject.id} onClick={() => { setSubjectId(subject.id); setSelected([]) }} className={`w-full rounded-md border p-3 text-left ${subjectId === subject.id ? 'border-[#1A56DB] bg-blue-50' : 'border-gray-100 hover:bg-gray-50'}`}><div className="font-medium text-gray-900">{subject.name}</div><div className="mt-1 text-xs text-gray-500">{subject.level} / {subject.questions} 题</div></button>)}</div>
+        </aside>
+
+        <section className="rounded-lg border border-gray-200 bg-white">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 p-3">
+            <div className="flex flex-wrap gap-2">
+              <select value={typeFilter} onChange={event => setTypeFilter(event.target.value)} className="h-9 rounded-md border border-gray-200 px-2 text-sm"><option>全部</option>{questionTypes.map(type => <option key={type}>{type}</option>)}</select>
+              <select value={statusFilter} onChange={event => setStatusFilter(event.target.value as typeof statusFilter)} className="h-9 rounded-md border border-gray-200 px-2 text-sm"><option>全部</option><option>有效</option><option>无效</option><option>草稿</option></select>
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input value={search} onChange={event => setSearch(event.target.value)} placeholder="题干 / 知识点" className="h-9 w-72 rounded-md border border-gray-200 pl-9 pr-3 text-sm focus:border-[#1A56DB] focus:outline-none" />
+            </div>
+          </div>
+          <div className="overflow-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-[#F9FAFB] text-gray-600"><tr><th className="w-12 px-4 py-3 text-left"><input type="checkbox" checked={filtered.length > 0 && filtered.every(item => selected.includes(item.id))} onChange={event => setSelected(event.target.checked ? filtered.map(item => item.id) : [])} /></th><th className="px-4 py-3 text-left font-medium">试题内容</th><th className="px-4 py-3 text-left font-medium">题型</th><th className="px-4 py-3 text-left font-medium">知识点</th><th className="px-4 py-3 text-left font-medium">难度</th><th className="px-4 py-3 text-left font-medium">分值</th><th className="px-4 py-3 text-left font-medium">状态</th><th className="px-4 py-3 text-left font-medium">操作</th></tr></thead>
+              <tbody className="divide-y divide-gray-100">
+                {filtered.map(question => (
+                  <tr key={question.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3"><input type="checkbox" checked={selected.includes(question.id)} onChange={() => setSelected(prev => prev.includes(question.id) ? prev.filter(id => id !== question.id) : [...prev, question.id])} /></td>
+                    <td className="max-w-[360px] px-4 py-3 font-medium text-gray-900"><span className="inline-flex items-center gap-2"><BookOpen className="h-4 w-4 shrink-0 text-[#1A56DB]" />{question.content}</span></td>
+                    <td className="px-4 py-3 text-gray-600">{question.type}</td>
+                    <td className="px-4 py-3 text-gray-600">{question.knowledge}</td>
+                    <td className="px-4 py-3 text-gray-600">{question.difficulty}</td>
+                    <td className="px-4 py-3 text-gray-600">{question.score}</td>
+                    <td className="px-4 py-3">{statusBadge(question.status)}</td>
+                    <td className="px-4 py-3"><div className="flex gap-2"><button onClick={() => { setEditing(question); setDialog('add') }} className="text-xs text-[#1A56DB] hover:underline"><Edit3 className="mr-0.5 inline h-3.5 w-3.5" />编辑</button><button onClick={() => toggleStatus(question)} className="text-xs text-gray-600 hover:text-[#1A56DB]">有效性</button></div></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
-      <Dialog open={showAdd} onOpenChange={setShowAdd}><DialogContent className="sm:max-w-lg"><DialogHeader><DialogTitle>添加题目</DialogTitle></DialogHeader><FormFields /><div className="flex justify-end gap-2 mt-4"><Button variant="outline" onClick={() => setShowAdd(false)}>取消</Button><Button onClick={handleSave} className="bg-[#1A56DB] hover:bg-[#1748B5]"><Save className="w-4 h-4 mr-1" />保存</Button></div></DialogContent></Dialog>
-      <Dialog open={!!showEdit} onOpenChange={() => setShowEdit(null)}><DialogContent className="sm:max-w-lg"><DialogHeader><DialogTitle>编辑题目</DialogTitle></DialogHeader><FormFields /><div className="flex justify-end gap-2 mt-4"><Button variant="outline" onClick={() => setShowEdit(null)}>取消</Button><Button onClick={handleSave} className="bg-[#1A56DB] hover:bg-[#1748B5]"><Save className="w-4 h-4 mr-1" />保存</Button></div></DialogContent></Dialog>
-      <Dialog open={!!showDelete} onOpenChange={() => setShowDelete(null)}><DialogContent className="sm:max-w-sm"><DialogHeader><DialogTitle>确认删除</DialogTitle></DialogHeader><p className="text-sm text-gray-500">确定要删除此题目吗？</p><div className="flex justify-end gap-2 mt-4"><Button variant="outline" onClick={() => setShowDelete(null)}>取消</Button><Button variant="destructive" onClick={() => showDelete && handleDelete(showDelete)}>删除</Button></div></DialogContent></Dialog>
+
+      <Dialog open={dialog === 'add'} onOpenChange={() => { setDialog(null); setEditing(null) }}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader><DialogTitle>{editing ? '编辑试题' : '添加试题'}</DialogTitle></DialogHeader>
+          <form onSubmit={saveQuestion} className="grid grid-cols-2 gap-3 text-sm">
+            <label className="col-span-2 block"><span className="font-medium text-gray-700">试题内容</span><textarea name="content" defaultValue={editing?.content} className="mt-1 h-24 w-full rounded-md border border-gray-200 px-3 py-2" /></label>
+            <SelectField label="题型" name="type" defaultValue={editing?.type || '单选题'} options={questionTypes} />
+            <SelectField label="知识点" name="knowledge" defaultValue={editing?.knowledge || knowledgeNodes[0].name} options={knowledgeNodes.map(node => node.name)} />
+            <SelectField label="难度" name="difficulty" defaultValue={editing?.difficulty || '中等'} options={['简单', '中等', '困难']} />
+            <Field label="分值" name="score" defaultValue={String(editing?.score || 1)} type="number" />
+            <SelectField label="状态" name="status" defaultValue={editing?.status || '有效'} options={['有效', '无效', '草稿']} />
+            <div className="col-span-2 flex justify-end gap-2 border-t border-gray-100 pt-3"><Button type="button" variant="outline" onClick={() => setDialog(null)}>取消</Button><Button type="submit">保存</Button></div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={dialog === 'import'} onOpenChange={() => setDialog(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>文本导入试题</DialogTitle></DialogHeader>
+          <textarea placeholder="粘贴按模板整理的试题文本，系统将批量解析题干、选项、答案、解析和知识点。" className="h-44 w-full rounded-md border border-gray-200 px-3 py-2 text-sm" />
+          <div className="flex justify-end"><Button onClick={() => { setDialog(null); toast.success('已导入 12 道试题') }}>导入</Button></div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={dialog === 'stats'} onOpenChange={() => setDialog(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader><DialogTitle>题量统计 - {subjectName(subjectId)}</DialogTitle></DialogHeader>
+          <div className="space-y-2">{questionTypes.map(type => <div key={type} className="flex items-center justify-between rounded-md border border-gray-100 px-3 py-2 text-sm"><span>{type}</span><span className="font-semibold">{filtered.filter(item => item.type === type).length} 道</span></div>)}</div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={dialog === 'transfer'} onOpenChange={() => setDialog(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>层级转移</DialogTitle></DialogHeader>
+          <div className="space-y-3 text-sm"><div className="rounded-md bg-[#F9FAFB] p-3">已选择 {selected.length} 道试题</div><SelectField label="目标知识结构" name="target" defaultValue={knowledgeNodes[0].name} options={knowledgeNodes.map(node => node.name)} /><div className="flex justify-end"><Button onClick={() => { setDialog(null); setSelected([]); toast.success('试题层级已转移') }}>确认转移</Button></div></div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
+}
+
+function Field({ label, name, defaultValue, type = 'text' }: { label: string; name: string; defaultValue?: string; type?: string }) {
+  return <label className="block"><span className="font-medium text-gray-700">{label}</span><input name={name} type={type} defaultValue={defaultValue} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3" /></label>
+}
+
+function SelectField({ label, name, defaultValue, options }: { label: string; name: string; defaultValue: string; options: string[] }) {
+  return <label className="block"><span className="font-medium text-gray-700">{label}</span><select name={name} defaultValue={defaultValue} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-2">{options.map(option => <option key={option}>{option}</option>)}</select></label>
 }

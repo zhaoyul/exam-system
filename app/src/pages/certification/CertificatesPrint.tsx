@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import {
-  Search, Printer, ChevronDown, ChevronRight, MoreHorizontal, CheckCircle, Users
+  Search, Printer, ChevronDown, ChevronRight, MoreHorizontal, CheckCircle, Users, Eye, Download, RotateCcw
 } from 'lucide-react'
 
 interface PrintPlan {
@@ -60,19 +60,28 @@ const mockCandidates: CandidatePrint[] = [
 
 export default function CertificatesPrint() {
   const [plans] = useState<PrintPlan[]>(mockPlans)
+  const [candidates, setCandidates] = useState<CandidatePrint[]>(mockCandidates)
   const [search, setSearch] = useState('')
+  const [printStatus, setPrintStatus] = useState<'全部' | CandidatePrint['status']>('全部')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [borderType, setBorderType] = useState<BorderType>('border')
   const [printPhoto, setPrintPhoto] = useState(true)
   const [showCandidates, setShowCandidates] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<PrintPlan | null>(null)
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([])
-  const [candidateList] = useState<CandidatePrint[]>(mockCandidates)
+  const [showPreview, setShowPreview] = useState<CandidatePrint | null>(null)
 
   const filtered = plans.filter(p => !search || p.name.includes(search) || p.planNo.includes(search))
+  const candidateList = candidates.filter(c => printStatus === '全部' || c.status === printStatus)
 
   const handlePrint = () => {
+    setCandidates(prev => prev.map(c => selectedCandidates.includes(c.id) ? { ...c, status: 'printed' as const } : c))
     toast.success(`证书打印完成！边框：${borderType === 'none' ? '无边框' : borderType === 'border' ? '打印边框' : '图文边框'}，${printPhoto ? '打印照片' : '不打印照片'}`)
+  }
+
+  const handlePrintOne = (id: string) => {
+    setCandidates(prev => prev.map(c => c.id === id ? { ...c, status: 'printed' as const } : c))
+    toast.success('当前证书已打印')
   }
 
   const toggleSelectCandidate = (id: string) => {
@@ -86,7 +95,16 @@ export default function CertificatesPrint() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">证书打印</h1>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">证书打印</h1>
+          <p className="text-sm text-gray-500 mt-1">按计划筛选证书，预览并批量打印，回写打印状态</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => toast.success('打印清单已导出')}><Download className="w-4 h-4 mr-2" />导出打印清单</Button>
+          <Button variant="outline" onClick={() => { setCandidates(prev => prev.map(c => ({ ...c, status: 'pending' as const }))); toast.success('打印状态已重置') }}><RotateCcw className="w-4 h-4 mr-2" />重置打印状态</Button>
+        </div>
+      </div>
 
       {/* Settings */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -97,6 +115,14 @@ export default function CertificatesPrint() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input placeholder="搜索" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 w-48" />
             </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-gray-700">打印状态：</span>
+            <select value={printStatus} onChange={e => setPrintStatus(e.target.value as typeof printStatus)} className="h-9 rounded-md border border-gray-200 px-3 text-sm">
+              <option>全部</option>
+              <option value="pending">未打印</option>
+              <option value="printed">已打印</option>
+            </select>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-gray-700">证书边框设置：</span>
@@ -217,6 +243,9 @@ export default function CertificatesPrint() {
               <Button variant="outline" size="sm" className="text-xs" onClick={() => setSelectedCandidates(candidateList.map(c => c.id))}>
                 <CheckCircle className="w-3.5 h-3.5 mr-1" />全选
               </Button>
+              <Button variant="outline" size="sm" className="text-xs" onClick={() => setSelectedCandidates([])}>
+                取消全选
+              </Button>
               <Button size="sm" className="text-xs bg-[#1A56DB]" onClick={handlePrint} disabled={selectedCandidates.length === 0}>
                 <Printer className="w-3.5 h-3.5 mr-1" />打印选中
               </Button>
@@ -233,6 +262,7 @@ export default function CertificatesPrint() {
                   <th className="px-3 py-3 text-left font-medium text-gray-600">证件号码</th>
                   <th className="px-3 py-3 text-left font-medium text-gray-600">证书编号</th>
                   <th className="px-3 py-3 text-left font-medium text-gray-600">状态</th>
+                  <th className="px-3 py-3 text-left font-medium text-gray-600">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -256,10 +286,40 @@ export default function CertificatesPrint() {
                         {c.status === 'printed' ? '已打印' : '待打印'}
                       </Badge>
                     </td>
+                    <td className="px-3 py-3">
+                      <button className="text-blue-600 hover:underline text-xs inline-flex items-center gap-1" onClick={() => setShowPreview(c)}>
+                        <Eye className="w-3 h-3" />预览
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!showPreview} onOpenChange={() => setShowPreview(null)}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader><DialogTitle>证书预览</DialogTitle></DialogHeader>
+          {showPreview && (
+            <div className="rounded-lg border-4 border-blue-200 bg-white p-8 text-center">
+              <div className="text-lg font-bold text-gray-900">职业技能等级证书</div>
+              <div className="mt-6 grid grid-cols-2 gap-3 text-left text-sm">
+                <div>姓名：{showPreview.name}</div>
+                <div>证件号码：{showPreview.idCard}</div>
+                <div>职业工种：{showPreview.profession}</div>
+                <div>技能等级：{showPreview.level}</div>
+                <div className="col-span-2">证书编号：{showPreview.certNo}</div>
+                <div>发证日期：{showPreview.issueDate}</div>
+                <div>打印照片：{printPhoto ? '是' : '否'}</div>
+              </div>
+            </div>
+          )}
+          <div className="flex justify-end">
+            <Button onClick={() => { if (showPreview) handlePrintOne(showPreview.id); setShowPreview(null) }}>
+              <Printer className="w-4 h-4 mr-2" />打印当前证书
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

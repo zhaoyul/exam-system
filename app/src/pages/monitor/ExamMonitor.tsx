@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Monitor, Users, UserCheck, UserX, AlertTriangle, Clock, MapPin, RefreshCw, Wifi } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface ExamRoom {
   id: string
@@ -31,7 +32,7 @@ const alerts_init = [
 ]
 
 export default function ExamMonitor() {
-  const [rooms, setRooms] = useState<ExamRoom[]>(initialRooms)
+  const [rooms, setRooms] = useBackendListState<ExamRoom>(initialRooms)
   const [alerts, setAlerts] = useState(alerts_init)
   const [lastUpdate, setLastUpdate] = useState(new Date())
   const [autoRefresh, setAutoRefresh] = useState(true)

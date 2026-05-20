@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { Users, Building2, Award, TrendingUp, TrendingDown, AlertCircle, Clock } from 'lucide-react'
 import { certStats, scoreData, statusPieData } from '@/data/mockData'
 import { AreaChart, Area, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
+import { useBackendData } from '@/context/BackendDataContext'
 
-const statCards = [
+const statCardTemplates = [
   { label: '本月认定人数', value: certStats.monthCount, icon: Users, color: '#1A56DB', trend: '+12.5%', up: true },
   { label: '备案机构数', value: certStats.orgCount, icon: Building2, color: '#0E9F6E', trend: '+1', up: true },
   { label: '待审批事项', value: certStats.pendingApproval, icon: AlertCircle, color: '#F59E0B', trend: '需关注', up: false },
@@ -30,6 +31,22 @@ const activities = [
 export default function Dashboard() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const navigate = useNavigate()
+  const backend = useBackendData<{ items?: Array<Record<string, any>> }>()
+  const dashboard = backend.data?.items?.[0] || {}
+  const statCards = statCardTemplates.map(card => ({
+    ...card,
+    value: dashboard[card.label === '本月认定人数'
+      ? 'monthCount'
+      : card.label === '备案机构数'
+        ? 'orgCount'
+        : card.label === '待审批事项'
+          ? 'pendingApproval'
+          : 'certIssued'] ?? card.value,
+  }))
+  const trendData = Array.isArray(dashboard.scoreData) ? dashboard.scoreData : scoreData
+  const pieData = Array.isArray(dashboard.statusPieData) ? dashboard.statusPieData : statusPieData
+  const dashboardTodos = Array.isArray(dashboard.todoItems) ? dashboard.todoItems : todoItems
+  const dashboardActivities = Array.isArray(dashboard.activities) ? dashboard.activities : activities
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -146,7 +163,7 @@ export default function Dashboard() {
         <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <h3 className="text-base font-semibold text-gray-900 mb-4">认定趋势</h3>
           <ResponsiveContainer width="100%" height={250}>
-            <AreaChart data={scoreData}>
+            <AreaChart data={trendData}>
               <defs>
                 <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#1A56DB" stopOpacity={0.15} />
@@ -165,14 +182,14 @@ export default function Dashboard() {
           <h3 className="text-base font-semibold text-gray-900 mb-4">认定状态分布</h3>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
-              <Pie data={statusPieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
-                {statusPieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+              <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
+                {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
               </Pie>
               <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 12 }} />
             </PieChart>
           </ResponsiveContainer>
           <div className="flex flex-wrap gap-3 mt-2">
-            {statusPieData.map((item, i) => (
+            {pieData.map((item, i) => (
               <div key={i} className="flex items-center gap-1.5 text-xs">
                 <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
                 <span className="text-gray-600">{item.name} {item.value}%</span>
@@ -189,7 +206,7 @@ export default function Dashboard() {
             <button onClick={() => navigate('/cert/approval')} className="text-xs text-[#1A56DB] hover:underline">查看全部</button>
           </div>
           <div className="space-y-2">
-            {todoItems.map((item, i) => (
+            {dashboardTodos.map((item, i) => (
               <div key={i} className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
                 onClick={() => navigate('/cert/approval')}>
                 <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
@@ -209,7 +226,7 @@ export default function Dashboard() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <h3 className="text-base font-semibold text-gray-900 mb-4">最近活动</h3>
           <div className="space-y-3">
-            {activities.map((item, i) => (
+            {dashboardActivities.map((item, i) => (
               <div key={i} className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-full bg-[#1A56DB] text-white flex items-center justify-center text-xs font-medium flex-shrink-0">
                   {item.user[0]}

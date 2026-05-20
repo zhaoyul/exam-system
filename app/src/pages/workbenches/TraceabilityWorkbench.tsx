@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, ArrowRight, Award, BarChart3, CheckCircle2, FileSearch, Link2, Search, ShieldAlert, TrendingUp, User, Workflow } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { findTraceCase, stageOrder, traceAlerts, traceCases, traceSummary } from '@/pages/traceability/traceabilityData'
+import { stageOrder, traceAlerts, traceCases, traceSummary } from '@/pages/traceability/traceabilityData'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const summary = traceSummary()
 
@@ -16,9 +17,12 @@ const orgStats = [
 
 export default function TraceabilityWorkbench() {
   const navigate = useNavigate()
+  const [backendTraceCases] = useBackendListState(traceCases)
+  const [backendTraceAlerts] = useBackendListState(traceAlerts)
+  const [backendOrgStats] = useBackendListState(orgStats)
   const [query, setQuery] = useState('')
   const quickSearch = () => {
-    const match = findTraceCase(query)
+    const match = backendTraceCases.find(item => [item.traceNo, item.candidateName, item.idCard, item.certNo].some(value => value.includes(query)))
     navigate(match ? `/traceability?q=${encodeURIComponent(query)}` : '/traceability')
   }
 
@@ -70,7 +74,7 @@ export default function TraceabilityWorkbench() {
           <div className="overflow-auto">
             <table className="w-full text-sm">
               <thead className="bg-[#F9FAFB] text-gray-600"><tr><th className="px-4 py-3 text-left font-medium">溯源编号</th><th className="px-4 py-3 text-left font-medium">考生</th><th className="px-4 py-3 text-left font-medium">证书编号</th><th className="px-4 py-3 text-left font-medium">类型</th><th className="px-4 py-3 text-left font-medium">机构</th><th className="px-4 py-3 text-left font-medium">状态</th><th className="px-4 py-3 text-left font-medium">操作</th></tr></thead>
-              <tbody className="divide-y divide-gray-100">{traceCases.map(item => <tr key={item.id} className="hover:bg-gray-50"><td className="px-4 py-3 font-mono text-xs text-gray-600">{item.traceNo}</td><td className="px-4 py-3 font-medium text-gray-900">{item.candidateName}</td><td className="px-4 py-3 font-mono text-xs text-gray-600">{item.certNo}</td><td className="px-4 py-3 text-gray-600">{item.traceType}</td><td className="px-4 py-3 text-gray-600">{item.org}</td><td className="px-4 py-3"><Badge className={item.status === '已完成' ? 'bg-green-50 text-green-700' : item.status === '异常' ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'}>{item.status}</Badge></td><td className="px-4 py-3"><button onClick={() => navigate(`/traceability?q=${encodeURIComponent(item.traceNo)}`)} className="text-xs text-[#1A56DB] hover:underline">查看 <ArrowRight className="inline h-3.5 w-3.5" /></button></td></tr>)}</tbody>
+              <tbody className="divide-y divide-gray-100">{backendTraceCases.map(item => <tr key={item.id} className="hover:bg-gray-50"><td className="px-4 py-3 font-mono text-xs text-gray-600">{item.traceNo}</td><td className="px-4 py-3 font-medium text-gray-900">{item.candidateName}</td><td className="px-4 py-3 font-mono text-xs text-gray-600">{item.certNo}</td><td className="px-4 py-3 text-gray-600">{item.traceType}</td><td className="px-4 py-3 text-gray-600">{item.org}</td><td className="px-4 py-3"><Badge className={item.status === '已完成' ? 'bg-green-50 text-green-700' : item.status === '异常' ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'}>{item.status}</Badge></td><td className="px-4 py-3"><button onClick={() => navigate(`/traceability?q=${encodeURIComponent(item.traceNo)}`)} className="text-xs text-[#1A56DB] hover:underline">查看 <ArrowRight className="inline h-3.5 w-3.5" /></button></td></tr>)}</tbody>
             </table>
           </div>
         </section>
@@ -78,11 +82,11 @@ export default function TraceabilityWorkbench() {
         <section className="space-y-4">
           <div className="rounded-lg border border-gray-200 bg-white p-4">
             <div className="mb-3 flex items-center gap-2 font-semibold text-gray-900"><BarChart3 className="h-4 w-4 text-[#1A56DB]" />各单位追溯质量</div>
-            <div className="space-y-3">{orgStats.map(item => <div key={item.name}><div className="mb-1 flex items-center justify-between text-sm"><span>{item.name}</span><span className="text-xs text-gray-500">{item.total.toLocaleString()} 条 / 异常 {item.abnormal}</span></div><div className="h-2 overflow-hidden rounded-full bg-gray-100"><div className="h-full rounded-full bg-[#1A56DB]" style={{ width: `${item.complete}%` }} /></div></div>)}</div>
+            <div className="space-y-3">{backendOrgStats.map(item => <div key={item.name}><div className="mb-1 flex items-center justify-between text-sm"><span>{item.name}</span><span className="text-xs text-gray-500">{item.total.toLocaleString()} 条 / 异常 {item.abnormal}</span></div><div className="h-2 overflow-hidden rounded-full bg-gray-100"><div className="h-full rounded-full bg-[#1A56DB]" style={{ width: `${item.complete}%` }} /></div></div>)}</div>
           </div>
           <div className="rounded-lg border border-gray-200 bg-white p-4">
             <div className="mb-3 flex items-center gap-2 font-semibold text-gray-900"><AlertTriangle className="h-4 w-4 text-red-600" />异常记录</div>
-            <div className="space-y-2">{traceAlerts.map(item => <button key={item.id} onClick={() => navigate(`/traceability?q=${encodeURIComponent(item.traceNo)}`)} className="w-full rounded-md border border-gray-100 px-3 py-2 text-left hover:bg-gray-50"><div className="flex items-center justify-between"><span className="text-sm font-medium text-gray-900">{item.candidateName} / {item.stage}</span><Badge className={item.level === '高' ? 'bg-red-50 text-red-700' : item.level === '中' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'}>{item.level}</Badge></div><div className="mt-1 text-xs text-gray-500">{item.problem}</div></button>)}</div>
+            <div className="space-y-2">{backendTraceAlerts.map(item => <button key={item.id} onClick={() => navigate(`/traceability?q=${encodeURIComponent(item.traceNo)}`)} className="w-full rounded-md border border-gray-100 px-3 py-2 text-left hover:bg-gray-50"><div className="flex items-center justify-between"><span className="text-sm font-medium text-gray-900">{item.candidateName} / {item.stage}</span><Badge className={item.level === '高' ? 'bg-red-50 text-red-700' : item.level === '中' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'}>{item.level}</Badge></div><div className="mt-1 text-xs text-gray-500">{item.problem}</div></button>)}</div>
           </div>
         </section>
       </div>

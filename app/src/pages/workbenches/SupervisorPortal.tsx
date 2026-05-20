@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { ClipboardList, CheckSquare, FileText, Clock, Send, Star, AlertCircle } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const pendingSupervisions = [
   { id: 1, plan: '2026年第二批技能认定-大亚湾核电', date: '2026-05-20', type: '现场督导', status: 'pending' },
@@ -19,6 +20,9 @@ const completedList = [
 
 export default function SupervisorPortal() {
   const navigate = useNavigate()
+  const [backendPendingSupervisions] = useBackendListState(pendingSupervisions)
+  const [backendForms] = useBackendListState(forms)
+  const [backendCompletedList] = useBackendListState(completedList)
 
   return (
     <div>
@@ -53,7 +57,7 @@ export default function SupervisorPortal() {
             </h2>
           </div>
           <div className="space-y-3">
-            {pendingSupervisions.map(s => (
+            {backendPendingSupervisions.map(s => (
               <div key={s.id} className="p-3 border border-gray-100 rounded-lg">
                 <div className="text-sm font-medium text-gray-900 mb-1">{s.plan}</div>
                 <div className="flex items-center justify-between text-xs text-gray-500">
@@ -74,7 +78,7 @@ export default function SupervisorPortal() {
             <button onClick={() => navigate('/supervision/forms')} className="text-xs text-[#1A56DB] hover:underline">查看全部</button>
           </div>
           <div className="space-y-3">
-            {forms.map(f => (
+            {backendForms.map(f => (
               <div key={f.id} className={`p-3 rounded-lg ${
                 f.status === 'pending' ? 'bg-amber-50 border border-amber-100' : 'bg-gray-50'
               }`}>
@@ -98,7 +102,7 @@ export default function SupervisorPortal() {
             </h2>
           </div>
           <div className="space-y-3">
-            {completedList.map(c => (
+            {backendCompletedList.map(c => (
               <div key={c.id} className="p-3 bg-gray-50 rounded-lg">
                 <div className="text-sm text-gray-900 mb-1">{c.plan}</div>
                 <div className="flex items-center justify-between text-xs text-gray-500">

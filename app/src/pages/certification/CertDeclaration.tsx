@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 import { toast } from 'sonner'
 import {
@@ -39,7 +40,7 @@ const statusMap: Record<string, { label: string; color: string }> = {
 }
 
 export default function CertDeclaration() {
-  const [declarations, setDeclarations] = useState<Declaration[]>(mockDeclarations)
+  const [declarations, setDeclarations] = useBackendListState<Declaration>(mockDeclarations)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [addOpen, setAddOpen] = useState(false)

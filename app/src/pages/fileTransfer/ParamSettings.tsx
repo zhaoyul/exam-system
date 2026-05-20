@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Save, Settings, ToggleLeft, ToggleRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface Setting { id: string; name: string; desc: string; enabled: boolean }
 
 export default function ParamSettings() {
-  const [items, setItems] = useState<Setting[]>([
+  const [items, setItems] = useBackendListState<Setting>([
     { id: '1', name: '自动归档', desc: '认定完成后自动归档相关文件', enabled: true },
     { id: '2', name: '邮件通知', desc: '发文后自动发送邮件通知', enabled: true },
     { id: '3', name: '短信提醒', desc: '重要事项发送短信提醒', enabled: false },

@@ -6,6 +6,7 @@ import {
   BookOpen, FileText, Users, CheckCircle, Send, Plus, X,
   Shield, GraduationCap, Printer, Download, CalendarDays, Clock, MapPin, Settings
 } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface PaperItem {
   id: number
@@ -39,7 +40,7 @@ const mockPapers: PaperItem[] = [
 ]
 
 export default function ExamSessionArrange() {
-  const [papers, setPapers] = useState<PaperItem[]>(mockPapers)
+  const [papers, setPapers] = useBackendListState<PaperItem>(mockPapers)
   const [proctors, setProctors] = useState<StaffItem[]>([])
   const [supervisors, setSupervisors] = useState<StaffItem[]>([])
   const [skillExaminers, setSkillExaminers] = useState<StaffItem[]>([])

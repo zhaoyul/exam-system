@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import {
   Search, Printer, ChevronDown, ChevronRight, MoreHorizontal, CheckCircle, Users, Eye, Download, RotateCcw
 } from 'lucide-react'
+import { useBackendResourceList, useBackendResourceState } from '@/hooks/useBackendListState'
 
 interface PrintPlan {
   id: string
@@ -59,8 +60,8 @@ const mockCandidates: CandidatePrint[] = [
 ]
 
 export default function CertificatesPrint() {
-  const [plans] = useState<PrintPlan[]>(mockPlans)
-  const [candidates, setCandidates] = useState<CandidatePrint[]>(mockCandidates)
+  const plans = useBackendResourceList('/certification/certificates-print', mockPlans)
+  const [candidates, setCandidates] = useBackendResourceState<CandidatePrint>('/certificate/view', mockCandidates)
   const [search, setSearch] = useState('')
   const [printStatus, setPrintStatus] = useState<'全部' | CandidatePrint['status']>('全部')
   const [expandedId, setExpandedId] = useState<string | null>(null)

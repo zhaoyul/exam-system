@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Search, Eye, Download, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const scores = [
   { id: '1', name: '张三', idCard: '440301199001011234', occupation: '核反应堆运行值班员', level: '三级', theory: 85, practical: 88, total: 86.8, result: '合格' },
@@ -12,7 +13,7 @@ const scores = [
 
 export default function ScorePublicity() {
   const [search, setSearch] = useState('')
-  const [items] = useState(scores)
+  const [items] = useBackendListState(scores)
   const [viewItem, setViewItem] = useState<any>(null)
 
   const filtered = items.filter(i => !search || i.name.includes(search) || i.idCard.includes(search))

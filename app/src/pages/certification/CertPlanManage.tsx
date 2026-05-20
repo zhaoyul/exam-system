@@ -11,6 +11,7 @@ import {
   Edit3, Eye, FileArchive, FileText, FileUp, MoreHorizontal, Plus, Search,
   Settings, Send, Trash2, Upload, Users
 } from 'lucide-react'
+import { useBackendListState, useBackendResourceList, useBackendResourceState } from '@/hooks/useBackendListState'
 
 interface CertPlan {
   id: string
@@ -147,7 +148,8 @@ const occupationOptions: PlanProfession[] = [
 type ModalKind = 'material' | 'occupation' | 'importCandidates' | 'importPhotos' | 'multiCert' | 'approval' | 'examSetting' | 'setOrg' | null
 
 export default function CertPlanManage() {
-  const [plans, setPlans] = useState<CertPlan[]>(mockPlans)
+  const [plans, setPlans] = useBackendListState<CertPlan>(mockPlans)
+  const backendOccupationOptions = useBackendResourceList('/standard/evaluation-scope', occupationOptions)
   const [search, setSearch] = useState('')
   const [queryType, setQueryType] = useState('办证计划')
   const [activeTab, setActiveTab] = useState<'待办' | '已办'>('待办')
@@ -158,7 +160,7 @@ export default function CertPlanManage() {
   const [modalKind, setModalKind] = useState<ModalKind>(null)
   const [selectedPlanForAction, setSelectedPlanForAction] = useState<CertPlan | null>(mockPlans[0])
   const [selectedOccupationIds, setSelectedOccupationIds] = useState<string[]>([])
-  const [regOrgs, setRegOrgs] = useState<RegOrg[]>(mockRegOrgs)
+  const [regOrgs, setRegOrgs] = useBackendResourceState<RegOrg>('/certification/execution/registration-orgs', mockRegOrgs)
   const [orgSearch, setOrgSearch] = useState('')
   const [importMode, setImportMode] = useState<'clear' | 'cover' | 'ignore'>('cover')
 
@@ -244,7 +246,7 @@ export default function CertPlanManage() {
       toast.error('请至少选择一个职业工种')
       return
     }
-    const selected = occupationOptions
+    const selected = backendOccupationOptions
       .filter(item => selectedOccupationIds.includes(item.id))
       .map(item => ({ ...item, id: `${item.id}-${Date.now()}` }))
     setPlans(prev => prev.map(plan => plan.id === selectedPlanForAction.id ? { ...plan, professions: [...plan.professions, ...selected] } : plan))
@@ -517,7 +519,7 @@ export default function CertPlanManage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {occupationOptions.map((item, idx) => (
+                  {backendOccupationOptions.map((item, idx) => (
                     <tr key={item.id} className="hover:bg-gray-50">
                       <td className="px-3 py-2"><input type="checkbox" checked={selectedOccupationIds.includes(item.id)} onChange={() => setSelectedOccupationIds(prev => prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id])} /></td>
                       <td className="px-3 py-2 text-gray-600">{idx + 1}</td>

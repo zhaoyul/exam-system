@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   AlertCircle,
@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { findTraceCase, stageOrder, traceAlerts, traceCases, type TraceCase, type TraceStage, type TraceStageKey, type TraceStatus } from './traceabilityData'
+import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
 
 const stageIcons: Record<TraceStageKey, typeof FileText> = {
   plan: FileText,
@@ -48,17 +49,27 @@ export default function TraceabilityCenter() {
   const [searched, setSearched] = useState(Boolean(initialQuery))
   const [viewStage, setViewStage] = useState<TraceStage | null>(null)
   const [alertDialog, setAlertDialog] = useState(false)
+  const [cases] = useBackendListState<TraceCase>(traceCases)
+  const alerts = useBackendResourceList('/traceability/alerts', traceAlerts)
 
-  const filteredCases = useMemo(() => traceCases.filter(item => {
+  const findCase = (value: string) => cases.find(item =>
+    [item.traceNo, item.candidateName, item.idCard, item.certNo, item.ticketNo, item.planName].some(field => field.includes(value)),
+  ) || null
+
+  useEffect(() => {
+    if (!selected && cases.length) setSelected(initialQuery ? findCase(initialQuery) : cases[0])
+  }, [cases, initialQuery, selected])
+
+  const filteredCases = useMemo(() => cases.filter(item => {
     const byType = activeType === '全部' || item.traceType === activeType
     const byStatus = activeStatus === '全部' || item.status === activeStatus
     const byQuery = !query || [item.traceNo, item.candidateName, item.idCard, item.certNo, item.ticketNo, item.planName].some(value => value.includes(query))
     return byType && byStatus && byQuery
-  }), [activeStatus, activeType, query])
+  }), [activeStatus, activeType, cases, query])
 
   const runSearch = () => {
     setSearched(true)
-    const result = findTraceCase(query)
+    const result = findCase(query)
     if (result) setSelected(result)
     else setSelected(null)
   }
@@ -67,7 +78,7 @@ export default function TraceabilityCenter() {
     setQuery('')
     setActiveType('全部')
     setActiveStatus('全部')
-    setSelected(traceCases[0])
+    setSelected(cases[0] || null)
     setSearched(false)
   }
 
@@ -121,7 +132,7 @@ export default function TraceabilityCenter() {
           <Button onClick={reset} variant="outline" className="h-10"><RotateCcw className="h-4 w-4" /></Button>
         </div>
         <div className="mt-3 flex flex-wrap gap-2 text-xs">
-          {['440301199001011234', 'CGN-2026-001', 'TR-2026-0003'].map(item => <button key={item} onClick={() => { setQuery(item); setSelected(findTraceCase(item)) }} className="rounded border border-gray-200 px-2 py-1 text-gray-600 hover:border-[#1A56DB] hover:text-[#1A56DB]">{item}</button>)}
+          {['440301199001011234', 'CGN-2026-001', 'TR-2026-0003'].map(item => <button key={item} onClick={() => { setQuery(item); setSelected(findCase(item)) }} className="rounded border border-gray-200 px-2 py-1 text-gray-600 hover:border-[#1A56DB] hover:text-[#1A56DB]">{item}</button>)}
         </div>
       </section>
 
@@ -215,7 +226,7 @@ export default function TraceabilityCenter() {
       <Dialog open={alertDialog} onOpenChange={setAlertDialog}>
         <DialogContent className="sm:max-w-3xl">
           <DialogHeader><DialogTitle>异常处理</DialogTitle></DialogHeader>
-          <div className="space-y-2">{traceAlerts.map(item => <div key={item.id} className="grid grid-cols-[1fr_80px_80px] items-center gap-3 rounded-md border border-gray-100 px-3 py-2 text-sm"><div><div className="font-medium text-gray-900">{item.candidateName} / {item.traceNo} / {item.stage}</div><div className="text-xs text-gray-500">{item.org}：{item.problem}</div></div><Badge className={item.level === '高' ? 'bg-red-50 text-red-700' : item.level === '中' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'}>{item.level}</Badge><Button size="sm" variant="outline" onClick={() => toast.success('异常处理状态已更新')}>{item.status}</Button></div>)}</div>
+          <div className="space-y-2">{alerts.map(item => <div key={item.id} className="grid grid-cols-[1fr_80px_80px] items-center gap-3 rounded-md border border-gray-100 px-3 py-2 text-sm"><div><div className="font-medium text-gray-900">{item.candidateName} / {item.traceNo} / {item.stage}</div><div className="text-xs text-gray-500">{item.org}：{item.problem}</div></div><Badge className={item.level === '高' ? 'bg-red-50 text-red-700' : item.level === '中' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'}>{item.level}</Badge><Button size="sm" variant="outline" onClick={() => toast.success('异常处理状态已更新')}>{item.status}</Button></div>)}</div>
         </DialogContent>
       </Dialog>
     </div>

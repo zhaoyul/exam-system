@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Search, Plus, Edit3, Trash2, Save, Megaphone, Pin, Eye, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const ann_init = [
   { id: '1', title: '2026年第三批技能认定报名通知', content: '各相关单位：2026年第三批技能认定报名工作已经开始，请于7月15日前完成报名。', type: '通知', author: '集团人力资源部', date: '2026-06-01', top: true, status: 'published' },
@@ -11,7 +12,7 @@ const ann_init = [
 ]
 
 export default function Announcements() {
-  const [items, setItems] = useState(ann_init)
+  const [items, setItems] = useBackendListState(ann_init)
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showEdit, setShowEdit] = useState<any>(null)

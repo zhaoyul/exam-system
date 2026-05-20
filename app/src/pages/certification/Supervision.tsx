@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
 
 type SupervisionTab = '等级认定' | '认定申报' | '一人多证查询'
 type FlowKey = '制定计划' | '考试报名' | '考场编排' | '考务安排' | '成绩管理' | '成绩公示' | '证书管理'
@@ -123,17 +124,20 @@ export default function Supervision() {
   const [query, setQuery] = useState('')
   const [orgFilter, setOrgFilter] = useState('全部机构')
   const [viewPlan, setViewPlan] = useState<SupervisionPlan | null>(null)
+  const [plans] = useBackendListState<SupervisionPlan>(initialPlans)
+  const declarationRows = useBackendResourceList<Declaration>('/certification/declaration', declarations)
+  const duplicateCertRows = useBackendResourceList<DuplicateCert>('/certification/public-query', duplicateCerts)
 
-  const orgs = useMemo(() => ['全部机构', ...Array.from(new Set(initialPlans.map(item => item.org)))], [])
+  const orgs = useMemo(() => ['全部机构', ...Array.from(new Set(plans.map(item => item.org)))], [plans])
 
   const flowCounts = useMemo(() => {
     return flowSteps.reduce<Record<FlowKey, number>>((acc, step) => {
-      acc[step.key] = initialPlans.filter(item => item.flow === step.key).length
+      acc[step.key] = plans.filter(item => item.flow === step.key).length
       return acc
     }, {} as Record<FlowKey, number>)
-  }, [])
+  }, [plans])
 
-  const filteredPlans = initialPlans.filter(item => {
+  const filteredPlans = plans.filter(item => {
     const matchesFlow = item.flow === activeFlow
     const matchesOrg = orgFilter === '全部机构' || item.org === orgFilter
     const text = queryType === '计划名称' ? item.name : queryType === '机构名称' ? item.org : item.code
@@ -273,7 +277,7 @@ export default function Supervision() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {declarations.map(item => (
+                {declarationRows.map(item => (
                   <tr key={item.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium text-gray-900">{item.org}</td>
                     <td className="px-4 py-3 text-gray-600">{item.scope}</td>
@@ -295,7 +299,7 @@ export default function Supervision() {
               <Button className="h-8 bg-[#1A56DB] text-xs hover:bg-[#1748B5]">查询</Button>
             </div>
             <div className="grid gap-3">
-              {duplicateCerts.map(item => (
+              {duplicateCertRows.map(item => (
                 <div key={item.id} className="rounded-lg border border-gray-200 bg-white p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="font-semibold text-gray-900">{item.name} <span className="ml-2 text-xs font-normal text-gray-500">{item.idCard}</span></div>

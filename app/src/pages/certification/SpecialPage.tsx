@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { useApp } from '@/context/AppContext'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 type SpecialType = '回退计划到上一步' | '删除计划'
 type SpecialStatus = '正在审核' | '通过' | '不通过' | '拒绝'
@@ -107,7 +108,7 @@ const typeFilters: Array<'全部' | SpecialType> = ['全部', '回退计划到�
 export default function SpecialPage() {
   const { user } = useApp()
   const isBranch = user?.role === 'branch_admin'
-  const [items, setItems] = useState<SpecialItem[]>(initialItems)
+  const [items, setItems] = useBackendListState<SpecialItem>(initialItems)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'全部' | SpecialStatus>('全部')
   const [typeFilter, setTypeFilter] = useState<'全部' | SpecialType>('全部')

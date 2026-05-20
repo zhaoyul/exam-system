@@ -9,6 +9,7 @@ import {
   ClipboardList, CheckCircle, Clock, AlertTriangle, TrendingUp,
   Building2, Award, ArrowRight, Calendar, FileCheck
 } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const stats = [
   { label: '本年度认定计划', value: 24, unit: '个', icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -55,6 +56,10 @@ const urgencyLabel: Record<string, string> = {
 
 export default function CertWorkbench() {
   const navigate = useNavigate()
+  const [backendStats] = useBackendListState(stats)
+  const [backendPlanProgress] = useBackendListState(planProgress)
+  const [backendTodos] = useBackendListState(todos)
+  const [backendMonthlyData] = useBackendListState(monthlyData)
   const [activeTab, setActiveTab] = useState('overview')
 
   return (
@@ -75,7 +80,7 @@ export default function CertWorkbench() {
       </div>
 
       <div className="grid grid-cols-4 gap-4">
-        {stats.map((s, i) => (
+        {backendStats.map((s, i) => (
           <Card key={i} className="border-0 shadow-sm">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -107,7 +112,7 @@ export default function CertWorkbench() {
                 <TabsTrigger value="monthly">月度趋势</TabsTrigger>
               </TabsList>
               <TabsContent value="overview" className="space-y-3 pt-3">
-                {planProgress.map((p, i) => (
+                {backendPlanProgress.map((p, i) => (
                   <div key={i} className="space-y-1.5">
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
@@ -128,7 +133,7 @@ export default function CertWorkbench() {
               </TabsContent>
               <TabsContent value="monthly" className="pt-3">
                 <div className="flex items-end justify-between h-40 gap-2">
-                  {monthlyData.map((d, i) => (
+                  {backendMonthlyData.map((d, i) => (
                     <div key={i} className="flex-1 flex flex-col items-center gap-1">
                       <div className="w-full bg-blue-100 rounded-t" style={{ height: `${(d.count / 120) * 120}px` }}>
                         <div className="w-full h-full bg-blue-500 rounded-t opacity-80" />
@@ -151,7 +156,7 @@ export default function CertWorkbench() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {todos.map(t => (
+            {backendTodos.map(t => (
               <div key={t.id} className="flex items-start gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
                 <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">

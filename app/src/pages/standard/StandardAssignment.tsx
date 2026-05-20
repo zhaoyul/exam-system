@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Plus, CheckCircle, X, Trash2 } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface Task { id: string; name: string; occupation: string; level: string; responsible: string; experts: string[]; status: string }
 
@@ -9,7 +10,7 @@ const initialTasks: Task[] = [
 ]
 
 export default function StandardAssignment() {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks)
+  const [tasks, setTasks] = useBackendListState<Task>(initialTasks)
   const [showAdd, setShowAdd] = useState(false)
   const [showAddExpert, setShowAddExpert] = useState<string | null>(null)
   const [form, setForm] = useState({ name: '', occupation: '', level: '三级', responsible: '' })

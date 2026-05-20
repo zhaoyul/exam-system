@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Search, CheckCircle, Eye, FileText, Trash2 } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const items_init = [
   { id: '1', title: '2026年第一批认定申请', org: '阳江核电', date: '2026-05-05', type: '申请', status: 'unread' },
@@ -9,7 +10,7 @@ const items_init = [
 ]
 
 export default function ReceivePage() {
-  const [items, setItems] = useState(items_init)
+  const [items, setItems] = useBackendListState(items_init)
   const [search, setSearch] = useState('')
   const [viewItem, setViewItem] = useState<any>(null)
 

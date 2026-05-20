@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Search, Award, FileText, Eye, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const scoreData = [
   { id: '1', name: '张三', idCard: '440301199001011234', occupation: '核反应堆运行值班员', level: '三级', theory: 85, practical: 88, total: 86.8, result: '合格', plan: '2026年第一批', date: '2026-05-20' },
@@ -10,6 +11,7 @@ const scoreData = [
 ]
 
 export default function ScoreQuery() {
+  const [scores] = useBackendListState(scoreData)
   const [searchId, setSearchId] = useState('')
   const [searched, setSearched] = useState(false)
   const [result, setResult] = useState<typeof scoreData[0] | null>(null)
@@ -17,7 +19,7 @@ export default function ScoreQuery() {
 
   const handleSearch = () => {
     setSearched(true)
-    setResult(scoreData.find(d => d.idCard === searchId) || null)
+    setResult(scores.find(d => d.idCard === searchId) || null)
   }
 
   const reset = () => { setSearchId(''); setSearched(false); setResult(null) }

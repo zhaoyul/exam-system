@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Search, Plus, Edit3, Trash2, Save, Send, Building2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const filings = [
   { id: '1', org: '阳江核电', parent: '集团', date: '2026-01-10', scope: '核反应堆运行值班员（三/四级）', status: 'approved', reviewer: '王督导' },
@@ -11,7 +12,7 @@ const filings = [
 ]
 
 export default function BranchFiling() {
-  const [items, setItems] = useState(filings)
+  const [items, setItems] = useBackendListState(filings)
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showEdit, setShowEdit] = useState<any>(null)

@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import {
   Users, Plus, Search, Trash2, Edit3, Eye, Download, Send, ShieldCheck, Upload, KeyRound
 } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface ExamStaff {
   id: number
@@ -39,7 +40,7 @@ const mockStaff: ExamStaff[] = [
 const roleOptions = ['考评组长', '考评员', '监考员', '质量督导员', '考务管理员']
 
 export default function ExamStaffManage() {
-  const [staff, setStaff] = useState<ExamStaff[]>(mockStaff)
+  const [staff, setStaff] = useBackendListState<ExamStaff>(mockStaff)
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('全部')
   const [assignFilter, setAssignFilter] = useState('全部')

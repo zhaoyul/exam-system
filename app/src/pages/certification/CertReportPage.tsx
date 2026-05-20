@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 type ReportStatus = '待上报' | '已上报' | '上报失败'
 type Dimension = '职业工种' | '评价机构' | '认定批次'
@@ -33,7 +34,7 @@ const initialReports: CertReportItem[] = [
 const dimensions: Dimension[] = ['职业工种', '评价机构', '认定批次']
 
 export default function CertReportPage() {
-  const [items, setItems] = useState<CertReportItem[]>(initialReports)
+  const [items, setItems] = useBackendListState<CertReportItem>(initialReports)
   const [month, setMonth] = useState('2026-05')
   const [dimension, setDimension] = useState<Dimension>('职业工种')
   const [search, setSearch] = useState('')

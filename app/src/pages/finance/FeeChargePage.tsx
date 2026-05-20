@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { Search, CheckCircle, AlertCircle } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface ChargeItem {
   id: string
@@ -36,7 +37,7 @@ const statusMap: Record<string, { label: string; color: string }> = {
 }
 
 export default function FeeChargePage() {
-  const [charges, setCharges] = useState<ChargeItem[]>(mockCharges)
+  const [charges, setCharges] = useBackendListState<ChargeItem>(mockCharges)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [planFilter, setPlanFilter] = useState('all')

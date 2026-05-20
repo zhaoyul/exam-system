@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Search, Award, Shield, QrCode, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const certDB = [
   { id: '1', name: '张三', idCard: '440301199001011234', certNo: 'CGN-2026-001', occupation: '核反应堆运行值班员', level: '三级', issueDate: '2026-06-01', org: '大亚湾核电' },
@@ -8,13 +9,14 @@ const certDB = [
 ]
 
 export default function PublicCertQuery() {
+  const [certs] = useBackendListState(certDB)
   const [query, setQuery] = useState('')
   const [result, setResult] = useState<typeof certDB[0] | null>(null)
   const [searched, setSearched] = useState(false)
 
   const handleSearch = () => {
     setSearched(true)
-    setResult(certDB.find(c => c.certNo === query || c.idCard === query) || null)
+    setResult(certs.find(c => c.certNo === query || c.idCard === query) || null)
   }
 
   return (

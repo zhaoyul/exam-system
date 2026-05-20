@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { knowledgeNodes, theorySubjects } from './theoryData'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface RatioRule {
   id: string
@@ -21,7 +22,7 @@ const initialRules: RatioRule[] = [
 ]
 
 export default function StructureRatio() {
-  const [rules, setRules] = useState<RatioRule[]>(initialRules)
+  const [rules, setRules] = useBackendListState<RatioRule>(initialRules)
   const [subjectId, setSubjectId] = useState('全部')
   const [search, setSearch] = useState('')
   const [dialog, setDialog] = useState<'add' | 'view' | 'import' | null>(null)

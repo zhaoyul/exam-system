@@ -5,9 +5,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { knowledgeNodes, questionTypes, subjectName, theoryQuestions, theorySubjects, type QuestionStatus, type TheoryQuestion } from '@/pages/question/theoryData'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 export default function TheoryQB() {
-  const [items, setItems] = useState<TheoryQuestion[]>(theoryQuestions)
+  const [items, setItems] = useBackendListState<TheoryQuestion>(theoryQuestions)
   const [subjectId, setSubjectId] = useState(theorySubjects[0].id)
   const [typeFilter, setTypeFilter] = useState('全部')
   const [statusFilter, setStatusFilter] = useState<'全部' | QuestionStatus>('全部')

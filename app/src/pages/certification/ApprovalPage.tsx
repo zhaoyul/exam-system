@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 type ApprovalStatus = '待批复' | '已通过' | '已退回'
 type ApprovalType = '制定计划' | '考场编排' | '考试成绩' | '成绩公示' | '证书制证'
@@ -100,7 +101,7 @@ const statusTabs = ['待批复', '已批复'] as const
 const nodeFilters: Array<'全部' | ApprovalType> = ['全部', '制定计划', '考场编排', '考试成绩', '成绩公示', '证书制证']
 
 export default function ApprovalPage() {
-  const [items, setItems] = useState<ApprovalItem[]>(initialApprovals)
+  const [items, setItems] = useBackendListState<ApprovalItem>(initialApprovals)
   const [activeTab, setActiveTab] = useState<(typeof statusTabs)[number]>('待批复')
   const [nodeFilter, setNodeFilter] = useState<'全部' | ApprovalType>('全部')
   const [search, setSearch] = useState('')

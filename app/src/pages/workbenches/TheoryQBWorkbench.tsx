@@ -4,20 +4,22 @@ import { ArrowRight, BookOpen, FileQuestion, FileSpreadsheet, FolderOpen, Layers
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { theorySubjects, questionTypes } from '@/pages/question/theoryData'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 export default function TheoryQBWorkbench() {
   const navigate = useNavigate()
+  const [backendTheorySubjects] = useBackendListState(theorySubjects)
   const totals = useMemo(() => {
-    const questions = theorySubjects.reduce((sum, subject) => sum + subject.questions, 0)
-    const papers = theorySubjects.reduce((sum, subject) => sum + subject.papers, 0)
-    const resources = theorySubjects.reduce((sum, subject) => sum + subject.resources, 0)
-    const categories = new Set(theorySubjects.map(subject => subject.category)).size
+    const questions = backendTheorySubjects.reduce((sum, subject) => sum + subject.questions, 0)
+    const papers = backendTheorySubjects.reduce((sum, subject) => sum + subject.papers, 0)
+    const resources = backendTheorySubjects.reduce((sum, subject) => sum + subject.resources, 0)
+    const categories = new Set(backendTheorySubjects.map(subject => subject.category)).size
     return { questions, papers, resources, categories }
-  }, [])
+  }, [backendTheorySubjects])
 
   const typeTotals = questionTypes.map(type => ({
     type,
-    count: theorySubjects.reduce((sum, subject) => sum + (subject.typeCounts[type] || 0), 0),
+    count: backendTheorySubjects.reduce((sum, subject) => sum + (subject.typeCounts[type] || 0), 0),
   }))
   const maxType = Math.max(...typeTotals.map(item => item.count), 1)
 
@@ -36,7 +38,7 @@ export default function TheoryQBWorkbench() {
 
       <div className="grid grid-cols-4 gap-3">
         <Stat label="题库分类" value={totals.categories} icon={Layers} tone="blue" />
-        <Stat label="科目总数" value={theorySubjects.length} icon={BookOpen} tone="green" />
+        <Stat label="科目总数" value={backendTheorySubjects.length} icon={BookOpen} tone="green" />
         <Stat label="试题总数" value={totals.questions} icon={FileQuestion} tone="amber" />
         <Stat label="试卷总数" value={totals.papers} icon={FolderOpen} tone="red" />
       </div>
@@ -48,7 +50,7 @@ export default function TheoryQBWorkbench() {
             <Badge className="bg-blue-50 text-blue-700">学习资源 {totals.resources} 个</Badge>
           </div>
           <div className="divide-y divide-gray-100">
-            {theorySubjects.map(subject => (
+            {backendTheorySubjects.map(subject => (
               <button key={subject.id} onClick={() => navigate('/question/subjects')} className="grid w-full grid-cols-[1fr_120px_120px_120px] items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
                 <div>
                   <div className="font-medium text-gray-900">{subject.name}</div>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Search, Ticket, Printer, Eye, MapPin, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const ticketData = [
   { id: '1', name: '张三', idCard: '440301199001011234', occupation: '核反应堆运行值班员', level: '三级', examRoom: '第一考场', location: '培训中心A栋301', seatNo: '15', theoryDate: '2026-05-20', theoryTime: '09:00-11:00', practicalDate: '2026-05-20', practicalTime: '14:00-16:00' },
@@ -9,6 +10,7 @@ const ticketData = [
 ]
 
 export default function AdmissionTicket() {
+  const [tickets] = useBackendListState(ticketData)
   const [searchId, setSearchId] = useState('')
   const [searched, setSearched] = useState(false)
   const [result, setResult] = useState<typeof ticketData[0] | null>(null)
@@ -16,7 +18,7 @@ export default function AdmissionTicket() {
 
   const handleSearch = () => {
     setSearched(true)
-    setResult(ticketData.find(d => d.idCard === searchId) || null)
+    setResult(tickets.find(d => d.idCard === searchId) || null)
   }
   const reset = () => { setSearchId(''); setSearched(false); setResult(null) }
 

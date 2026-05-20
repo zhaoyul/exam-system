@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Plus, Edit3, Trash2, Save, CheckCircle, Circle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const steps_init = [
   { id: '1', name: '标准立项', desc: '提交标准立项申请', completed: true },
@@ -12,7 +13,7 @@ const steps_init = [
 ]
 
 export default function StandardProcess() {
-  const [items, setItems] = useState(steps_init)
+  const [items, setItems] = useBackendListState(steps_init)
   const [showAdd, setShowAdd] = useState(false)
   const [showEdit, setShowEdit] = useState<any>(null)
   const [showDelete, setShowDelete] = useState<string | null>(null)

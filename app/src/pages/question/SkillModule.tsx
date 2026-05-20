@@ -5,9 +5,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { skillModules, skillSubjects, type SkillModule } from './skillData'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 export default function SkillModuleManage() {
-  const [modules, setModules] = useState<SkillModule[]>(skillModules)
+  const [modules, setModules] = useBackendListState<SkillModule>(skillModules)
   const [subjectId, setSubjectId] = useState(skillSubjects[0].id)
   const [search, setSearch] = useState('')
   const [expanded, setExpanded] = useState<string[]>(modules.filter(item => !item.parentId).map(item => item.id))

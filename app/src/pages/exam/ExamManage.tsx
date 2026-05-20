@@ -3,6 +3,7 @@ import { Search, Plus, Edit3, Trash2, Save, Monitor, Play, Square } from 'lucide
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useNavigate } from 'react-router-dom'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const exams = [
   { id: '1', name: '2026年第一批理论考试', type: '理论', date: '2026-05-20', time: '09:00-11:00', rooms: 3, status: 'active' },
@@ -12,7 +13,7 @@ const exams = [
 
 export default function ExamManage() {
   const navigate = useNavigate()
-  const [items, setItems] = useState(exams)
+  const [items, setItems] = useBackendListState(exams)
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showEdit, setShowEdit] = useState<any>(null)

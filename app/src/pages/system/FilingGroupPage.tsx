@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Search, FileCheck, MapPin, ChevronRight, Plus, X, Trash2 } from 'lucide-react'
+import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
 
 interface Filing { org: string; province: string; status: string; date: string; materials: number; sites: number; projects: number; staff: number; supervisors: number; examiners: number; examRooms: number }
 interface ScopeItem { code: string; name: string; level: string; exam: string; form: string }
@@ -23,13 +24,14 @@ export default function FilingGroupPage() {
   const [tab, setTab] = useState<'workbench' | 'view' | 'scope'>('workbench')
   const [search, setSearch] = useState('')
   const [detailOrg, setDetailOrg] = useState<string | null>(null)
-  const [scopes, setScopes] = useState<ScopeItem[]>(initialScopes)
+  const filingRows = useBackendResourceList('/filing/group', filings)
+  const [scopes, setScopes] = useBackendListState<ScopeItem>(initialScopes)
   const [showAddScope, setShowAddScope] = useState(false)
   const [showDeleteScope, setShowDeleteScope] = useState<string | null>(null)
   const [scopeForm, setScopeForm] = useState({ code: '', name: '', level: '三级', exam: '理论+技能', form: '笔试+实操' })
 
-  const pendingCount = filings.filter(f => f.status === 'pending').length
-  const approvedCount = filings.filter(f => f.status === 'approved').length
+  const pendingCount = filingRows.filter(f => f.status === 'pending').length
+  const approvedCount = filingRows.filter(f => f.status === 'approved').length
 
   const doAddScope = () => {
     if (!scopeForm.code || !scopeForm.name) return
@@ -51,14 +53,14 @@ export default function FilingGroupPage() {
       {tab === 'workbench' && (
         <div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <div className="bg-white rounded-lg p-5 border border-gray-200"><div className="text-sm text-gray-500 mb-1">备案总数</div><div className="text-3xl font-bold text-gray-900">{filings.length}</div></div>
+            <div className="bg-white rounded-lg p-5 border border-gray-200"><div className="text-sm text-gray-500 mb-1">备案总数</div><div className="text-3xl font-bold text-gray-900">{filingRows.length}</div></div>
             <div className="bg-white rounded-lg p-5 border border-gray-200"><div className="text-sm text-gray-500 mb-1">待审核</div><div className="text-3xl font-bold text-amber-600">{pendingCount}</div></div>
             <div className="bg-white rounded-lg p-5 border border-gray-200"><div className="text-sm text-gray-500 mb-1">已通过</div><div className="text-3xl font-bold text-green-600">{approvedCount}</div></div>
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <h3 className="text-base font-semibold text-gray-900 mb-4">近期备案活动</h3>
             <div className="space-y-3">
-              {filings.slice(0, 4).map((f, i) => (
+              {filingRows.slice(0, 4).map((f, i) => (
                 <div key={i} className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 cursor-pointer" onClick={() => { setTab('view'); setDetailOrg(f.org) }}>
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${f.status === 'approved' ? 'bg-green-100' : 'bg-amber-100'}`}>
                     <FileCheck className={`w-5 h-5 ${f.status === 'approved' ? 'text-green-600' : 'text-amber-600'}`} />
@@ -84,7 +86,7 @@ export default function FilingGroupPage() {
             <table className="w-full text-sm"><thead className="bg-[#F9FAFB] text-gray-600 font-medium sticky top-0">
               <tr><th className="px-4 py-3 text-left">机构名称</th><th className="px-4 py-3 text-left">备案省份</th><th className="px-4 py-3 text-left">备案状态</th><th className="px-4 py-3 text-left">备案时间</th><th className="px-4 py-3 text-left">认定项目</th><th className="px-4 py-3 text-left">考评人员</th><th className="px-4 py-3 text-left">操作</th></tr>
             </thead><tbody className="divide-y divide-gray-100">
-              {filings.filter(f => !search || f.org.includes(search)).map((f, i) => (
+              {filingRows.filter(f => !search || f.org.includes(search)).map((f, i) => (
                 <tr key={i} className="hover:bg-gray-50"><td className="px-4 py-3 font-medium text-gray-900">{f.org}</td><td className="px-4 py-3 text-gray-600"><span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{f.province}</span></td>
                   <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${f.status === 'approved' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>{f.status === 'approved' ? '已通过' : '审核中'}</span></td>
                   <td className="px-4 py-3 text-gray-600">{f.date}</td><td className="px-4 py-3 text-gray-600">{f.projects}个</td><td className="px-4 py-3 text-gray-600">{f.examiners}人</td>
@@ -97,7 +99,7 @@ export default function FilingGroupPage() {
             <div className="mt-4 bg-white rounded-lg border border-gray-200 p-4">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">{detailOrg} 备案详情</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[{ label: '备案材料', value: filings.find(f => f.org === detailOrg)?.materials }, { label: '站点', value: filings.find(f => f.org === detailOrg)?.sites }, { label: '认定项目', value: filings.find(f => f.org === detailOrg)?.projects }, { label: '工作人员', value: filings.find(f => f.org === detailOrg)?.staff }, { label: '督导人员', value: filings.find(f => f.org === detailOrg)?.supervisors }, { label: '考评人员', value: filings.find(f => f.org === detailOrg)?.examiners }, { label: '考点', value: filings.find(f => f.org === detailOrg)?.examRooms }].map((item, i) => (
+                {[{ label: '备案材料', value: filingRows.find(f => f.org === detailOrg)?.materials }, { label: '站点', value: filingRows.find(f => f.org === detailOrg)?.sites }, { label: '认定项目', value: filingRows.find(f => f.org === detailOrg)?.projects }, { label: '工作人员', value: filingRows.find(f => f.org === detailOrg)?.staff }, { label: '督导人员', value: filingRows.find(f => f.org === detailOrg)?.supervisors }, { label: '考评人员', value: filingRows.find(f => f.org === detailOrg)?.examiners }, { label: '考点', value: filingRows.find(f => f.org === detailOrg)?.examRooms }].map((item, i) => (
                   <div key={i} className="bg-gray-50 rounded-lg p-3 text-center"><div className="text-lg font-semibold text-gray-900">{item.value}</div><div className="text-xs text-gray-500 mt-0.5">{item.label}</div></div>
                 ))}
               </div>

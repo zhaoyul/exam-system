@@ -5,9 +5,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { orgOptions, theorySubjects, type SubjectStatus, type TheorySubject } from './theoryData'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 export default function SubjectManage() {
-  const [subjects, setSubjects] = useState<TheorySubject[]>(theorySubjects)
+  const [subjects, setSubjects] = useBackendListState<TheorySubject>(theorySubjects)
   const [status, setStatus] = useState<'全部' | SubjectStatus>('全部')
   const [search, setSearch] = useState('')
   const [activeLevel, setActiveLevel] = useState('全部')

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Search, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const data = [
   { id: '1', org: '大亚湾核电', total: 120, pass: 105, fail: 15, avg: 82.5 },
@@ -11,7 +12,7 @@ const data = [
 
 export default function ScoreReport() {
   const [search, setSearch] = useState('')
-  const [items] = useState(data)
+  const [items] = useBackendListState(data)
   const filtered = items.filter(i => !search || i.org.includes(search))
 
   return (

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Search, Plus, Edit3, Trash2, Save, Send, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const items_init = [
   { id: '1', title: '2026年第一批认定通知', org: '大亚湾核电', date: '2026-05-01', type: '通知', status: 'sent' },
@@ -9,7 +10,7 @@ const items_init = [
 ]
 
 export default function DistributePage() {
-  const [items, setItems] = useState(items_init)
+  const [items, setItems] = useBackendListState(items_init)
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showEdit, setShowEdit] = useState<any>(null)

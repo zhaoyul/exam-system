@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Plus, Search, Edit, MoreHorizontal, Key, Eye, PlusCircle, X, Trash2 } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface Expert { id: string; name: string; username: string; phone: string; unit: string; skillType: string; skillProject: string; status: 'active' | 'inactive' }
 
@@ -10,7 +11,7 @@ const initialExperts: Expert[] = [
 ]
 
 export default function ExpertsPage() {
-  const [experts, setExperts] = useState<Expert[]>(initialExperts)
+  const [experts, setExperts] = useBackendListState<Expert>(initialExperts)
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showEdit, setShowEdit] = useState<Expert | null>(null)

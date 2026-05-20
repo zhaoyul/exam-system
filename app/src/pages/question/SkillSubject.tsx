@@ -6,9 +6,10 @@ import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { orgOptions } from './theoryData'
 import { skillLevels, skillSubjects, type SkillStatus, type SkillSubject } from './skillData'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 export default function SkillSubjectManage() {
-  const [subjects, setSubjects] = useState<SkillSubject[]>(skillSubjects)
+  const [subjects, setSubjects] = useBackendListState<SkillSubject>(skillSubjects)
   const [status, setStatus] = useState<'全部' | SkillStatus>('全部')
   const [level, setLevel] = useState('全部')
   const [search, setSearch] = useState('')

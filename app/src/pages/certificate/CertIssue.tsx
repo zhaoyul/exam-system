@@ -17,6 +17,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
+import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
 
 type PrintState = '全部' | '已打印' | '未打印'
 type BorderMode = '不打印边框' | '打印边框' | '图文边框'
@@ -204,7 +205,8 @@ const batches: CertBatch[] = [
 ]
 
 export default function CertIssue() {
-  const [items, setItems] = useState<CertBatch[]>(batches)
+  const [items, setItems] = useBackendListState<CertBatch>(batches)
+  const backendUnits = useBackendResourceList('/certification/organizations', units)
   const [search, setSearch] = useState('')
   const [selectedUnit, setSelectedUnit] = useState(units[0])
   const [unitDialogOpen, setUnitDialogOpen] = useState(false)
@@ -451,7 +453,7 @@ export default function CertIssue() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader><DialogTitle>选择机构</DialogTitle></DialogHeader>
           <div className="space-y-2">
-            {units.map(unit => (
+            {backendUnits.map(unit => (
               <button
                 key={unit.uid}
                 onClick={() => {

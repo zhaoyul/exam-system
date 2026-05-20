@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Search, PenTool, CheckCircle, Save } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const papers = [
   { id: '1', candidate: '张三', idCard: '440301199001011234', occupation: '核反应堆运行值班员', level: '三级', subject: '实操考试', score: null, status: 'pending', marker: '' },
@@ -11,7 +12,7 @@ const papers = [
 ]
 
 export default function MarkingManage() {
-  const [items, setItems] = useState(papers)
+  const [items, setItems] = useBackendListState(papers)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('全部')
   const [markingId, setMarkingId] = useState<string | null>(null)

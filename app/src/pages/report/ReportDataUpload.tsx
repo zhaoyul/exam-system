@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Upload, Download, FileText, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const uploads = [
   { id: '1', name: '2026年第一批认定数据', org: '大亚湾核电', date: '2026-05-25', status: 'uploaded' },
@@ -8,7 +9,7 @@ const uploads = [
 ]
 
 export default function ReportDataUpload() {
-  const [items, setItems] = useState(uploads)
+  const [items, setItems] = useBackendListState(uploads)
   const [dragOver, setDragOver] = useState(false)
 
   const upload = (id: string) => { setItems(prev => prev.map(i => i.id === id ? { ...i, status: 'uploaded' } : i)) }

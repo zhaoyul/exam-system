@@ -1,0 +1,68 @@
+{:system/env
+ #profile {:dev  :dev
+           :test :test
+           :prod :prod}
+ 
+ 
+ 
+ 
+
+ :server/http
+ {:port    #long #or [#env PORT 8080]
+  :host    #or [#env HTTP_HOST "0.0.0.0"]
+  :handler #ig/ref :handler/ring}
+
+ :handler/ring
+ {:router                #ig/ref :router/core
+  :api-path              "/api/docs"
+  :cookie-secret         #or [#env COOKIE_SECRET "NVCZBZMGAIVBHHHY"]
+  ;; from ring.middleware.defaults. anti-forgery `false` by default because services may not require it
+  :site-defaults-config  {:params    {:urlencoded true
+                                      :multipart  true
+                                      :nested     true
+                                      :keywordize true}
+                          :cookies   true
+                          :session   {:flash true
+                                      :cookie-name "zhaoyul.exam-system-backend"
+                                      :cookie-attrs {:max-age     86400
+                                                     :http-only   true
+                                                     :same-site   :strict}}
+                          :security  {:anti-forgery   false
+                                      :xss-protection {:enable? true, :mode :block}
+                                      :frame-options  :sameorigin
+                                      :content-type-options :nosniff}
+                          :static    {:resources "public"}
+                          :responses {:not-modified-responses true
+                                      :absolute-redirects     true
+                                      :content-types          true
+                                      :default-charset        "utf-8"}}}
+
+ :reitit.routes/api
+ {:base-path "/api"
+  :env       #ig/ref :system/env
+  :datasource #ig/ref :zhaoyul.exam-system-backend.infra.datasource/datasource
+  :auth {:token-secret #or [#env AUTH_TOKEN_SECRET "dev-secret-change-before-production"]
+         :token-ttl-seconds #long #or [#env AUTH_TOKEN_TTL_SECONDS 28800]}
+  :cors {:allowed-origins #or [#env CORS_ALLOWED_ORIGINS "*"]}}
+
+ :zhaoyul.exam-system-backend.infra.datasource/datasource
+ {:config {:database {:profile #or [#env DB_PROFILE "sqlite"]
+                      :driver-class #or [#env DB_DRIVER "org.sqlite.JDBC"]
+                      :jdbc-url #or [#env JDBC_URL "jdbc:sqlite:./data/exam-system-dev.db"]
+                      :username #or [#env DB_USERNAME ""]
+                      :password #or [#env DB_PASSWORD ""]}}}
+
+ :zhaoyul.exam-system-backend.infra.migrations/migrations
+ {:datasource #ig/ref :zhaoyul.exam-system-backend.infra.datasource/datasource
+  :config {:database {:profile #or [#env DB_PROFILE "sqlite"]}}}
+
+ :zhaoyul.exam-system-backend.domain.seed/seed
+ {:datasource #ig/ref :zhaoyul.exam-system-backend.infra.datasource/datasource
+  :migrations #ig/ref :zhaoyul.exam-system-backend.infra.migrations/migrations}
+
+ :router/routes
+ {:routes #ig/refset :reitit/routes}
+
+ :router/core
+ {:routes #ig/ref :router/routes
+  :env #ig/ref :system/env} }

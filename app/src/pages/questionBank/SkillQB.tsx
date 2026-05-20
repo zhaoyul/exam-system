@@ -5,9 +5,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { skillModuleName, skillModules, skillQuestionTypes, skillQuestions, skillSubjectName, skillSubjects, type SkillQuestion, type SkillQuestionStatus } from '@/pages/question/skillData'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 export default function SkillQB() {
-  const [items, setItems] = useState<SkillQuestion[]>(skillQuestions)
+  const [items, setItems] = useBackendListState<SkillQuestion>(skillQuestions)
   const [subjectId, setSubjectId] = useState(skillSubjects[0].id)
   const [moduleId, setModuleId] = useState('全部')
   const [status, setStatus] = useState<'全部' | SkillQuestionStatus>('全部')

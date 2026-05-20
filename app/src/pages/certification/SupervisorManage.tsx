@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import {
   UserCheck, Plus, Search, Shield, Trash2, Eye, Download, Upload, KeyRound
 } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface Supervisor {
   id: number
@@ -34,7 +35,7 @@ const mockSupervisors: Supervisor[] = [
 ]
 
 export default function SupervisorManage() {
-  const [supervisors, setSupervisors] = useState<Supervisor[]>(mockSupervisors)
+  const [supervisors, setSupervisors] = useBackendListState<Supervisor>(mockSupervisors)
   const [search, setSearch] = useState('')
   const [addOpen, setAddOpen] = useState(false)
 

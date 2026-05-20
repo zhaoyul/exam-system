@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -9,6 +9,7 @@ import {
   MapPin, Users, Plus, Clock, CheckCircle,
   Trash2, Eye, Printer, Ticket, FileSpreadsheet, LayoutGrid
 } from 'lucide-react'
+import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
 
 interface ExamRoom {
   id: number
@@ -72,7 +73,14 @@ export default function ExamArrangement() {
   const [workTab, setWorkTab] = useState<'待办' | '已办'>('待办')
   const [selectedPlan, setSelectedPlan] = useState<number | null>(null)
   const [selectedSite, setSelectedSite] = useState<number>(1)
-  const [sites, setSites] = useState<ExamSite[]>(mockSites)
+  const [sites, setSites] = useBackendListState<ExamSite>(mockSites)
+  const arrangementPlans = useBackendResourceList('/certification/exam-arrangement', [
+    { id: 1, code: '20260324001', name: '大亚湾核电2026年第1批认定', site: '职业技能培训中心', month: '2026年04月', status: '待编排', count: 45 },
+    { id: 2, code: '20260324002', name: '阳江核电2026年第1批认定', site: '阳江培训中心', month: '2026年05月', status: '已编排', count: 32 },
+  ])
+  const availableSites = useBackendResourceList('/certification/execution/exam-rooms', allSites)
+  const backendCandidates = useBackendResourceList('/candidates/manage', mockCandidates)
+  const backendSessions = useBackendResourceList('/certification/exam-session', mockSessions)
   const [sessions, setSessions] = useState<ExamSession[]>(mockSessions)
   const [, setArranged] = useState(false)
   const [showAddSite, setShowAddSite] = useState(false)
@@ -147,6 +155,10 @@ export default function ExamArrangement() {
   const [newRoomName, setNewRoomName] = useState('')
   const [newRoomSeats, setNewRoomSeats] = useState('50')
 
+  useEffect(() => {
+    setSessions(backendSessions)
+  }, [backendSessions])
+
   const handleAddCandidates = (room: ExamRoom) => {
     const count = Math.max(1, selectedCandidateIds.length || 5)
     setSites(prev => prev.map(s => ({
@@ -178,13 +190,8 @@ export default function ExamArrangement() {
 
   const unassignedCount = 10 // 模拟剩余考生数
 
-  const filteredSites = allSites.filter(s => !siteSearch || s.name.includes(siteSearch))
-  const filteredCandidates = mockCandidates.filter(c => selectedSession === 'all' || c.sessionId === selectedSession)
-
-  const arrangementPlans = [
-    { id: 1, code: '20260324001', name: '大亚湾核电2026年第1批认定', site: '职业技能培训中心', month: '2026年04月', status: '待编排', count: 45 },
-    { id: 2, code: '20260324002', name: '阳江核电2026年第1批认定', site: '阳江培训中心', month: '2026年05月', status: '已编排', count: 32 },
-  ]
+  const filteredSites = availableSites.filter(s => !siteSearch || s.name.includes(siteSearch))
+  const filteredCandidates = backendCandidates.filter(c => selectedSession === 'all' || c.sessionId === selectedSession)
 
   return (
     <div className="space-y-4">

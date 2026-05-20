@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Search, Download, TrendingUp, TrendingDown } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface LedgerItem {
   id: string
@@ -33,7 +34,7 @@ const typeMap: Record<string, { label: string; color: string; icon: React.Elemen
 }
 
 export default function FeeLedgerPage() {
-  const [ledger] = useState<LedgerItem[]>(mockLedger)
+  const [ledger] = useBackendListState<LedgerItem>(mockLedger)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
 

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Search, Download, X } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface Person {
   id: string
@@ -20,7 +21,7 @@ const initialPersonnel: Person[] = [
 ]
 
 export default function PersonnelPage() {
-  const [personnel, setPersonnel] = useState<Person[]>(initialPersonnel)
+  const [personnel, setPersonnel] = useBackendListState<Person>(initialPersonnel)
   const [search, setSearch] = useState('')
   const [showImport, setShowImport] = useState(false)
   const [importFile, setImportFile] = useState('')

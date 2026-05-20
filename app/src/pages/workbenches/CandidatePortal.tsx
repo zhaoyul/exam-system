@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { FileText, Award, BarChart3, Bell, CheckCircle, Clock } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const myRegistrations = [
   { id: 1, occupation: '核反应堆运行值班员', level: '三级', status: 'approved', date: '2026-03-15', examDate: '2026-05-20' },
@@ -22,6 +23,10 @@ const examResults = [
 
 export default function CandidatePortal() {
   const navigate = useNavigate()
+  const [backendRegistrations] = useBackendListState(myRegistrations)
+  const [backendNotifications] = useBackendListState(notifications)
+  const [backendCertificates] = useBackendListState(myCertificates)
+  const [backendResults] = useBackendListState(examResults)
 
   return (
     <div>
@@ -68,7 +73,7 @@ export default function CandidatePortal() {
             <button onClick={() => navigate('/personal/register')} className="text-xs text-[#1A56DB] hover:underline">我要报名</button>
           </div>
           <div className="space-y-3">
-            {myRegistrations.map(r => (
+            {backendRegistrations.map(r => (
               <div key={r.id} className="p-3 border border-gray-100 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-900">{r.occupation} · {r.level}</span>
@@ -97,7 +102,7 @@ export default function CandidatePortal() {
             </h2>
           </div>
           <div className="space-y-3">
-            {notifications.map(n => (
+            {backendNotifications.map(n => (
               <div key={n.id} className={`flex items-start gap-3 p-3 rounded-lg ${
                 !n.read ? 'bg-blue-50 border border-blue-100' : 'bg-gray-50'
               }`}>
@@ -121,8 +126,8 @@ export default function CandidatePortal() {
             </h2>
             <button onClick={() => navigate('/personal/cert')} className="text-xs text-[#1A56DB] hover:underline">查看全部</button>
           </div>
-          {myCertificates.length > 0 ? (
-            myCertificates.map(c => (
+          {backendCertificates.length > 0 ? (
+            backendCertificates.map(c => (
               <div key={c.id} className="p-3 bg-emerald-50 border border-emerald-100 rounded-lg">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm font-medium text-gray-900">{c.occupation} · {c.level}</span>
@@ -145,7 +150,7 @@ export default function CandidatePortal() {
             </h2>
             <button onClick={() => navigate('/personal/score')} className="text-xs text-[#1A56DB] hover:underline">查看全部</button>
           </div>
-          {examResults.map(r => (
+          {backendResults.map(r => (
             <div key={r.id} className="p-3 bg-purple-50 border border-purple-100 rounded-lg">
               <div className="text-sm font-medium text-gray-900 mb-2">{r.occupation} · {r.level}</div>
               <div className="grid grid-cols-3 gap-2 text-center">

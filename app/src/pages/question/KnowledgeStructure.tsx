@@ -5,9 +5,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { knowledgeNodes, theorySubjects, type KnowledgeNode } from './theoryData'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 export default function KnowledgeStructure() {
-  const [nodes, setNodes] = useState<KnowledgeNode[]>(knowledgeNodes)
+  const [nodes, setNodes] = useBackendListState<KnowledgeNode>(knowledgeNodes)
   const [subjectId, setSubjectId] = useState(theorySubjects[0].id)
   const [search, setSearch] = useState('')
   const [expanded, setExpanded] = useState<string[]>(nodes.filter(node => !node.parentId).map(node => node.id))

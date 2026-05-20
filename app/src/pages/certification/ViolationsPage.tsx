@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 type WarningType = '一人多证预警' | '工作进度预警' | '年龄预警' | '合格率预警' | '成绩过低预警' | '成绩过高预警'
 type WarningStatus = '待处理' | '已确认' | '已忽略'
@@ -96,7 +97,7 @@ const warningTypes: Array<'全部' | WarningType> = ['全部', '一人多证预�
 const statuses: Array<'全部' | WarningStatus> = ['全部', '待处理', '已确认', '已忽略']
 
 export default function ViolationsPage() {
-  const [items, setItems] = useState<WarningItem[]>(initialWarnings)
+  const [items, setItems] = useBackendListState<WarningItem>(initialWarnings)
   const [activeType, setActiveType] = useState<'全部' | WarningType>('全部')
   const [statusFilter, setStatusFilter] = useState<'全部' | WarningStatus>('全部')
   const [search, setSearch] = useState('')

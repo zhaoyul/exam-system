@@ -7,6 +7,7 @@ import {
   Building2, FileCheck, Globe, Clock, AlertTriangle,
   ArrowRight, CheckCircle, MapPin, Calendar
 } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const stats = [
   { label: '集团备案', value: 1, unit: '项', icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -53,6 +54,10 @@ const timeline = [
 
 export default function FilingWorkbench() {
   const navigate = useNavigate()
+  const [backendStats] = useBackendListState(stats)
+  const [backendBranchStatus] = useBackendListState(branchStatus)
+  const [backendProvinceDist] = useBackendListState(provinceDist)
+  const [backendTimeline] = useBackendListState(timeline)
 
   return (
     <div className="p-6 space-y-6">
@@ -72,7 +77,7 @@ export default function FilingWorkbench() {
       </div>
 
       <div className="grid grid-cols-4 gap-4">
-        {stats.map((s, i) => (
+        {backendStats.map((s, i) => (
           <Card key={i} className="border-0 shadow-sm">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -112,7 +117,7 @@ export default function FilingWorkbench() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {branchStatus.map((b, i) => (
+                  {backendBranchStatus.map((b, i) => (
                     <tr key={i} className="hover:bg-gray-50">
                       <td className="px-3 py-2.5 font-medium text-sm">{b.name}</td>
                       <td className="px-3 py-2.5 text-xs text-gray-600">{b.province}</td>
@@ -146,7 +151,7 @@ export default function FilingWorkbench() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {provinceDist.map((p, i) => (
+              {backendProvinceDist.map((p, i) => (
                 <div key={i}>
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span className="text-gray-700">{p.name}</span>
@@ -168,7 +173,7 @@ export default function FilingWorkbench() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {timeline.map(t => (
+              {backendTimeline.map(t => (
                 <div key={t.id} className={`p-2 rounded-lg cursor-pointer transition-colors ${t.status === 'urgent' ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-gray-50'}`} onClick={() => navigate('/filing/branch')}>
                   <div className="flex items-center gap-2">
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${t.status === 'urgent' ? 'bg-red-500' : t.status === 'upcoming' ? 'bg-amber-400' : 'bg-blue-400'}`} />

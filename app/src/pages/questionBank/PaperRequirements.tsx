@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Search, Plus, Edit3, Trash2, Save, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const reqs = [
   { id: '1', name: '三级理论考试A卷出题要求', occupation: '核反应堆运行值班员', level: '三级', single: 40, multi: 20, judge: 20, total: 100 },
@@ -9,7 +10,7 @@ const reqs = [
 ]
 
 export default function PaperRequirements() {
-  const [items, setItems] = useState(reqs)
+  const [items, setItems] = useBackendListState(reqs)
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showEdit, setShowEdit] = useState<any>(null)

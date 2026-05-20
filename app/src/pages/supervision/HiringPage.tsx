@@ -4,9 +4,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { experts, type ExpertProfile, type ExpertRole, type ExpertStatus } from './expertData'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 export default function HiringPage() {
-  const [items, setItems] = useState<ExpertProfile[]>(experts)
+  const [items, setItems] = useBackendListState<ExpertProfile>(experts)
   const [search, setSearch] = useState('')
   const [role, setRole] = useState<'全部' | ExpertRole>('全部')
   const [active, setActive] = useState<ExpertProfile | null>(null)

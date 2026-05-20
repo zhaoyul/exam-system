@@ -5,10 +5,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { formDefs, type ExpertFormDef } from './expertData'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 export default function FormsPage() {
   const [tab, setTab] = useState<'表单定义' | '使用设置'>('表单定义')
-  const [items, setItems] = useState<ExpertFormDef[]>(formDefs)
+  const [items, setItems] = useBackendListState<ExpertFormDef>(formDefs)
   const [search, setSearch] = useState('')
   const [dialog, setDialog] = useState<'add' | 'view' | 'setting' | null>(null)
   const [active, setActive] = useState<ExpertFormDef | null>(null)

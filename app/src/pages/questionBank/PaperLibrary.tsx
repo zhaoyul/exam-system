@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { levels, orgOptions, theorySubjects } from '@/pages/question/theoryData'
 import { skillLevels, skillSubjectName, skillSubjects } from '@/pages/question/skillData'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 type PaperStatus = '草稿' | '已发布' | '已推送'
 type BankType = '理论题库' | '技能题库'
@@ -32,7 +33,7 @@ const initialPapers: PaperItem[] = [
 ]
 
 export default function PaperLibrary() {
-  const [papers, setPapers] = useState<PaperItem[]>(initialPapers)
+  const [papers, setPapers] = useBackendListState<PaperItem>(initialPapers)
   const [bank, setBank] = useState<BankType>('理论题库')
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<'全部' | PaperStatus>('全部')

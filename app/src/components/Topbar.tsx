@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
 import type { UserRole } from '@/config/rolePermissions'
 import { ROLES, getRoleLabel, getRolePortal } from '@/config/rolePermissions'
+import { useBackendData } from '@/context/BackendDataContext'
 
 const roleIcons: Record<UserRole, React.ElementType> = {
   group_admin: Shield,
@@ -17,6 +18,7 @@ const roleIcons: Record<UserRole, React.ElementType> = {
 
 export default function Topbar() {
   const { logout, toggleSidebar, sidebarCollapsed, user, switchRole } = useApp()
+  const backend = useBackendData()
   const navigate = useNavigate()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotify, setShowNotify] = useState(false)
@@ -69,6 +71,22 @@ export default function Topbar() {
       </div>
       <div className="flex items-center gap-2">
         {/* Role badge */}
+        <div
+          className={`hidden md:flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] ${
+            backend.status === 'ready'
+              ? 'bg-emerald-50 text-emerald-700'
+              : backend.status === 'error'
+              ? 'bg-red-50 text-red-600'
+              : 'bg-gray-100 text-gray-500'
+          }`}
+          title={backend.error || backend.endpoint}
+        >
+          <span className={`w-1.5 h-1.5 rounded-full ${
+            backend.status === 'ready' ? 'bg-emerald-500' : backend.status === 'error' ? 'bg-red-500' : 'bg-gray-400'
+          }`} />
+          <span>{backend.status === 'ready' ? '接口已连接' : backend.status === 'error' ? '接口异常' : '加载中'}</span>
+        </div>
+
         <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 rounded-md">
           <RoleIcon className="w-3.5 h-3.5 text-[#1A56DB]" />
           <span className="text-xs font-medium text-[#1A56DB]">{getRoleLabel(userRole as UserRole)}</span>

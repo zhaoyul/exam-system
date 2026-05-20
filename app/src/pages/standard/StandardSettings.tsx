@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Plus, Search, Clock, CheckCircle, Play, X, Trash2 } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface Plan { id: string; name: string; type: string; occupation: string; level: string; status: string; person: string; deadline: string }
 
@@ -10,7 +11,7 @@ const initialPlans: Plan[] = [
 ]
 
 export default function StandardSettings() {
-  const [plans, setPlans] = useState<Plan[]>(initialPlans)
+  const [plans, setPlans] = useBackendListState<Plan>(initialPlans)
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showDelete, setShowDelete] = useState<string | null>(null)

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Search, Calendar, User, Download, Trash2, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const logs = [
   { id: '1', user: '管理员', action: '登录系统', module: '系统', ip: '10.0.0.15', time: '2026-05-20 08:30:15', level: 'info' },
@@ -14,7 +15,7 @@ const logs = [
 ]
 
 export default function SystemLogs() {
-  const [items, setItems] = useState(logs)
+  const [items, setItems] = useBackendListState(logs)
   const [search, setSearch] = useState('')
   const [levelFilter, setLevelFilter] = useState('全部')
   const [moduleFilter, setModuleFilter] = useState('全部')

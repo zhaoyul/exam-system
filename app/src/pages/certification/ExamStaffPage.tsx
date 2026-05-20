@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { Search, Plus, Edit3, Trash2, Save, UserCog } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 export default function ExamStaffPage() {
-  const [items, setItems] = useState([
+  const [items, setItems] = useBackendListState([
     { id: '1', name: '考评员甲', type: '考评员', org: '大亚湾核电', phone: '13800138001', status: 'active' },
     { id: '2', name: '考评员乙', type: '高级考评员', org: '中广核工程', phone: '13900139001', status: 'active' },
     { id: '3', name: '考务员A', type: '考务员', org: '阳江核电', phone: '13700137001', status: 'inactive' },

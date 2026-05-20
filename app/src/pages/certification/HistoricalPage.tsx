@@ -17,6 +17,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
+import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
 
 type ExportState = '全部' | '待导出' | '已导出'
 
@@ -213,7 +214,8 @@ const historyPlans: HistoryPlan[] = [
 ]
 
 export default function HistoricalPage() {
-  const [plans, setPlans] = useState<HistoryPlan[]>(historyPlans)
+  const [plans, setPlans] = useBackendListState<HistoryPlan>(historyPlans)
+  const backendUnits = useBackendResourceList('/certification/organizations', units)
   const [search, setSearch] = useState('')
   const [selectedUnit, setSelectedUnit] = useState(units[0])
   const [unitDialogOpen, setUnitDialogOpen] = useState(false)
@@ -460,7 +462,7 @@ export default function HistoricalPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader><DialogTitle>选择机构</DialogTitle></DialogHeader>
           <div className="space-y-2">
-            {units.map(unit => (
+            {backendUnits.map(unit => (
               <button
                 key={unit.uid}
                 onClick={() => {

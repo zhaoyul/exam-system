@@ -5,6 +5,7 @@ import { Eye, EyeOff, MessageSquare, Lock, ChevronRight, ChevronLeft, Shield, Bo
 import { Button } from '@/components/ui/button'
 import type { UserRole } from '@/config/rolePermissions'
 import { ROLES, getRolePortal } from '@/config/rolePermissions'
+import { loginRequest, setAuthToken } from '@/lib/api'
 
 const slides = [
   {
@@ -74,6 +75,7 @@ export default function Login() {
   const [error, setError] = useState('')
   const [selectedRole, setSelectedRole] = useState<UserRole>('group_admin')
   const [showRoleSelect, setShowRoleSelect] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Auto rotate slides
   useEffect(() => {
@@ -88,7 +90,22 @@ export default function Login() {
     setCaptcha('')
   }
 
-  const handleLogin = (e: React.FormEvent) => {
+  const roleKeys = ROLES.map(role => role.key)
+  const normalizeRole = (role?: string): UserRole =>
+    role && roleKeys.includes(role as UserRole) ? role as UserRole : selectedRole
+
+  const getOrgName = (role: UserRole, orgId?: string) => {
+    if (orgId === 'org-cgn') return '中广核集团'
+    if (orgId === 'org-csyxgs') return '测试有限公司'
+    return role === 'group_admin' ? '集团' :
+      role === 'branch_admin' ? '中国同辐股份有限公司' :
+      role === 'expert' ? '评价专家组' :
+      role === 'supervisor' ? '督导组' :
+      role === 'exam_staff' ? '考务组' :
+      role === 'proctor' ? '监考组' : '个人'
+  }
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     if (!username.trim()) {
@@ -107,19 +124,27 @@ export default function Login() {
       setShowRoleSelect(true)
       return
     }
-    // Mock login with selected role
-    const roleInfo = ROLES.find(r => r.key === selectedRole)
-    login({
-      name: username || (roleInfo?.label || '用户'),
-      role: selectedRole,
-      org: selectedRole === 'group_admin' ? '集团' :
-           selectedRole === 'branch_admin' ? '中国同辐股份有限公司' :
-           selectedRole === 'expert' ? '评价专家组' :
-           selectedRole === 'supervisor' ? '督导组' :
-           selectedRole === 'exam_staff' ? '考务组' :
-           selectedRole === 'proctor' ? '监考组' : '个人',
-    })
-    navigate(getRolePortal(selectedRole), { replace: true })
+    if (loginType !== 'password') {
+      setError('短信登录接口尚未开放，请使用账号密码登录')
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      const result = await loginRequest(username.trim(), password)
+      const role = normalizeRole(result.user.role)
+      setAuthToken(result.token)
+      login({
+        name: result.user.displayName || result.user.username || username,
+        role,
+        org: getOrgName(role, result.user.orgId),
+      })
+      navigate(getRolePortal(role), { replace: true })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '登录失败，请检查账号或密码')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleBack = () => {
@@ -335,9 +360,10 @@ export default function Login() {
                 {/* Submit */}
                 <Button
                   type="submit"
+                  disabled={isSubmitting}
                   className="w-full h-10 bg-[#1A56DB] hover:bg-[#1748B5] text-white font-medium rounded-lg transition-colors"
                 >
-                  登 录
+                  {isSubmitting ? '登录中...' : '登 录'}
                 </Button>
               </form>
 
@@ -415,9 +441,10 @@ export default function Login() {
 
                 <Button
                   type="submit"
+                  disabled={isSubmitting}
                   className="w-full h-10 bg-[#1A56DB] hover:bg-[#1748B5] text-white font-medium rounded-lg transition-colors mt-4"
                 >
-                  进入工作台
+                  {isSubmitting ? '登录中...' : '进入工作台'}
                 </Button>
               </form>
             </div>

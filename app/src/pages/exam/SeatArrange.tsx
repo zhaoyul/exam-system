@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import {
   Monitor, Users, Armchair, RotateCcw, Save, Grid3X3
 } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface Seat {
   row: number
@@ -47,7 +48,7 @@ export default function SeatArrange() {
     return grid
   })
   const [selectedSeat, setSelectedSeat] = useState<{ row: number; col: number } | null>(null)
-  const [candidates] = useState<Candidate[]>(mockCandidates)
+  const [candidates] = useBackendListState<Candidate>(mockCandidates)
   const [assignedCount, setAssignedCount] = useState(0)
   const [examRoom, setExamRoom] = useState('room1')
 

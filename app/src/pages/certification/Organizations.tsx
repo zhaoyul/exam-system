@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
+import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
 
 interface OrgUnit {
   id: string
@@ -157,7 +158,8 @@ const orgUnits: OrgUnit[] = [
 ]
 
 export default function Organizations() {
-  const [units, setUnits] = useState<OrgUnit[]>(orgUnits)
+  const [units, setUnits] = useBackendListState<OrgUnit>(orgUnits)
+  const backendTreeNodes = useBackendResourceList('/certification/organizations', treeNodes)
   const [expanded, setExpanded] = useState(true)
   const [selectedTree, setSelectedTree] = useState('root')
   const [searchType, setSearchType] = useState('评价机构')
@@ -285,7 +287,7 @@ export default function Organizations() {
             机构目录
           </div>
           <div className="p-3">
-            {treeNodes.map(root => (
+            {backendTreeNodes.map(root => (
               <div key={root.id}>
                 <button
                   onClick={() => {

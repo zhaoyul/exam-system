@@ -1,14 +1,25 @@
 import { useNavigate } from 'react-router-dom'
 import { DollarSign, TrendingUp, TrendingDown, FileText, AlertCircle } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
+
+const recentRecords = [
+  { id: '1', date: '2022-03-25', candidate: '孙考生', occupation: '核反应堆运行值班员（三级）', amount: '+¥400', status: '已缴费', statusTone: 'green' },
+  { id: '2', date: '2022-03-25', candidate: '李考生', occupation: '电气试验员（四级）', amount: '+¥300', status: '已缴费', statusTone: 'green' },
+  { id: '3', date: '2022-04-01', candidate: '王考生', occupation: '焊接工（五级）', amount: '-¥150', status: '已退款', statusTone: 'amber' },
+]
 
 export default function FinanceWorkbench() {
   const navigate = useNavigate()
+  const [records] = useBackendListState(recentRecords)
+  const ledger = records[0] as typeof recentRecords[number] & { income?: number; refund?: number; amount?: number }
+  const income = ledger?.income ?? 700
+  const refund = ledger?.refund ?? 150
 
   const stats = [
-    { title: '应收总额', value: '¥1,250', color: 'text-blue-700', bg: 'bg-blue-50', icon: DollarSign },
-    { title: '已收金额', value: '¥700', color: 'text-green-700', bg: 'bg-green-50', icon: TrendingUp },
+    { title: '应收总额', value: `¥${income + 550}`, color: 'text-blue-700', bg: 'bg-blue-50', icon: DollarSign },
+    { title: '已收金额', value: `¥${income}`, color: 'text-green-700', bg: 'bg-green-50', icon: TrendingUp },
     { title: '待收金额', value: '¥550', color: 'text-red-700', bg: 'bg-red-50', icon: TrendingDown },
-    { title: '退款金额', value: '¥150', color: 'text-amber-700', bg: 'bg-amber-50', icon: AlertCircle },
+    { title: '退款金额', value: `¥${refund}`, color: 'text-amber-700', bg: 'bg-amber-50', icon: AlertCircle },
   ]
 
   const menuItems = [
@@ -69,27 +80,15 @@ export default function FinanceWorkbench() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            <tr className="hover:bg-gray-50">
-              <td className="px-4 py-3 text-gray-600">2022-03-25</td>
-              <td className="px-4 py-3 font-medium text-gray-900">孙考生</td>
-              <td className="px-4 py-3 text-gray-600">核反应堆运行值班员（三级）</td>
-              <td className="px-4 py-3 text-right font-medium text-green-700">+¥400</td>
-              <td className="px-4 py-3"><span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">已缴费</span></td>
-            </tr>
-            <tr className="hover:bg-gray-50">
-              <td className="px-4 py-3 text-gray-600">2022-03-25</td>
-              <td className="px-4 py-3 font-medium text-gray-900">李考生</td>
-              <td className="px-4 py-3 text-gray-600">电气试验员（四级）</td>
-              <td className="px-4 py-3 text-right font-medium text-green-700">+¥300</td>
-              <td className="px-4 py-3"><span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">已缴费</span></td>
-            </tr>
-            <tr className="hover:bg-gray-50">
-              <td className="px-4 py-3 text-gray-600">2022-04-01</td>
-              <td className="px-4 py-3 font-medium text-gray-900">王考生</td>
-              <td className="px-4 py-3 text-gray-600">焊接工（五级）</td>
-              <td className="px-4 py-3 text-right font-medium text-red-700">-¥150</td>
-              <td className="px-4 py-3"><span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs">已退款</span></td>
-            </tr>
+            {records.map(record => (
+              <tr key={record.id} className="hover:bg-gray-50">
+                <td className="px-4 py-3 text-gray-600">{record.date}</td>
+                <td className="px-4 py-3 font-medium text-gray-900">{record.candidate}</td>
+                <td className="px-4 py-3 text-gray-600">{record.occupation}</td>
+                <td className={`px-4 py-3 text-right font-medium ${String(record.amount).startsWith('-') ? 'text-red-700' : 'text-green-700'}`}>{record.amount}</td>
+                <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs ${record.statusTone === 'amber' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>{record.status}</span></td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

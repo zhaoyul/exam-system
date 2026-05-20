@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Plus, Search, Play, Users, MapPin, FileText, Award, ChevronRight, Save, Trash2, Edit3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const workflowSteps = ['制定计划', '考试报名', '考场编排', '考务安排', '成绩管理', '成绩公示', '证书管理']
 
@@ -13,7 +14,7 @@ const statusMap: Record<string, { label: string; cls: string }> = {
 }
 
 export default function Plans() {
-  const [items, setItems] = useState([
+  const [items, setItems] = useBackendListState([
     { id: '1', name: '2026年第一批技能认定', date: '2026-05-20', occupation: '核反应堆运行值班员', level: '三级', status: 'draft' },
     { id: '2', name: '2026年第二批技能认定', date: '2026-06-15', occupation: '电气试验员', level: '四级', status: 'pending' },
     { id: '3', name: '2026年第三批技能认定', date: '2026-07-10', occupation: '机械设备检修工', level: '三级', status: 'processing' },

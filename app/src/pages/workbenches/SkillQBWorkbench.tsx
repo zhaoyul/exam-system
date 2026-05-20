@@ -4,16 +4,18 @@ import { ArrowRight, FileSpreadsheet, FolderOpen, Layers, PieChart, Wrench, Zap 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { skillQuestionTypes, skillSubjects } from '@/pages/question/skillData'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 export default function SkillQBWorkbench() {
   const navigate = useNavigate()
+  const [backendSkillSubjects] = useBackendListState(skillSubjects)
   const totals = useMemo(() => ({
-    categories: new Set(skillSubjects.map(item => item.category)).size,
-    subjects: skillSubjects.length,
-    questions: skillSubjects.reduce((sum, item) => sum + item.questions, 0),
-    papers: skillSubjects.reduce((sum, item) => sum + item.papers, 0),
-    modules: skillSubjects.reduce((sum, item) => sum + item.modules, 0),
-  }), [])
+    categories: new Set(backendSkillSubjects.map(item => item.category)).size,
+    subjects: backendSkillSubjects.length,
+    questions: backendSkillSubjects.reduce((sum, item) => sum + item.questions, 0),
+    papers: backendSkillSubjects.reduce((sum, item) => sum + item.papers, 0),
+    modules: backendSkillSubjects.reduce((sum, item) => sum + item.modules, 0),
+  }), [backendSkillSubjects])
 
   return (
     <div className="space-y-4">
@@ -42,7 +44,7 @@ export default function SkillQBWorkbench() {
             <Badge className="bg-blue-50 text-blue-700">技能模块 {totals.modules} 个</Badge>
           </div>
           <div className="divide-y divide-gray-100">
-            {skillSubjects.map(subject => (
+            {backendSkillSubjects.map(subject => (
               <button key={subject.id} onClick={() => navigate('/question/skill-subjects')} className="grid w-full grid-cols-[1fr_120px_120px_120px] items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
                 <div>
                   <div className="font-medium text-gray-900">{subject.name}</div>

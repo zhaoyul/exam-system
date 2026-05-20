@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { skillLevels, skillSubjectName, skillSubjects } from './skillData'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 type ReqSource = '系统推送' | '手动建立'
 type ReqStatus = '新需求' | '已配置' | '已抽卷'
@@ -15,7 +16,7 @@ const initialReqs: SkillReq[] = [
 ]
 
 export default function SkillPaperRequirements() {
-  const [reqs, setReqs] = useState<SkillReq[]>(initialReqs)
+  const [reqs, setReqs] = useBackendListState<SkillReq>(initialReqs)
   const [search, setSearch] = useState('')
   const [source, setSource] = useState<'全部' | ReqSource>('全部')
   const [expanded, setExpanded] = useState<string[]>([])

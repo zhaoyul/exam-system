@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Search, FolderOpen, Users, Calendar, FileText, Award, Clock, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
 
 interface Candidate {
   id: string
@@ -76,12 +77,13 @@ const mockTimeline: TimelineEvent[] = [
 
 export default function ArchivePage() {
   const [search, setSearch] = useState('')
-  const [items] = useState(archives)
+  const [items] = useBackendListState(archives)
   const [viewItem, setViewItem] = useState<ArchiveItem | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [showCandidates, setShowCandidates] = useState(false)
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null)
   const [showTimeline, setShowTimeline] = useState(false)
+  const timelineEvents = useBackendResourceList('/traceability/cases', mockTimeline)
 
   const filtered = items.filter(i =>
     !search || i.name.includes(search) || i.planNo.includes(search) || i.org.includes(search)
@@ -276,17 +278,17 @@ export default function ArchivePage() {
             {/* Vertical line */}
             <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-gray-200" />
 
-            {mockTimeline.map((event, idx) => (
+            {timelineEvents.map((event, idx) => (
               <div key={idx} className="relative mb-6 last:mb-0">
                 {/* Dot */}
                 <div className={`absolute -left-6 top-1 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                   idx === 0 ? 'bg-blue-500 border-blue-500' :
-                  idx === mockTimeline.length - 1 ? 'bg-green-500 border-green-500' :
+                  idx === timelineEvents.length - 1 ? 'bg-green-500 border-green-500' :
                   'bg-white border-gray-300'
                 }`}>
                   <div className={`w-2 h-2 rounded-full ${
                     idx === 0 ? 'bg-white' :
-                    idx === mockTimeline.length - 1 ? 'bg-white' :
+                    idx === timelineEvents.length - 1 ? 'bg-white' :
                     'bg-gray-300'
                   }`} />
                 </div>

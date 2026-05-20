@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { Search, Plus, Edit3, Trash2, Save, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 export default function RegistrationOrgPage() {
-  const [items, setItems] = useState([
+  const [items, setItems] = useBackendListState([
     { id: '1', name: '大亚湾核电', code: 'DYG', contact: '张三', phone: '0755-84212345', status: 'confirmed' },
     { id: '2', name: '阳江核电', code: 'YJ', contact: '李四', phone: '0662-7654321', status: 'pending' },
     { id: '3', name: '台山核电', code: 'TS', contact: '王五', phone: '0750-5551234', status: 'confirmed' },

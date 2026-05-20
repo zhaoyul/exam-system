@@ -5,9 +5,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { nextTrainingStep, trainingPlans, trainingSteps, type TrainingPlan, type TrainingType } from './expertData'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 export default function TrainingPage({ type = '督导培训' }: { type?: TrainingType }) {
-  const [items, setItems] = useState<TrainingPlan[]>(trainingPlans.filter(item => item.type === type))
+  const [items, setItems] = useBackendListState<TrainingPlan>(trainingPlans.filter(item => item.type === type))
   const [search, setSearch] = useState('')
   const [tab, setTab] = useState<'自建培训' | '报名培训' | '历次培训'>('自建培训')
   const [dialog, setDialog] = useState<'add' | 'register' | 'score' | 'cert' | 'candidates' | null>(null)

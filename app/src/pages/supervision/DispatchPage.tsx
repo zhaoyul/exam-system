@@ -5,9 +5,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { dispatchTasks, experts, type DispatchTask } from './expertData'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 export default function DispatchPage() {
-  const [items, setItems] = useState<DispatchTask[]>(dispatchTasks)
+  const [items, setItems] = useBackendListState<DispatchTask>(dispatchTasks)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<'全部' | DispatchTask['status']>('全部')
   const [active, setActive] = useState<DispatchTask | null>(null)

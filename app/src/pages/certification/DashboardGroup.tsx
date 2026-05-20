@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Users, FileCheck, Award, TrendingUp, Calendar, Search, RefreshCw } from 'lucide-react'
+import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
 
 const stats = [
   { label: '本年度认定人数', value: 1256, change: '+12%', icon: Users },
@@ -17,7 +18,8 @@ const activities = [
 export default function DashboardGroup() {
   const [search, setSearch] = useState('')
   const [period, setPeriod] = useState('本年')
-  const [items, setItems] = useState(activities)
+  const [items, setItems] = useBackendListState(activities)
+  const dashboardStats = useBackendResourceList('/dashboard/summary', stats)
 
   const refresh = () => {
     setItems(prev => prev.map(a => ({ ...a, count: a.count + Math.floor(Math.random() * 10) })))
@@ -29,7 +31,7 @@ export default function DashboardGroup() {
     <div>
       <h1 className="text-xl font-bold text-gray-900 mb-4">集团工作台</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-        {stats.map((s, i) => (
+        {dashboardStats.map((s, i) => (
           <div key={i} className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-500">{s.label}</span>

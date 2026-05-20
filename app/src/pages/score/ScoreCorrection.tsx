@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Search, Plus, Edit3, Trash2, Save, FileEdit } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const corrections = [
   { id: '1', name: '张三', idCard: '440301199001011234', item: '理论成绩', oldVal: '75', newVal: '85', reason: '阅卷误差', status: 'approved' },
@@ -9,7 +10,7 @@ const corrections = [
 ]
 
 export default function ScoreCorrection() {
-  const [items, setItems] = useState(corrections)
+  const [items, setItems] = useBackendListState(corrections)
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showEdit, setShowEdit] = useState<any>(null)

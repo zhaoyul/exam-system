@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import {
   Plus, Search, Trash2, Eye, Download, Upload
 } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface Evaluator {
   id: string
@@ -54,7 +55,7 @@ const mockEvaluators: Evaluator[] = [
 ]
 
 export default function EvaluatorStaff() {
-  const [evaluators, setEvaluators] = useState<Evaluator[]>(mockEvaluators)
+  const [evaluators, setEvaluators] = useBackendListState<Evaluator>(mockEvaluators)
   const [search, setSearch] = useState('')
   const [levelFilter, setLevelFilter] = useState('all')
   const [addOpen, setAddOpen] = useState(false)

@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { Calendar, Monitor, ClipboardCheck, LayoutGrid, AlertCircle, CheckCircle, Clock } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const tasks = [
   { id: 1, title: '2026年第二批理论考试考场编排', deadline: '2026-05-20', status: 'urgent', type: '编排' },
@@ -15,6 +16,8 @@ const todayExams = [
 
 export default function ExamStaffWorkbench() {
   const navigate = useNavigate()
+  const [backendTasks] = useBackendListState(tasks)
+  const [backendTodayExams] = useBackendListState(todayExams)
 
   return (
     <div>
@@ -49,7 +52,7 @@ export default function ExamStaffWorkbench() {
             </h2>
           </div>
           <div className="space-y-3">
-            {tasks.map(task => (
+            {backendTasks.map(task => (
               <div key={task.id} className={`flex items-center gap-3 p-3 rounded-lg ${
                 task.status === 'urgent' ? 'bg-red-50 border border-red-100' : 'bg-gray-50'
               }`}>
@@ -78,7 +81,7 @@ export default function ExamStaffWorkbench() {
             <button onClick={() => navigate('/monitor')} className="text-xs text-[#1A56DB] hover:underline">查看监控</button>
           </div>
           <div className="space-y-3">
-            {todayExams.map(exam => (
+            {backendTodayExams.map(exam => (
               <div key={exam.id} className="p-3 border border-gray-100 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-900">{exam.name}</span>

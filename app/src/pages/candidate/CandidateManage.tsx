@@ -12,6 +12,7 @@ import {
   Search, Plus, Upload, Eye, CheckCircle, XCircle, FileDown,
   User, Phone, Mail, Building2, GraduationCap, Calendar
 } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface Candidate {
   id: number
@@ -48,7 +49,7 @@ const statusMap: Record<string, { label: string; color: string }> = {
 }
 
 export default function CandidateManage() {
-  const [candidates, setCandidates] = useState<Candidate[]>(mockCandidates)
+  const [candidates, setCandidates] = useBackendListState<Candidate>(mockCandidates)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [orgFilter, setOrgFilter] = useState<string>('all')

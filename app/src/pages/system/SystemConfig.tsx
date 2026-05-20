@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Save, Settings, Clock, Database, Shield, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface ConfigItem { id: string; name: string; desc: string; enabled: boolean }
 
 export default function SystemConfig() {
-  const [basic, setBasic] = useState<ConfigItem[]>([
+  const [basic, setBasic] = useBackendListState<ConfigItem>([
     { id: '1', name: '启用验证码', desc: '登录时必须输入验证码', enabled: true },
     { id: '2', name: '短信通知', desc: '重要操作发送短信提醒', enabled: true },
     { id: '3', name: '邮件通知', desc: '启用邮件通知功能', enabled: false },
@@ -13,7 +14,7 @@ export default function SystemConfig() {
     { id: '5', name: '登录失败锁定', desc: '连续5次失败锁定账号30分钟', enabled: true },
   ])
 
-  const [backup, setBackup] = useState([
+  const [backup, setBackup] = useBackendListState([
     { id: '1', name: '数据库自动备份', time: '每天 02:00', lastRun: '2026-05-20 02:00', status: 'success' },
     { id: '2', name: '证书数据备份', time: '每周六 03:00', lastRun: '2026-05-17 03:00', status: 'success' },
     { id: '3', name: '日志归档', time: '每月1日 04:00', lastRun: '2026-05-01 04:00', status: 'success' },

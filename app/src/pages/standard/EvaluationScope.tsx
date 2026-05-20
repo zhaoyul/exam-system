@@ -11,6 +11,7 @@ import {
   Building2, Plus, Search, Upload, FileText, Award, Edit3,
   ChevronRight, School, BookOpen, X
 } from 'lucide-react'
+import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
 
 // 二、标准大纲 - 评价范围页面
 // 功能：新增职业级别、评价等级、考试科目、申报条件、批量授权、导入
@@ -64,14 +65,15 @@ const examModes = [
 
 export default function EvaluationScope() {
   const [selectedOrg, setSelectedOrg] = useState<number>(1)
-  const [projects] = useState<EvalProject[]>(mockProjects)
+  const [projects] = useBackendListState<EvalProject>(mockProjects)
+  const backendBranches = useBackendResourceList('/certification/organizations', mockBranches)
   const [search, setSearch] = useState('')
   const [addOpen, setAddOpen] = useState(false)
   const [conditions, setConditions] = useState<Condition[]>([])
 
   const filtered = projects.filter(p => p.orgId === selectedOrg && (!search || p.professionName.includes(search) || p.jobTypeName.includes(search)))
 
-  const selectedOrgData = mockBranches.find(b => b.id === selectedOrg)
+  const selectedOrgData = backendBranches.find(b => b.id === selectedOrg)
 
   return (
     <div className="p-6 space-y-6">
@@ -99,7 +101,7 @@ export default function EvaluationScope() {
           <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
             <Building2 className="w-4 h-4 text-blue-600" /> 分支机构
           </h3>
-          {mockBranches.map(org => (
+          {backendBranches.map(org => (
             <div
               key={org.id}
               className={`p-3 rounded-lg border cursor-pointer transition-all ${

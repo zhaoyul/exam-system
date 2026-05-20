@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 type Level = '一级' | '二级' | '三级' | '四级' | '五级'
 type AuditScope = '本机构' | '下级机构'
@@ -176,7 +177,7 @@ const initialAuditNodes: AuditNodeSetting[] = [
 
 export default function ApprovalSettingsPage() {
   const [warning, setWarning] = useState<WarningSettings>(initialWarning)
-  const [auditNodes, setAuditNodes] = useState<AuditNodeSetting[]>(initialAuditNodes)
+  const [auditNodes, setAuditNodes] = useBackendListState<AuditNodeSetting>(initialAuditNodes)
   const [activeTab, setActiveTab] = useState<'预警设置' | '批复设置'>('预警设置')
   const [userNodeId, setUserNodeId] = useState<string | null>(null)
   const [materialNodeId, setMaterialNodeId] = useState<string | null>(null)

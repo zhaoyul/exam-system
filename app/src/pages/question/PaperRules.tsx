@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { levels, theorySubjects } from './theoryData'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 type RuleMode = '单科目' | '跨科目'
 
@@ -27,7 +28,7 @@ const initialRules: PaperRule[] = [
 ]
 
 export default function PaperRules() {
-  const [rules, setRules] = useState<PaperRule[]>(initialRules)
+  const [rules, setRules] = useBackendListState<PaperRule>(initialRules)
   const [modeFilter, setModeFilter] = useState<'全部' | RuleMode>('全部')
   const [search, setSearch] = useState('')
   const [dialog, setDialog] = useState<'add' | 'detail' | null>(null)

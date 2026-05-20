@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import {
   Eye, Clock, CheckCircle, Calendar, AlertTriangle, Download, FileText, Search
 } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface PublicityBatch {
   id: number
@@ -37,7 +38,7 @@ const statusMap: Record<string, { label: string; color: string }> = {
 }
 
 export default function ScorePublicityManage() {
-  const [batches, setBatches] = useState<PublicityBatch[]>(mockBatches)
+  const [batches, setBatches] = useBackendListState<PublicityBatch>(mockBatches)
   const [publicityDays, setPublicityDays] = useState(7)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'全部' | PublicityBatch['status']>('全部')

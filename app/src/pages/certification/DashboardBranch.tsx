@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Building2, Users, FileCheck, Clock, CalendarDays } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const branchStats = [
   { label: '本月认定人数', value: 156, icon: Users },
@@ -10,7 +11,7 @@ const branchStats = [
 
 export default function DashboardBranch() {
   const [period, setPeriod] = useState('本月')
-  const [stats, setStats] = useState(branchStats)
+  const [stats, setStats] = useBackendListState(branchStats)
 
   const refresh = () => {
     setStats(prev => prev.map(s => ({ ...s, value: s.value + Math.floor(Math.random() * 5) })))

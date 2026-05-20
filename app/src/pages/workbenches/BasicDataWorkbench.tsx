@@ -6,6 +6,7 @@ import {
   Database, Settings, Users, Building2, BookOpen,
   ArrowRight, Shield, FileText, Layers, Globe, KeyRound, Cog
 } from 'lucide-react'
+import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
 
 const stats = [
   { label: '系统用户', value: 1280, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50', path: '/system/users' },
@@ -83,6 +84,9 @@ const typeLabel: Record<string, string> = {
 
 export default function BasicDataWorkbench() {
   const navigate = useNavigate()
+  const [backendStats] = useBackendListState(stats)
+  const [backendLogs] = useBackendListState(recentLogs)
+  const backendDataModules = useBackendResourceList('/dashboard/workbench-cards', dataModules)
 
   return (
     <div className="p-6 space-y-6">
@@ -102,7 +106,7 @@ export default function BasicDataWorkbench() {
       </div>
 
       <div className="grid grid-cols-4 gap-4">
-        {stats.map((s, i) => (
+        {backendStats.map((s, i) => (
           <Card key={i} className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(s.path)}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -120,7 +124,7 @@ export default function BasicDataWorkbench() {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        {dataModules.map((mod, i) => (
+        {backendDataModules.map((mod, i) => (
           <Card key={i} className="border-0 shadow-sm">
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
@@ -170,7 +174,7 @@ export default function BasicDataWorkbench() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {recentLogs.map(l => (
+                  {backendLogs.map(l => (
                     <tr key={l.id} className="hover:bg-gray-50">
                       <td className="px-3 py-2.5 text-sm font-medium">{l.user}</td>
                       <td className="px-3 py-2.5">

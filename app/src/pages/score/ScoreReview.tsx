@@ -3,6 +3,7 @@ import { Search, CheckCircle, XCircle, Eye, Settings2, Users, Percent } from 'lu
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 type AuditMode = '必查' | '抽查' | '组合'
 type AuditStatus = 'pending' | 'approved' | 'rejected'
@@ -16,7 +17,7 @@ const scores = [
 ]
 
 export default function ScoreReview() {
-  const [items, setItems] = useState(scores)
+  const [items, setItems] = useBackendListState(scores)
   const [search, setSearch] = useState('')
   const [viewItem, setViewItem] = useState<any>(null)
   const [showAuditConfig, setShowAuditConfig] = useState(false)

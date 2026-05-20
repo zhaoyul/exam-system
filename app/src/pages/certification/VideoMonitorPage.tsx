@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { CalendarDays, Monitor, PlayCircle, Search, Video, Wifi, WifiOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 type ExamStatus = '未开考' | '正在考试' | '考试结束'
 
@@ -26,25 +27,26 @@ const sessions: VideoSession[] = [
 ]
 
 export default function VideoMonitorPage() {
+  const [monitorSessions] = useBackendListState<VideoSession>(sessions)
   const [status, setStatus] = useState<ExamStatus>('未开考')
   const [date, setDate] = useState('2026-05-19')
   const [queryType, setQueryType] = useState('计划编号')
   const [query, setQuery] = useState('')
 
   const filtered = useMemo(() => {
-    return sessions.filter(item => {
+    return monitorSessions.filter(item => {
       const source = queryType === '计划编号' ? item.planCode : item.planName
       return item.status === status && item.date === date && (!query || source.includes(query))
     })
-  }, [date, query, queryType, status])
+  }, [date, monitorSessions, query, queryType, status])
 
   const counts = useMemo(() => {
     return {
-      未开考: sessions.filter(item => item.status === '未开考').length,
-      正在考试: sessions.filter(item => item.status === '正在考试').length,
-      考试结束: sessions.filter(item => item.status === '考试结束').length,
+      未开考: monitorSessions.filter(item => item.status === '未开考').length,
+      正在考试: monitorSessions.filter(item => item.status === '正在考试').length,
+      考试结束: monitorSessions.filter(item => item.status === '考试结束').length,
     }
-  }, [])
+  }, [monitorSessions])
 
   return (
     <div className="space-y-4">

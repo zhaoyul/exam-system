@@ -8,6 +8,7 @@ import {
   Building2, FileText, MapPin, Users, Shield,
   Upload, Search, Plus, Edit3, CheckCircle
 } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 // 集团备案 - 区别于分支机构备案
 // 集团备案：集团向人社部备案，管理集团层面信息、认定项目、分支机构授权
@@ -61,8 +62,8 @@ const statusMap: Record<string, { label: string; color: string }> = {
 
 export default function GroupFiling() {
   const [activeTab, setActiveTab] = useState('basic')
-  const [branches] = useState<BranchOrg[]>(mockBranches)
-  const [projects] = useState<EvalProject[]>(mockProjects)
+  const [branches] = useBackendListState<BranchOrg>(mockBranches)
+  const [projects] = useBackendListState<EvalProject>(mockProjects)
   const [search, setSearch] = useState('')
 
   const filteredProjects = projects.filter(p => !search || p.professionName.includes(search) || p.jobTypeName.includes(search))

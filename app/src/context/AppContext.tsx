@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
 import type { UserRole } from '@/config/rolePermissions'
+import { setAuthToken } from '@/lib/api'
 
 interface AppState {
   isLoggedIn: boolean
@@ -44,6 +45,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     window.sessionStorage.removeItem(SESSION_KEY)
+    setAuthToken(null)
     setState(s => ({ ...s, isLoggedIn: false, user: null }))
   }, [])
 

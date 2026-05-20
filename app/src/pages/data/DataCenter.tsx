@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Upload, Download, FileText, CheckCircle, Database, Users, Award, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const importTasks = [
   { id: '1', name: '考生信息导入', type: '导入', records: 156, status: 'completed', date: '2026-05-18' },
@@ -16,8 +17,8 @@ const exportTasks = [
 export default function DataCenter() {
   const [dragOver, setDragOver] = useState(false)
   const [activeTab, setActiveTab] = useState<'import' | 'export'>('import')
-  const [imports, setImports] = useState(importTasks)
-  const [exports, setExports] = useState(exportTasks)
+  const [imports, setImports] = useBackendListState(importTasks)
+  const [exports, setExports] = useBackendListState(exportTasks)
 
   const runImport = (id: string) => { setImports(prev => prev.map(i => i.id === id ? { ...i, status: 'completed', records: 156, date: new Date().toISOString().slice(0,10) } : i)) }
   const runExport = (id: string) => { setExports(prev => prev.map(i => i.id === id ? { ...i, status: 'completed', records: Math.floor(Math.random()*500)+100, date: new Date().toISOString().slice(0,10) } : i)) }

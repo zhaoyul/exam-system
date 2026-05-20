@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface Room {
   id: string
@@ -46,7 +47,7 @@ const initialSpots: TestSpot[] = [
 ]
 
 export default function ExamRoomPage() {
-  const [spots, setSpots] = useState<TestSpot[]>(initialSpots)
+  const [spots, setSpots] = useBackendListState<TestSpot>(initialSpots)
   const [search, setSearch] = useState('')
   const [activeSpot, setActiveSpot] = useState<TestSpot | null>(null)
   const [roomForm, setRoomForm] = useState({ name: '', seats: 30, type: '笔试' as Room['type'] })

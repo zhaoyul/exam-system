@@ -427,26 +427,30 @@ export default function Sidebar() {
           const isExpanded = expandedModules[mod.key]
           return (
             <div key={mod.key} className="mb-0.5">
-              <button
-                onClick={() => {
-                  if (!isExpanded) toggleModule(mod.key)
-                  navigate(mod.path)
-                }}
+              <div
                 className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-all duration-200 ${
                   isModuleActive
                     ? 'text-[#1A56DB] bg-[#E8EFFF] border-l-[3px] border-[#1A56DB]'
                     : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
-                <Icon className="w-4 h-4 flex-shrink-0" />
-                <span className="flex-1 text-left truncate">{mod.label}</span>
+                <button
+                  onClick={() => {
+                    if (!isExpanded) toggleModule(mod.key)
+                    navigate(mod.path)
+                  }}
+                  className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+                >
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">{mod.label}</span>
+                </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleModule(mod.key) }}
                   className="flex-shrink-0 p-0.5 hover:bg-gray-200 rounded"
                 >
                   {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                 </button>
-              </button>
+              </div>
               {isExpanded && visibleChildren.length > 0 && (
                 <div className="bg-gray-50/50">
                   {visibleChildren.map(child => {

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Download, RefreshCw, TrendingUp, Users, Award, FileCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const data = [
   { id: '1', org: '大亚湾核电', total: 320, pass: 280, cert: 275, rate: '87.5%' },
@@ -21,7 +22,7 @@ export default function StatisticsPage() {
   const [mode, setMode] = useState<'按职业统计' | '按机构统计'>('按职业统计')
   const [startMonth, setStartMonth] = useState('2026-01')
   const [endMonth, setEndMonth] = useState('2026-05')
-  const [items, setItems] = useState(data)
+  const [items, setItems] = useBackendListState(data)
 
   const refresh = () => {
     setItems(prev => prev.map(d => ({ ...d, total: d.total + Math.floor(Math.random() * 10), pass: d.pass + Math.floor(Math.random() * 8) })))

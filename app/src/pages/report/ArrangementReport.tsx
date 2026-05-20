@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Search, Download, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const data = [
   { id: '1', examRoom: '第一考场', location: '培训中心A栋301', capacity: 40, enrolled: 35, plan: '2026年第一批' },
@@ -10,7 +11,7 @@ const data = [
 
 export default function ArrangementReport() {
   const [search, setSearch] = useState('')
-  const [items] = useState(data)
+  const [items] = useBackendListState(data)
   const filtered = items.filter(i => !search || i.examRoom.includes(search) || i.plan.includes(search))
 
   return (

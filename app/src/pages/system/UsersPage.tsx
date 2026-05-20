@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Plus, Search, Edit, MoreHorizontal, Lock, Unlock, Key, Shield, ChevronRight, Trash2, X } from 'lucide-react'
+import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
 
 interface User {
   id: string
@@ -30,7 +31,8 @@ const initialUsers: User[] = [
 ]
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>(initialUsers)
+  const [users, setUsers] = useBackendListState<User>(initialUsers)
+  const backendOrgTree = useBackendResourceList('/certification/organizations', orgTree)
   const [search, setSearch] = useState('')
   const [selectedOrg, setSelectedOrg] = useState('1')
   const [showAdd, setShowAdd] = useState(false)
@@ -112,7 +114,7 @@ export default function UsersPage() {
       <div className="flex gap-4 h-[calc(100vh-140px)]">
         <div className="w-56 bg-white rounded-lg border border-gray-200 p-3 flex-shrink-0 overflow-y-auto">
           <h3 className="text-sm font-medium text-gray-700 mb-2 px-2">组织机构</h3>
-          {orgTree.map(org => (
+          {backendOrgTree.map(org => (
             <button key={org.id} onClick={() => setSelectedOrg(org.id)}
               className={`w-full text-left px-2 py-1.5 rounded-md text-sm flex items-center gap-1 transition-colors ${selectedOrg === org.id ? 'bg-[#E8EFFF] text-[#1A56DB]' : 'text-gray-600 hover:bg-gray-50'}`}
               style={{ paddingLeft: `${org.level * 16 + 8}px` }}>

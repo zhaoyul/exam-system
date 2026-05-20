@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 type ScoreStatus = '待录入' | '已录入' | '待复核' | '已提交' | '异常'
 
@@ -39,7 +40,7 @@ const statusColor: Record<ScoreStatus, string> = {
 }
 
 export default function ScoreEntry() {
-  const [items, setItems] = useState(initialCandidates)
+  const [items, setItems] = useBackendListState(initialCandidates)
   const [search, setSearch] = useState('')
   const [planFilter, setPlanFilter] = useState('全部计划')
   const [statusFilter, setStatusFilter] = useState<'全部' | ScoreStatus>('全部')

@@ -3,6 +3,7 @@ import { Users, Settings, ChevronRight, PenTool, X, Save, Search, Plus, Edit3, T
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
+import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
 
 const initialPlans = [
   { id: '1', name: '2026年第一批技能认定-理论阅卷', subject: '核反应堆运行值班员', type: '理论', status: 'in_progress' as const, experts: 3, candidates: 45 },
@@ -27,7 +28,7 @@ const initialExperts: Expert[] = [
 
 export default function GradingPage() {
   const [activeTab, setActiveTab] = useState<'task' | 'expert'>('task')
-  const [plans] = useState(initialPlans)
+  const plans = useBackendResourceList('/grading', initialPlans)
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
   const [showAddRule, setShowAddRule] = useState(false)
   const [ruleForm, setRuleForm] = useState({ name: '', maxDiff: 5 })
@@ -35,7 +36,7 @@ export default function GradingPage() {
   const [candidateIdx, setCandidateIdx] = useState(0)
 
   // Expert management state
-  const [experts, setExperts] = useState<Expert[]>(initialExperts)
+  const [experts, setExperts] = useBackendListState<Expert>(initialExperts)
   const [expertSearch, setExpertSearch] = useState('')
   const [showExpertForm, setShowExpertForm] = useState(false)
   const [editingExpert, setEditingExpert] = useState<Expert | null>(null)
@@ -43,7 +44,17 @@ export default function GradingPage() {
   const [showResetPwd, setShowResetPwd] = useState<string | null>(null)
   const [showDeleteExpert, setShowDeleteExpert] = useState<string | null>(null)
 
-  const candidates = ['陈小明', '林小红', '周小强', '吴小丽', '郑小华', '王小明', '赵小红', '钱小强']
+  const candidateRows = useBackendResourceList('/candidates/manage', [
+    { id: 'candidate-1', name: '陈小明' },
+    { id: 'candidate-2', name: '林小红' },
+    { id: 'candidate-3', name: '周小强' },
+    { id: 'candidate-4', name: '吴小丽' },
+    { id: 'candidate-5', name: '郑小华' },
+    { id: 'candidate-6', name: '王小明' },
+    { id: 'candidate-7', name: '赵小红' },
+    { id: 'candidate-8', name: '钱小强' },
+  ])
+  const candidates = candidateRows.map(candidate => candidate.name)
 
   const doAddRule = () => { setShowAddRule(false); setRuleForm({ name: '', maxDiff: 5 }) }
   const doSubmitScore = () => { setCandidateIdx(p => Math.min(p + 1, candidates.length - 1)); setScore(4) }

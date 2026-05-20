@@ -1,0 +1,8 @@
+{:full-name "zhaoyul/exam-system-backend"
+ :ns-name   "zhaoyul.exam-system-backend"
+ :sanitized "zhaoyul/exam_system_backend"
+ :name      "exam-system-backend"
+ :modules   {:root         "modules"
+             :repositories [{:url  "https://github.com/kit-clj/modules.git"
+                             :tag  "master"
+                             :name "kit-modules"}]}}

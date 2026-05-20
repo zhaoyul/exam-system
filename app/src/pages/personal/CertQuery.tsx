@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Search, Award, Eye, Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const certData = [
   { id: '1', name: '张三', idCard: '440301199001011234', occupation: '核反应堆运行值班员', level: '三级', certNo: 'CGN-2026-001', issueDate: '2026-06-01', org: '大亚湾核电', status: '有效' },
@@ -9,6 +10,7 @@ const certData = [
 ]
 
 export default function CertQuery() {
+  const [certs] = useBackendListState(certData)
   const [searchId, setSearchId] = useState('')
   const [searched, setSearched] = useState(false)
   const [result, setResult] = useState<typeof certData[0] | null>(null)
@@ -17,7 +19,7 @@ export default function CertQuery() {
 
   const handleSearch = () => {
     setSearched(true)
-    setResult(certData.find(d => d.idCard === searchId || d.certNo === searchId) || null)
+    setResult(certs.find(d => d.idCard === searchId || d.certNo === searchId) || null)
   }
   const reset = () => { setSearchId(''); setSearched(false); setResult(null) }
 

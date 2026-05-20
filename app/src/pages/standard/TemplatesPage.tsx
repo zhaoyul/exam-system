@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Plus, FileText, ChevronRight, ChevronDown, X } from 'lucide-react'
+import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
 
 const initialTemplates = [
   { id: '1', name: '国家职业技能标准模板', type: '国标', status: 'published', date: '2025-01-15' },
@@ -26,7 +27,8 @@ const templateItems = [
 ]
 
 export default function TemplatesPage() {
-  const [templates, setTemplates] = useState(initialTemplates)
+  const [templates, setTemplates] = useBackendListState(initialTemplates)
+  const backendTemplateItems = useBackendResourceList('/standard/templates', templateItems)
   const [selectedTpl, setSelectedTpl] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ '1': true, '2': true })
   const [showAdd, setShowAdd] = useState(false)
@@ -72,7 +74,7 @@ export default function TemplatesPage() {
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-center justify-between mb-3"><h3 className="text-sm font-semibold text-gray-900">模板结构</h3><button className="h-8 px-3 bg-[#1A56DB] text-white rounded-md text-xs flex items-center gap-1 hover:bg-[#1748B5]"><Plus className="w-3.5 h-3.5" /> 增加新项</button></div>
-            {templateItems.map(item => (
+            {backendTemplateItems.map(item => (
               <div key={item.id}>
                 <div className="flex items-center gap-2 py-2 px-3 rounded-md hover:bg-gray-50">
                   {item.children && (<button onClick={() => toggle(item.id)} className="text-gray-400">{expanded[item.id] ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</button>)}{!item.children && <div className="w-4" />}

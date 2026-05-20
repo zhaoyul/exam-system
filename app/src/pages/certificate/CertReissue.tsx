@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Search, Plus, Edit3, Trash2, Save } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const reissues = [
   { id: '1', name: '张三', idCard: '440301199001011234', certNo: 'CGN-2026-001', reason: '证书损坏', status: 'pending' },
@@ -9,7 +10,7 @@ const reissues = [
 ]
 
 export default function CertReissue() {
-  const [items, setItems] = useState(reissues)
+  const [items, setItems] = useBackendListState(reissues)
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showEdit, setShowEdit] = useState<any>(null)

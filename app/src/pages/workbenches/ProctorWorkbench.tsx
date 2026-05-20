@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { Eye, CheckCircle, Clock, Monitor, Calendar, MapPin, Users } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const upcomingProctor = [
   { id: 1, name: '核反应堆运行值班员三级理论考试', date: '2026-05-20', time: '09:00-11:00', location: '大亚湾核电培训中心', room: '101教室', count: 25 },
@@ -15,6 +16,8 @@ const history = [
 
 export default function ProctorWorkbench() {
   const navigate = useNavigate()
+  const [backendUpcomingProctor] = useBackendListState(upcomingProctor)
+  const [backendHistory] = useBackendListState(history)
 
   return (
     <div>
@@ -49,7 +52,7 @@ export default function ProctorWorkbench() {
             </h2>
           </div>
           <div className="space-y-3">
-            {upcomingProctor.map(exam => (
+            {backendUpcomingProctor.map(exam => (
               <div key={exam.id} className="p-3 border border-gray-100 rounded-lg hover:border-blue-200 transition-colors">
                 <div className="text-sm font-medium text-gray-900 mb-2">{exam.name}</div>
                 <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
@@ -71,7 +74,7 @@ export default function ProctorWorkbench() {
             </h2>
           </div>
           <div className="space-y-3">
-            {history.map(h => (
+            {backendHistory.map(h => (
               <div key={h.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                 <div className={`w-2 h-2 rounded-full ${h.status === 'normal' ? 'bg-green-500' : 'bg-red-500'}`} />
                 <div className="flex-1">

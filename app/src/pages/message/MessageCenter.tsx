@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Bell, CheckCheck, Trash2, Send, Settings, Mail, AlertCircle, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface Message {
   id: string
@@ -31,7 +32,7 @@ const typeMeta: Record<string, { label: string; color: string; icon: typeof Mail
 }
 
 export default function MessageCenter() {
-  const [msgs, setMsgs] = useState<Message[]>(msgs_init)
+  const [msgs, setMsgs] = useBackendListState<Message>(msgs_init)
   const [tab, setTab] = useState<'inbox' | 'settings'>('inbox')
   const [filter, setFilter] = useState('全部')
   const [viewMsg, setViewMsg] = useState<Message | null>(null)

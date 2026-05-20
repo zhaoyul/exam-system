@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import {
   Search, Award, FileText, ChevronDown, ChevronRight, Eye, FileSpreadsheet, MoreHorizontal, Download, CheckCircle
 } from 'lucide-react'
+import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
 
 interface CertPlan {
   id: string
@@ -67,7 +68,8 @@ const mockCandidateCerts: CandidateCert[] = [
 ]
 
 export default function CertificatesGroup() {
-  const [plans, setPlans] = useState<CertPlan[]>(mockPlans)
+  const [plans, setPlans] = useBackendListState<CertPlan>(mockPlans)
+  const candidateCerts = useBackendResourceList('/certificate/view', mockCandidateCerts)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'全部' | CertPlan['status']>('全部')
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -75,7 +77,6 @@ export default function CertificatesGroup() {
   const [showCandidates, setShowCandidates] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<CertPlan | null>(null)
   const [issueDate, setIssueDate] = useState('2022-03-27')
-  const [candidateCerts] = useState<CandidateCert[]>(mockCandidateCerts)
 
   const filtered = plans.filter(p => {
     const bySearch = !search || p.name.includes(search) || p.planNo.includes(search)

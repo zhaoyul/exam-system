@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { Building2, LayoutGrid, PenTool, Award, AlertCircle, Clock, ChevronRight, FileText } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const flowSteps = [
   { id: 1, label: '制定计划', count: 1, status: 'completed', path: '/cert/exec/plans' },
@@ -20,6 +21,8 @@ const urgentTasks = [
 
 export default function BranchPortal() {
   const navigate = useNavigate()
+  const [backendFlowSteps] = useBackendListState(flowSteps)
+  const [backendUrgentTasks] = useBackendListState(urgentTasks)
 
   return (
     <div>
@@ -66,7 +69,7 @@ export default function BranchPortal() {
             {/* Connection line */}
             <div className="absolute left-4 top-6 bottom-6 w-0.5 bg-gray-200" />
             <div className="space-y-2">
-              {flowSteps.map((step) => (
+              {backendFlowSteps.map((step) => (
                 <button
                   key={step.id}
                   onClick={() => navigate(step.path)}
@@ -114,7 +117,7 @@ export default function BranchPortal() {
             </h2>
           </div>
           <div className="space-y-3">
-            {urgentTasks.map(task => (
+            {backendUrgentTasks.map(task => (
               <div key={task.id} className={`p-3 rounded-lg ${
                 task.type === 'urgent' ? 'bg-red-50 border border-red-100' :
                 task.type === 'warning' ? 'bg-amber-50 border border-amber-100' :

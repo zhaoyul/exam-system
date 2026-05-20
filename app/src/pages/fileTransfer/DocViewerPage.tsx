@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Search, Eye, FileText, Trash2 } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const docs = [
   { id: '1', name: '2026年认定工作计划.pdf', type: 'PDF', size: '2.5MB', date: '2026-01-15' },
@@ -13,7 +14,7 @@ const typeColors: Record<string, string> = { 'PDF': 'bg-red-50 text-red-700', 'W
 
 export default function DocViewerPage() {
   const [search, setSearch] = useState('')
-  const [items, setItems] = useState(docs)
+  const [items, setItems] = useBackendListState(docs)
   const [viewItem, setViewItem] = useState<any>(null)
 
   const filtered = items.filter(i => !search || i.name.includes(search))

@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Save, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface Rule { id: string; name: string; singleCount: number; singleScore: number; multiCount: number; multiScore: number; judgeCount: number; judgeScore: number; total: number }
 
 export default function PaperRules() {
-  const [items, setItems] = useState<Rule[]>([
+  const [items, setItems] = useBackendListState<Rule>([
     { id: '1', name: '三级理论考试A卷', singleCount: 40, singleScore: 1, multiCount: 20, multiScore: 2, judgeCount: 20, judgeScore: 1, total: 100 },
     { id: '2', name: '四级理论考试B卷', singleCount: 50, singleScore: 1, multiCount: 15, multiScore: 2, judgeCount: 20, judgeScore: 0.5, total: 100 },
   ])

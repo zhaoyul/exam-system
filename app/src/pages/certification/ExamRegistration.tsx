@@ -13,6 +13,7 @@ import {
   FileSpreadsheet, AlertTriangle, ChevronRight, UserPlus, RotateCcw,
   Camera, FileUp
 } from 'lucide-react'
+import { useBackendResourceList, useBackendResourceState } from '@/hooks/useBackendListState'
 
 interface RegistrationPlan {
   id: number
@@ -76,9 +77,9 @@ const statusMap: Record<string, { label: string; color: string }> = {
 }
 
 export default function ExamRegistration() {
-  const [plans] = useState<RegistrationPlan[]>(mockPlans)
-  const [batches, setBatches] = useState<RegBatch[]>(mockBatches)
-  const [candidates, setCandidates] = useState<Candidate[]>(mockCandidates)
+  const plans = useBackendResourceList('/certification/exam-registration', mockPlans)
+  const [batches, setBatches] = useBackendResourceState<RegBatch>('/certification/execution/registration-orgs', mockBatches)
+  const [candidates, setCandidates] = useBackendResourceState<Candidate>('/candidates/manage', mockCandidates)
   const [selectedPlan, setSelectedPlan] = useState<number | null>(null)
   const [selectedBatch, setSelectedBatch] = useState<number>(1)
   const [addBatchOpen, setAddBatchOpen] = useState(false)

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Plus, Search, X, Trash2 } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const initialPlans = [
   { id: '1', name: '2026年核反应堆运行值班员标准编制', type: '标准编制', occupation: '核反应堆运行值班员', template: '国家职业技能标准模板', level: '三级,四级,五级', org: '大亚湾核电', status: 'processing' },
@@ -8,7 +9,7 @@ const initialPlans = [
 ]
 
 export default function StandardPlans() {
-  const [plans, setPlans] = useState(initialPlans)
+  const [plans, setPlans] = useBackendListState(initialPlans)
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showDelete, setShowDelete] = useState<string | null>(null)

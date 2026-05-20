@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { Search, Settings, Save } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface FeeItem {
   id: string
@@ -28,7 +29,7 @@ const mockFees: FeeItem[] = [
 ]
 
 export default function FeeStandardPage() {
-  const [fees, setFees] = useState<FeeItem[]>(mockFees)
+  const [fees, setFees] = useBackendListState<FeeItem>(mockFees)
   const [search, setSearch] = useState('')
   const [showSetFee, setShowSetFee] = useState(false)
   const [showBatchSet, setShowBatchSet] = useState(false)

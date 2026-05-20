@@ -2,15 +2,19 @@ import { useState } from 'react'
 import { UserPlus, Save, CheckCircle, ChevronRight, Building2, Briefcase, Award } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const occupations = ['核反应堆运行值班员', '电气试验员', '机械设备检修工', '仪控设备检修工', '焊接工']
 const levels = ['一级', '二级', '三级', '四级', '五级']
 const orgs = ['大亚湾核电', '阳江核电', '台山核电', '中广核工程', '中广核研究院']
+const registrationOptions = [{ id: 'personal-registration-options', plan: '2026年第二批技能认定', occupations, levels, orgs }]
 
 export default function SelfRegistration() {
+  const [backendOptions] = useBackendListState(registrationOptions)
+  const options = backendOptions[0] || registrationOptions[0]
   const [step, setStep] = useState(1)
   const [form, setForm] = useState({
-    name: '', idCard: '', phone: '', org: '', occupation: '', level: '', workYears: '', edu: '', certNo: '', plan: '2026年第二批技能认定',
+    name: '', idCard: '', phone: '', org: '', occupation: '', level: '', workYears: '', edu: '', certNo: '', plan: options.plan,
   })
   const [showSuccess, setShowSuccess] = useState(false)
 
@@ -59,9 +63,9 @@ export default function SelfRegistration() {
         {step === 2 && (
           <div className="space-y-4 max-w-lg">
             <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2"><Briefcase className="w-4 h-4 text-[#1A56DB]" />报考信息</h3>
-            <div><label className="text-sm font-medium text-gray-700">所属机构 <span className="text-red-500">*</span></label><select value={form.org} onChange={e => update('org', e.target.value)} className="w-full mt-1 h-10 px-3 border border-gray-200 rounded-md text-sm"><option value="">请选择</option>{orgs.map(o => <option key={o}>{o}</option>)}</select></div>
-            <div><label className="text-sm font-medium text-gray-700">报考职业（工种） <span className="text-red-500">*</span></label><select value={form.occupation} onChange={e => update('occupation', e.target.value)} className="w-full mt-1 h-10 px-3 border border-gray-200 rounded-md text-sm"><option value="">请选择</option>{occupations.map(o => <option key={o}>{o}</option>)}</select></div>
-            <div><label className="text-sm font-medium text-gray-700">报考等级 <span className="text-red-500">*</span></label><select value={form.level} onChange={e => update('level', e.target.value)} className="w-full mt-1 h-10 px-3 border border-gray-200 rounded-md text-sm"><option value="">请选择</option>{levels.map(l => <option key={l}>{l}</option>)}</select></div>
+            <div><label className="text-sm font-medium text-gray-700">所属机构 <span className="text-red-500">*</span></label><select value={form.org} onChange={e => update('org', e.target.value)} className="w-full mt-1 h-10 px-3 border border-gray-200 rounded-md text-sm"><option value="">请选择</option>{options.orgs.map(o => <option key={o}>{o}</option>)}</select></div>
+            <div><label className="text-sm font-medium text-gray-700">报考职业（工种） <span className="text-red-500">*</span></label><select value={form.occupation} onChange={e => update('occupation', e.target.value)} className="w-full mt-1 h-10 px-3 border border-gray-200 rounded-md text-sm"><option value="">请选择</option>{options.occupations.map(o => <option key={o}>{o}</option>)}</select></div>
+            <div><label className="text-sm font-medium text-gray-700">报考等级 <span className="text-red-500">*</span></label><select value={form.level} onChange={e => update('level', e.target.value)} className="w-full mt-1 h-10 px-3 border border-gray-200 rounded-md text-sm"><option value="">请选择</option>{options.levels.map(l => <option key={l}>{l}</option>)}</select></div>
           </div>
         )}
 
@@ -103,7 +107,7 @@ export default function SelfRegistration() {
             <CheckCircle className="w-14 h-14 text-green-500 mx-auto mb-3" />
             <p className="text-sm text-gray-600">您的报名信息已提交，请等待审核</p>
             <p className="text-xs text-gray-400 mt-1">报名编号：CGN-BM-{Date.now().toString().slice(-6)}</p>
-            <Button onClick={() => { setShowSuccess(false); setStep(1); setForm({ name:'',idCard:'',phone:'',org:'',occupation:'',level:'',workYears:'',edu:'',certNo:'',plan:'2026年第二批技能认定' }) }} className="mt-4 bg-[#1A56DB] h-9 text-xs">继续报名</Button>
+            <Button onClick={() => { setShowSuccess(false); setStep(1); setForm({ name:'',idCard:'',phone:'',org:'',occupation:'',level:'',workYears:'',edu:'',certNo:'',plan:options.plan }) }} className="mt-4 bg-[#1A56DB] h-9 text-xs">继续报名</Button>
           </div>
         </DialogContent>
       </Dialog>

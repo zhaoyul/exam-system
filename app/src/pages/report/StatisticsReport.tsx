@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Search, BarChart3, TrendingUp, Users, Award, FileText, FileSpreadsheet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const data = [
   { id: '1', org: '大亚湾核电', total: 320, pass: 280, cert: 275, rate: '87.5%' },
@@ -13,7 +14,7 @@ const data = [
 export default function StatisticsReport() {
   const [search, setSearch] = useState('')
   const [period, setPeriod] = useState('2026 年')
-  const [items, setItems] = useState(data)
+  const [items, setItems] = useBackendListState(data)
 
   const refresh = () => { setItems(prev => prev.map(d => ({ ...d, total: d.total + Math.floor(Math.random() * 5) }))) }
   const filtered = items.filter(i => !search || i.org.includes(search))

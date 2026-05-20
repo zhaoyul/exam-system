@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Plus, Upload, FileCheck, ChevronRight, X, Trash2, Edit3, Save } from 'lucide-react'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const tabs = ['基本信息', '备案材料', '站点信息', '认定项目', '工作人员', '督导人员', '考评人员', '考点信息']
 const staffMock = [
@@ -35,12 +36,12 @@ type TabKey = typeof tabs[number]
 export default function FilingBranchPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('基本信息')
   const [subNav, setSubNav] = useState<'info' | 'apply'>('info')
-  const [staff, setStaff] = useState(staffMock)
-  const [rooms, setRooms] = useState(examSites)
-  const [docsList, setDocsList] = useState(docs)
-  const [sitesList, setSitesList] = useState(sites)
-  const [projectList, setProjectList] = useState(projects)
-  const [applyData, setApplyData] = useState(applyList)
+  const [staff, setStaff] = useBackendListState(staffMock)
+  const [rooms, setRooms] = useBackendListState(examSites)
+  const [docsList, setDocsList] = useBackendListState(docs)
+  const [sitesList, setSitesList] = useBackendListState(sites)
+  const [projectList, setProjectList] = useBackendListState(projects)
+  const [applyData, setApplyData] = useBackendListState(applyList)
   const [showAddStaff, setShowAddStaff] = useState(false)
   const [showAddRoom, setShowAddRoom] = useState(false)
   const [showAddDoc, setShowAddDoc] = useState(false)

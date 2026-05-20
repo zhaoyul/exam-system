@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { skillLevels, skillModules, skillSubjectName, skillSubjects } from './skillData'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 type RuleMode = '单科目' | '跨科目'
 interface SkillRule { id: string; name: string; mode: RuleMode; subjectIds: string[]; level: string; totalScore: number; passScore: number; duration: number; status: '启用' | '草稿'; modules: Array<{ module: string; score: number; time: number }> }
@@ -14,7 +15,7 @@ const initialRules: SkillRule[] = [
 ]
 
 export default function SkillPaperRules() {
-  const [rules, setRules] = useState<SkillRule[]>(initialRules)
+  const [rules, setRules] = useBackendListState<SkillRule>(initialRules)
   const [mode, setMode] = useState<'全部' | RuleMode>('全部')
   const [search, setSearch] = useState('')
   const [dialog, setDialog] = useState<'add' | 'detail' | null>(null)

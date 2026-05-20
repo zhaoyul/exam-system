@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Search, Plus, Edit3, Trash2, Save, BookOpen, ChevronRight, ChevronDown, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
 
 interface TreeNode { id: string; name: string; children?: TreeNode[] }
 
@@ -61,7 +62,8 @@ export default function StandardLibrary() {
   const [showEdit, setShowEdit] = useState<any>(null)
   const [showDelete, setShowDelete] = useState<string | null>(null)
   const [form, setForm] = useState({ name: '', code: '', version: '', status: 'draft' })
-  const [stds, setStds] = useState(standards)
+  const [stds, setStds] = useBackendListState(standards)
+  const backendTreeData = useBackendResourceList('/standard/library', treeData)
 
   const toggle = (id: string) => {
     setExpanded(prev => {
@@ -86,7 +88,7 @@ export default function StandardLibrary() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="bg-white rounded-lg border border-gray-200 p-3">
           <h2 className="text-sm font-semibold text-gray-900 mb-2">标准分类</h2>
-          <div className="space-y-0.5">{treeData.map(n => <TreeItem key={n.id} node={n} expanded={expanded} toggle={toggle} selected={selected} onSelect={setSelected} />)}</div>
+          <div className="space-y-0.5">{backendTreeData.map(n => <TreeItem key={n.id} node={n} expanded={expanded} toggle={toggle} selected={selected} onSelect={setSelected} />)}</div>
         </div>
         <div className="lg:col-span-2">
           <div className="flex items-center justify-between mb-3">

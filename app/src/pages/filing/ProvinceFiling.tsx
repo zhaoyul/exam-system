@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Search, Plus, Edit3, Trash2, Save, FileCheck, Send, CheckCircle, Clock, Building2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
 
 const filings = [
   { id: '1', org: '大亚湾核电', province: '广东省', dept: '广东省人力资源和社会保障厅', date: '2026-01-15', materials: 8, status: 'submitted' },
@@ -16,7 +17,8 @@ const materialsList = [
 ]
 
 export default function ProvinceFiling() {
-  const [items, setItems] = useState(filings)
+  const [items, setItems] = useBackendListState(filings)
+  const backendMaterials = useBackendResourceList('/file/receive', materialsList)
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showEdit, setShowEdit] = useState<any>(null)
@@ -91,7 +93,7 @@ export default function ProvinceFiling() {
         {showDetail && <div>
           <div className="text-sm text-gray-600 mb-3">机构：{showDetail.org}</div>
           <div className="space-y-2">
-            {materialsList.map((m, i) => (
+            {backendMaterials.map((m, i) => (
               <div key={i} className="flex items-center gap-2 p-2 border border-gray-100 rounded-lg">
                 <CheckCircle className={`w-4 h-4 ${i < showDetail.materials ? 'text-green-500' : 'text-gray-300'}`} />
                 <span className={`text-sm ${i < showDetail.materials ? 'text-gray-900' : 'text-gray-400'}`}>{m}</span>

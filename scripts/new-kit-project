@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage:
+  scripts/new-kit-project --name zhaoyul/exam-system-backend [--target-dir backend] [--backend-only] [--proxy http://127.0.0.1:6696]
+
+Options:
+  --name NAME          Required Kit project name, for example zhaoyul/exam-system-backend.
+  --target-dir DIR    Optional output directory. Defaults to the project basename.
+  --backend-only      Generate the default backend-only Kit template. This is currently the default.
+  --profile PROFILE   Add a Kit backend profile, for example +hikari, +migratus, +sql.
+  --proxy URL         Use an HTTP proxy for neil/deps-new/git HTTP traffic, for example http://127.0.0.1:6696.
+  --help              Show this help.
+
+Notes:
+  Kit's default template is already backend-only: kit-core + kit-undertow.
+  Do not pass frontend profiles here; this repository keeps the React frontend separate under app/.
+USAGE
+}
+
+name=""
+target_dir=""
+backend_only=false
+proxy_url=""
+profiles=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --name)
+      name="${2:-}"
+      shift 2
+      ;;
+    --target-dir)
+      target_dir="${2:-}"
+      shift 2
+      ;;
+    --backend-only)
+      backend_only=true
+      shift
+      ;;
+    --profile)
+      profiles+=("${2:-}")
+      shift 2
+      ;;
+    --proxy)
+      proxy_url="${2:-}"
+      shift 2
+      ;;
+    --help|-h)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+done
+
+if [[ -z "$name" ]]; then
+  echo "--name is required." >&2
+  usage >&2
+  exit 2
+fi
+
+if [[ "$backend_only" == true ]]; then
+  for profile in ${profiles[@]+"${profiles[@]}"}; do
+    case "$profile" in
+      +sql|+conman|+hikari|+migratus|+mysql|+postgres|+hato|+metrics|+quartz|+redis|+selmer|+nrepl|+socket-repl)
+        ;;
+      *)
+        echo "Profile '$profile' is not allowed with --backend-only." >&2
+        exit 2
+        ;;
+    esac
+  done
+fi
+
+if [[ -n "$proxy_url" ]]; then
+  if ! curl -fsSI --max-time 10 -x "$proxy_url" https://github.com >/dev/null; then
+    echo "Proxy is not usable for GitHub HTTPS: $proxy_url" >&2
+    exit 1
+  fi
+  export HTTP_PROXY="$proxy_url"
+  export HTTPS_PROXY="$proxy_url"
+  export ALL_PROXY="$proxy_url"
+  export http_proxy="$proxy_url"
+  export https_proxy="$proxy_url"
+  export all_proxy="$proxy_url"
+  export GIT_CONFIG_COUNT=2
+  export GIT_CONFIG_KEY_0=http.proxy
+  export GIT_CONFIG_VALUE_0="$proxy_url"
+  export GIT_CONFIG_KEY_1=https.proxy
+  export GIT_CONFIG_VALUE_1="$proxy_url"
+fi
+
+cmd=(neil new io.github.kit-clj/kit "$name")
+if [[ -n "$target_dir" ]]; then
+  cmd+=("$target_dir")
+fi
+for profile in ${profiles[@]+"${profiles[@]}"}; do
+  cmd+=("$profile")
+done
+
+printf 'Running:'
+printf ' %q' "${cmd[@]}"
+printf '\n'
+exec "${cmd[@]}"

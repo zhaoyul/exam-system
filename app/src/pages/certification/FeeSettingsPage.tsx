@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Save, DollarSign, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface FeeItem { id: string; level: string; theory: number; practical: number; review: number; cert: number }
 
 export default function FeeSettingsPage() {
-  const [items, setItems] = useState<FeeItem[]>([
+  const [items, setItems] = useBackendListState<FeeItem>([
     { id: '1', level: '一级', theory: 120, practical: 280, review: 80, cert: 30 },
     { id: '2', level: '二级', theory: 100, practical: 240, review: 70, cert: 30 },
     { id: '3', level: '三级', theory: 80, practical: 200, review: 60, cert: 30 },

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 interface EnrollUnit {
   id: string
@@ -36,7 +37,7 @@ const emptyForm = {
 }
 
 export default function RegistrationOrgManage() {
-  const [units, setUnits] = useState<EnrollUnit[]>(initialUnits)
+  const [units, setUnits] = useBackendListState<EnrollUnit>(initialUnits)
   const [search, setSearch] = useState('')
   const [siteFilter, setSiteFilter] = useState('全部')
   const [editing, setEditing] = useState<EnrollUnit | null>(null)

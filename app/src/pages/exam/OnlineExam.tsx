@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Clock, ChevronLeft, ChevronRight, Flag, Send, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendListState } from '@/hooks/useBackendListState'
 
 const questions = [
   { id: 1, type: '单选', content: '核反应堆运行值班员的主要职责是什么？', options: ['A. 负责核反应堆的日常运行监控和操作', 'B. 负责核电站的安保工作', 'C. 负责核电站的行政管理工作', 'D. 负责核电站的设备采购'] },
@@ -12,6 +13,7 @@ const questions = [
 ]
 
 export default function OnlineExam() {
+  const [examQuestions] = useBackendListState(questions)
   const [current, setCurrent] = useState(0)
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [marked, setMarked] = useState<number[]>([])
@@ -34,14 +36,14 @@ export default function OnlineExam() {
     return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`
   }
 
-  const selectAnswer = (ans: string) => { setAnswers(prev => ({ ...prev, [questions[current].id]: ans })) }
+  const selectAnswer = (ans: string) => { setAnswers(prev => ({ ...prev, [examQuestions[current].id]: ans })) }
   const toggleMark = () => {
-    const qid = questions[current].id
+    const qid = examQuestions[current].id
     setMarked(prev => prev.includes(qid) ? prev.filter(i => i !== qid) : [...prev, qid])
   }
   const submitExam = () => { setSubmitted(true); setShowSubmit(false) }
 
-  const q = questions[current]
+  const q = examQuestions[current]
   const answeredCount = Object.keys(answers).length
 
   if (submitted) {
@@ -54,7 +56,7 @@ export default function OnlineExam() {
         <p className="text-sm text-gray-500 mb-4">您的答卷已成功提交，成绩将在复核后公布</p>
         <div className="bg-white rounded-lg border border-gray-200 p-4 inline-block text-left">
           <div className="text-sm space-y-2">
-            <div className="flex justify-between gap-8"><span className="text-gray-500">总题数</span><span className="font-medium">{questions.length}</span></div>
+            <div className="flex justify-between gap-8"><span className="text-gray-500">总题数</span><span className="font-medium">{examQuestions.length}</span></div>
             <div className="flex justify-between"><span className="text-gray-500">已作答</span><span className="font-medium">{answeredCount}</span></div>
             <div className="flex justify-between"><span className="text-gray-500">标记题目</span><span className="font-medium">{marked.length}</span></div>
           </div>
@@ -72,7 +74,7 @@ export default function OnlineExam() {
         <div className="flex items-center gap-4 text-sm">
           <span className="text-gray-600">核反应堆运行值班员 · 三级</span>
           <span className="text-gray-400">|</span>
-          <span className="text-gray-600">共 {questions.length} 题</span>
+          <span className="text-gray-600">共 {examQuestions.length} 题</span>
         </div>
         <div className={`flex items-center gap-1.5 text-sm font-mono font-medium ${timeLeft < 300 ? 'text-red-600' : 'text-gray-900'}`}>
           <Clock className="w-4 h-4" />
@@ -85,7 +87,7 @@ export default function OnlineExam() {
         <div className="lg:col-span-3 bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center gap-2 mb-4">
             <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{q.type}</span>
-            <span className="text-sm text-gray-400">第 {current + 1} / {questions.length} 题</span>
+            <span className="text-sm text-gray-400">第 {current + 1} / {examQuestions.length} 题</span>
             {marked.includes(q.id) && <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded text-xs flex items-center gap-1"><Flag className="w-3 h-3" />已标记</span>}
           </div>
           <h3 className="text-base font-medium text-gray-900 mb-6">{q.content}</h3>
@@ -100,7 +102,7 @@ export default function OnlineExam() {
             <Button onClick={toggleMark} variant="outline" className="h-9 text-xs"><Flag className="w-3.5 h-3.5 mr-1" />{marked.includes(q.id) ? '取消标记' : '标记本题'}</Button>
             <div className="flex gap-2">
               <Button onClick={() => setCurrent(Math.max(0, current - 1))} disabled={current === 0} variant="outline" className="h-9 text-xs"><ChevronLeft className="w-3.5 h-3.5 mr-1" />上一题</Button>
-              {current < questions.length - 1 ? (
+              {current < examQuestions.length - 1 ? (
                 <Button onClick={() => setCurrent(current + 1)} className="h-9 text-xs bg-[#1A56DB]">下一题<ChevronRight className="w-3.5 h-3.5 ml-1" /></Button>
               ) : (
                 <Button onClick={() => setShowSubmit(true)} className="h-9 text-xs bg-green-600 hover:bg-green-700"><Send className="w-3.5 h-3.5 mr-1" />提交试卷</Button>
@@ -113,7 +115,7 @@ export default function OnlineExam() {
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <h3 className="text-sm font-medium text-gray-900 mb-3">答题卡</h3>
           <div className="grid grid-cols-5 gap-2">
-            {questions.map((qs, idx) => (
+            {examQuestions.map((qs, idx) => (
               <button key={qs.id} onClick={() => setCurrent(idx)} className={`h-9 rounded-md text-xs font-medium transition-all ${idx === current ? 'bg-[#1A56DB] text-white' : answers[qs.id] ? 'bg-green-50 text-green-700 border border-green-200' : marked.includes(qs.id) ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'}`}>
                 {idx + 1}
               </button>
@@ -126,8 +128,8 @@ export default function OnlineExam() {
           </div>
           <div className="mt-4 pt-3 border-t border-gray-100">
             <div className="text-xs text-gray-500 mb-1">答题进度</div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-green-500 rounded-full transition-all" style={{ width: `${(answeredCount / questions.length * 100)}%` }} /></div>
-            <div className="text-xs text-gray-400 mt-1">{answeredCount}/{questions.length}</div>
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-green-500 rounded-full transition-all" style={{ width: `${(answeredCount / examQuestions.length * 100)}%` }} /></div>
+            <div className="text-xs text-gray-400 mt-1">{answeredCount}/{examQuestions.length}</div>
           </div>
         </div>
       </div>
@@ -138,7 +140,7 @@ export default function OnlineExam() {
           <div className="text-center py-2">
             <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-2" />
             <p className="text-sm text-gray-600">您已作答 {answeredCount}/{questions.length} 题</p>
-            {answeredCount < questions.length && <p className="text-xs text-red-500 mt-1">还有 {questions.length - answeredCount} 题未作答，确定提交吗？</p>}
+            {answeredCount < examQuestions.length && <p className="text-xs text-red-500 mt-1">还有 {examQuestions.length - answeredCount} 题未作答，确定提交吗？</p>}
           </div>
           <div className="flex justify-end gap-2 mt-4">
             <Button variant="outline" onClick={() => setShowSubmit(false)}>继续答题</Button>

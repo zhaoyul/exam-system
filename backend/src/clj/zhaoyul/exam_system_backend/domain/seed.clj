@@ -11,33 +11,27 @@
   [{:id "u-group-admin"
     :username "cgnzx001"
     :password "cs@13311331"
-    :display-name "集团管理员"
+    :display_name "集团管理员"
     :role "group_admin"
-    :org-id "org-cgn"}
-   {:id "u-group-admin-original"
-    :username "cgnzx001cs"
-    :password "cs@13311331"
-    :display-name "集团管理员"
-    :role "group_admin"
-    :org-id "org-cgn"}
+    :org_id "org-cgn"}
    {:id "u-branch-admin"
     :username "Csyxgs001"
     :password "cs@13311331"
-    :display-name "机构管理员"
+    :display_name "机构管理员"
     :role "branch_admin"
-    :org-id "org-csyxgs"}
+    :org_id "org-csyxgs"}
    {:id "u-branch-admin-original"
     :username "Csyxgs001cs"
     :password "cs@13311331"
-    :display-name "机构管理员"
+    :display_name "机构管理员"
     :role "branch_admin"
-    :org-id "org-csyxgs"}])
+    :org_id "org-csyxgs"}])
 
 (def organizations
-  [{:id "org-cgn" :org-type "group" :name "中广核集团" :contact-name "张总" :contact-phone "13800138000" :status "active"}
-   {:id "org-csyxgs" :parent-id "org-cgn" :org-type "branch" :name "测试有限公司" :credit-code "91440000MA00000001" :contact-name "李经理" :contact-phone "13800138001" :mobile "13800138001" :address "广东省深圳市" :login-name "Csyxgs001" :status "active"}
-   {:id "org-dayawan" :parent-id "org-cgn" :org-type "branch" :name "大亚湾核电" :contact-name "李经理" :contact-phone "13800138002" :status "active"}
-   {:id "org-yangjiang" :parent-id "org-cgn" :org-type "branch" :name "阳江核电" :contact-name "王经理" :contact-phone "13800138003" :status "active"}])
+  [{:id "org-cgn" :org_type "group" :name "中广核集团" :contact_name "张总" :contact_phone "13800138000" :status "active"}
+   {:id "org-csyxgs" :parent_id "org-cgn" :org_type "branch" :name "测试有限公司" :credit_code "91440000MA00000001" :contact_name "李经理" :contact_phone "13800138001" :mobile "13800138001" :address "广东省深圳市" :login_name "Csyxgs001" :status "active"}
+   {:id "org-dayawan" :parent_id "org-cgn" :org_type "branch" :name "大亚湾核电" :contact_name "李经理" :contact_phone "13800138002" :status "active"}
+   {:id "org-yangjiang" :parent_id "org-cgn" :org_type "branch" :name "阳江核电" :contact_name "王经理" :contact_phone "13800138003" :status "active"}])
 
 (def resource-fixtures
   {"dashboard-summary"
@@ -258,84 +252,84 @@
 ;; ============================================================
 
 (def domain-organizations
-  [{:id "org-cgn" :org-id "" :org-type "group" :name "中广核集团" :credit_code "91440000MA0CGN001" :contact_name "张总" :contact_phone "13800138000" :address "广东省深圳市" :status "active"}
-   {:id "org-csyxgs" :org-id "org-cgn" :parent-id "org-cgn" :org-type "branch" :name "测试有限公司" :credit_code "91440000MA00000001" :contact_name "李经理" :contact_phone "13800138001" :address "广东省深圳市" :status "active"}
-   {:id "org-dayawan" :org-id "org-cgn" :parent-id "org-cgn" :org-type "branch" :name "大亚湾核电运营管理有限责任公司" :credit_code "91440300100000001X" :contact_name "刘主管" :contact_phone "13800138002" :address "广东省深圳市大鹏新区" :status "active"}
-   {:id "org-yangjiang" :org-id "org-cgn" :parent-id "org-cgn" :org-type "branch" :name "阳江核电有限公司" :contact_name "王经理" :contact_phone "13800138003" :address "广东省阳江市" :status "active"}
-   {:id "org-taishan" :org-id "org-cgn" :parent-id "org-cgn" :org-type "branch" :name "台山核电合营有限公司" :contact_name "陈主管" :contact_phone "13800138004" :address "广东省台山市" :status "active"}])
+  [{:id "org-cgn" :org_id "" :org_type "group" :name "中广核集团" :credit_code "91440000MA0CGN001" :contact_name "张总" :contact_phone "13800138000" :address "广东省深圳市" :status "active"}
+   {:id "org-csyxgs" :org_id "org-cgn" :parent_id "org-cgn" :org_type "branch" :name "测试有限公司" :credit_code "91440000MA00000001" :contact_name "李经理" :contact_phone "13800138001" :address "广东省深圳市" :status "active"}
+   {:id "org-dayawan" :org_id "org-cgn" :parent_id "org-cgn" :org_type "branch" :name "大亚湾核电运营管理有限责任公司" :credit_code "91440300100000001X" :contact_name "刘主管" :contact_phone "13800138002" :address "广东省深圳市大鹏新区" :status "active"}
+   {:id "org-yangjiang" :org_id "org-cgn" :parent_id "org-cgn" :org_type "branch" :name "阳江核电有限公司" :contact_name "王经理" :contact_phone "13800138003" :address "广东省阳江市" :status "active"}
+   {:id "org-taishan" :org_id "org-cgn" :parent_id "org-cgn" :org_type "branch" :name "台山核电合营有限公司" :contact_name "陈主管" :contact_phone "13800138004" :address "广东省台山市" :status "active"}])
 
 (def domain-users
-  [{:id "du-group-admin" :org-id "org-cgn" :username "cgnzx001" :display-name "集团管理员" :role "group_admin" :phone "13800138000" :status "active"}
-   {:id "du-branch-admin" :org-id "org-csyxgs" :username "Csyxgs001" :display-name "机构管理员" :role "branch_admin" :phone "13800138001" :status "active"}
-   {:id "du-user-zhang" :org-id "org-dayawan" :username "zhangsan" :display-name "张三" :role "user" :phone "13800138101" :status "active"}
-   {:id "du-user-li" :org-id "org-yangjiang" :username "lisi" :display-name "李四" :role "user" :phone "13800138102" :status "active"}
-   {:id "du-user-wang" :org-id "org-csyxgs" :username "wangwu" :display-name "王五" :role "user" :phone "13800138103" :status "active"}])
+  [{:id "du-group-admin" :org_id "org-cgn" :username "cgnzx001" :display_name "集团管理员" :role "group_admin" :phone "13800138000" :status "active"}
+   {:id "du-branch-admin" :org_id "org-csyxgs" :username "Csyxgs001" :display_name "机构管理员" :role "branch_admin" :phone "13800138001" :status "active"}
+   {:id "du-user-zhang" :org_id "org-dayawan" :username "zhangsan" :display_name "张三" :role "user" :phone "13800138101" :status "active"}
+   {:id "du-user-li" :org_id "org-yangjiang" :username "lisi" :display_name "李四" :role "user" :phone "13800138102" :status "active"}
+   {:id "du-user-wang" :org_id "org-csyxgs" :username "wangwu" :display_name "王五" :role "user" :phone "13800138103" :status "active"}])
 
 (def domain-persons
-  [{:id "person-001" :org-id "org-dayawan" :code "P20260001" :name "陈小明" :id_card "440301199001011234" :gender "男" :birth_date "1990-01-01" :phone "13800138201" :education "本科" :org_name "大亚湾核电" :position "运行值班员"}
-   {:id "person-002" :org-id "org-dayawan" :code "P20260002" :name "赵小红" :id_card "440301199105152345" :gender "女" :birth_date "1991-05-15" :phone "13800138202" :education "本科" :org_name "大亚湾核电" :position "电气试验员"}
-   {:id "person-003" :org-id "org-yangjiang" :code "P20260003" :name "刘建国" :id_card "441700198803203456" :gender "男" :birth_date "1988-03-20" :phone "13800138203" :education "硕士" :org_name "阳江核电" :position "核安全工程师"}
-   {:id "person-004" :org-id "org-yangjiang" :code "P20260004" :name "孙丽华" :id_card "441700199207014567" :gender "女" :birth_date "1992-07-01" :phone "13800138204" :education "本科" :org_name "阳江核电" :position "设备管理"}
-   {:id "person-005" :org-id "org-csyxgs" :code "P20260005" :name "周文博" :id_card "440301198512055678" :gender "男" :birth_date "1985-12-05" :phone "13800138205" :education "博士" :org_name "测试有限公司" :position "技术专家"}])
+  [{:id "person-001" :org_id "org-dayawan" :code "P20260001" :name "陈小明" :id_card "440301199001011234" :gender "男" :birth_date "1990-01-01" :phone "13800138201" :education "本科" :org_name "大亚湾核电" :position "运行值班员"}
+   {:id "person-002" :org_id "org-dayawan" :code "P20260002" :name "赵小红" :id_card "440301199105152345" :gender "女" :birth_date "1991-05-15" :phone "13800138202" :education "本科" :org_name "大亚湾核电" :position "电气试验员"}
+   {:id "person-003" :org_id "org-yangjiang" :code "P20260003" :name "刘建国" :id_card "441700198803203456" :gender "男" :birth_date "1988-03-20" :phone "13800138203" :education "硕士" :org_name "阳江核电" :position "核安全工程师"}
+   {:id "person-004" :org_id "org-yangjiang" :code "P20260004" :name "孙丽华" :id_card "441700199207014567" :gender "女" :birth_date "1992-07-01" :phone "13800138204" :education "本科" :org_name "阳江核电" :position "设备管理"}
+   {:id "person-005" :org_id "org-csyxgs" :code "P20260005" :name "周文博" :id_card "440301198512055678" :gender "男" :birth_date "1985-12-05" :phone "13800138205" :education "博士" :org_name "测试有限公司" :position "技术专家"}])
 
 (def domain-recognition-plans
-  [{:id "recog-plan-001" :org-id "org-csyxgs" :code "Y0041GD0000012603001" :name "2026年第一批核反应堆运行值班员三级认定" :occupation "核反应堆运行值班员" :level "三级" :planned_month "2026-06" :registration_deadline "2026-06-15" :exam_start_date "2026-06-20" :exam_end_date "2026-06-22" :candidate_count 45 :status "processing"}
-   {:id "recog-plan-002" :org-id "org-yangjiang" :code "Y0041GD0000022603002" :name "2026年第二批电气试验员四级认定" :occupation "电气试验员" :level "四级" :planned_month "2026-07" :registration_deadline "2026-07-15" :exam_start_date "2026-07-20" :exam_end_date "2026-07-21" :candidate_count 32 :status "pending"}
-   {:id "recog-plan-003" :org-id "org-dayawan" :code "Y0041GD0000032603003" :name "2026年核安全工程师三级认定" :occupation "核安全工程师" :level "三级" :planned_month "2026-08" :registration_deadline "2026-08-10" :candidate_count 28 :status "draft"}
-   {:id "recog-plan-004" :org-id "org-csyxgs" :code "Y0041GD0000042603004" :name "2026年核电焊工四级认定" :occupation "核电焊工" :level "四级" :planned_month "2026-09" :registration_deadline "2026-09-01" :candidate_count 25 :status "draft"}])
+  [{:id "recog-plan-001" :org_id "org-csyxgs" :code "Y0041GD0000012603001" :name "2026年第一批核反应堆运行值班员三级认定" :occupation "核反应堆运行值班员" :level "三级" :planned_month "2026-06" :registration_deadline "2026-06-15" :exam_start_date "2026-06-20" :exam_end_date "2026-06-22" :candidate_count 45 :status "processing"}
+   {:id "recog-plan-002" :org_id "org-yangjiang" :code "Y0041GD0000022603002" :name "2026年第二批电气试验员四级认定" :occupation "电气试验员" :level "四级" :planned_month "2026-07" :registration_deadline "2026-07-15" :exam_start_date "2026-07-20" :exam_end_date "2026-07-21" :candidate_count 32 :status "pending"}
+   {:id "recog-plan-003" :org_id "org-dayawan" :code "Y0041GD0000032603003" :name "2026年核安全工程师三级认定" :occupation "核安全工程师" :level "三级" :planned_month "2026-08" :registration_deadline "2026-08-10" :candidate_count 28 :status "draft"}
+   {:id "recog-plan-004" :org_id "org-csyxgs" :code "Y0041GD0000042603004" :name "2026年核电焊工四级认定" :occupation "核电焊工" :level "四级" :planned_month "2026-09" :registration_deadline "2026-09-01" :candidate_count 25 :status "draft"}])
 
 (def domain-candidates
-  [{:id "candidate-001" :org-id "org-dayawan" :code "CAN20260001" :name "陈小明" :id_card "440301199001011234" :gender "男" :phone "13800138201" :org_name "大亚湾核电" :occupation "核反应堆运行值班员" :level "三级" :education "本科" :status "approved"}
-   {:id "candidate-002" :org-id "org-dayawan" :code "CAN20260002" :name "赵小红" :id_card "440301199105152345" :gender "女" :phone "13800138202" :org_name "大亚湾核电" :occupation "核反应堆运行值班员" :level "三级" :education "本科" :status "approved"}
-   {:id "candidate-003" :org-id "org-yangjiang" :code "CAN20260003" :name "刘建国" :id_card "441700198803203456" :gender "男" :phone "13800138203" :org_name "阳江核电" :occupation "电气试验员" :level "四级" :education "硕士" :status "pending"}
-   {:id "candidate-004" :org-id "org-yangjiang" :code "CAN20260004" :name "孙丽华" :id_card "441700199207014567" :gender "女" :phone "13800138204" :org_name "阳江核电" :occupation "电气试验员" :level "四级" :education "本科" :status "pending"}
-   {:id "candidate-005" :org-id "org-csyxgs" :code "CAN20260005" :name "周文博" :id_card "440301198512055678" :gender "男" :phone "13800138205" :org_name "测试有限公司" :occupation "核反应堆运行值班员" :level "三级" :education "博士" :status "approved"}])
+  [{:id "candidate-001" :org_id "org-dayawan" :code "CAN20260001" :name "陈小明" :id_card "440301199001011234" :gender "男" :phone "13800138201" :org_name "大亚湾核电" :occupation "核反应堆运行值班员" :level "三级" :education "本科" :status "approved"}
+   {:id "candidate-002" :org_id "org-dayawan" :code "CAN20260002" :name "赵小红" :id_card "440301199105152345" :gender "女" :phone "13800138202" :org_name "大亚湾核电" :occupation "核反应堆运行值班员" :level "三级" :education "本科" :status "approved"}
+   {:id "candidate-003" :org_id "org-yangjiang" :code "CAN20260003" :name "刘建国" :id_card "441700198803203456" :gender "男" :phone "13800138203" :org_name "阳江核电" :occupation "电气试验员" :level "四级" :education "硕士" :status "pending"}
+   {:id "candidate-004" :org_id "org-yangjiang" :code "CAN20260004" :name "孙丽华" :id_card "441700199207014567" :gender "女" :phone "13800138204" :org_name "阳江核电" :occupation "电气试验员" :level "四级" :education "本科" :status "pending"}
+   {:id "candidate-005" :org_id "org-csyxgs" :code "CAN20260005" :name "周文博" :id_card "440301198512055678" :gender "男" :phone "13800138205" :org_name "测试有限公司" :occupation "核反应堆运行值班员" :level "三级" :education "博士" :status "approved"}])
 
 (def domain-exam-rooms
-  [{:id "room-001" :org-id "org-csyxgs" :code "RM2026001" :name "大亚湾基地101教室考场" :address "大亚湾基地培训中心一楼101" :phone "0755-00000001" :room_type "理论考场" :seat_count 50 :status "active"}
-   {:id "room-002" :org-id "org-csyxgs" :code "RM2026002" :name "大亚湾基地102教室考场" :address "大亚湾基地培训中心一楼102" :phone "0755-00000002" :room_type "理论考场" :seat_count 40 :status "active"}
-   {:id "room-003" :org-id "org-csyxgs" :code "RM2026003" :name "大亚湾基地实操一号工位" :address "大亚湾基地技能实训中心" :phone "0755-00000003" :room_type "技能考场" :seat_count 20 :status "active"}
-   {:id "room-004" :org-id "org-yangjiang" :code "RM2026004" :name "阳江核电培训楼201" :address "阳江核电培训中心二楼201" :phone "0662-0000001" :room_type "理论考场" :seat_count 35 :status "active"}
-   {:id "room-005" :org-id "org-yangjiang" :code "RM2026005" :name "阳江核电实操焊接工位" :address "阳江核电技能车间" :phone "0662-0000002" :room_type "技能考场" :seat_count 15 :status "active"}])
+  [{:id "room-001" :org_id "org-csyxgs" :code "RM2026001" :name "大亚湾基地101教室考场" :address "大亚湾基地培训中心一楼101" :phone "0755-00000001" :room_type "理论考场" :seat_count 50 :status "active"}
+   {:id "room-002" :org_id "org-csyxgs" :code "RM2026002" :name "大亚湾基地102教室考场" :address "大亚湾基地培训中心一楼102" :phone "0755-00000002" :room_type "理论考场" :seat_count 40 :status "active"}
+   {:id "room-003" :org_id "org-csyxgs" :code "RM2026003" :name "大亚湾基地实操一号工位" :address "大亚湾基地技能实训中心" :phone "0755-00000003" :room_type "技能考场" :seat_count 20 :status "active"}
+   {:id "room-004" :org_id "org-yangjiang" :code "RM2026004" :name "阳江核电培训楼201" :address "阳江核电培训中心二楼201" :phone "0662-0000001" :room_type "理论考场" :seat_count 35 :status "active"}
+   {:id "room-005" :org_id "org-yangjiang" :code "RM2026005" :name "阳江核电实操焊接工位" :address "阳江核电技能车间" :phone "0662-0000002" :room_type "技能考场" :seat_count 15 :status "active"}])
 
 (def domain-exam-sessions
-  [{:id "session-001" :org-id "org-csyxgs" :code "SES2026001" :plan_id "recog-plan-001" :name "理论考试第一场" :session_type "理论" :start_at "2026-06-20 09:00" :end_at "2026-06-20 11:00" :exam_room_id "room-001" :status "scheduled"}
-   {:id "session-002" :org-id "org-csyxgs" :code "SES2026002" :plan_id "recog-plan-001" :name "实操考核第一场" :session_type "技能" :start_at "2026-06-21 09:00" :end_at "2026-06-21 12:00" :exam_room_id "room-003" :status "scheduled"}
-   {:id "session-003" :org-id "org-yangjiang" :code "SES2026003" :plan_id "recog-plan-002" :name "电气试验员理论考试" :session_type "理论" :start_at "2026-07-20 09:00" :end_at "2026-07-20 11:00" :exam_room_id "room-004" :status "scheduled"}])
+  [{:id "session-001" :org_id "org-csyxgs" :code "SES2026001" :plan_id "recog-plan-001" :name "理论考试第一场" :session_type "理论" :start_at "2026-06-20 09:00" :end_at "2026-06-20 11:00" :exam_room_id "room-001" :status "scheduled"}
+   {:id "session-002" :org_id "org-csyxgs" :code "SES2026002" :plan_id "recog-plan-001" :name "实操考核第一场" :session_type "技能" :start_at "2026-06-21 09:00" :end_at "2026-06-21 12:00" :exam_room_id "room-003" :status "scheduled"}
+   {:id "session-003" :org_id "org-yangjiang" :code "SES2026003" :plan_id "recog-plan-002" :name "电气试验员理论考试" :session_type "理论" :start_at "2026-07-20 09:00" :end_at "2026-07-20 11:00" :exam_room_id "room-004" :status "scheduled"}])
 
 (def domain-certificates
-  [{:id "cert-001" :org-id "org-csyxgs" :code "CERT20260001" :cert_no "Y0041GD0000012603001001" :candidate_name "陈小明" :id_card "440301199001011234" :occupation "核反应堆运行值班员" :level "三级" :plan_id "recog-plan-001" :issue_date "2026-07-15" :status "issued"}
-   {:id "cert-002" :org-id "org-csyxgs" :code "CERT20260002" :cert_no "Y0041GD0000012603001002" :candidate_name "赵小红" :id_card "440301199105152345" :occupation "核反应堆运行值班员" :level "三级" :plan_id "recog-plan-001" :issue_date "2026-07-15" :status "issued"}
-   {:id "cert-003" :org-id "org-csyxgs" :code "CERT20260003" :cert_no "Y0041GD0000012603001003" :candidate_name "周文博" :id_card "440301198512055678" :occupation "核反应堆运行值班员" :level "三级" :plan_id "recog-plan-001" :issue_date "2026-07-15" :status "issued"}])
+  [{:id "cert-001" :org_id "org-csyxgs" :code "CERT20260001" :cert_no "Y0041GD0000012603001001" :candidate_name "陈小明" :id_card "440301199001011234" :occupation "核反应堆运行值班员" :level "三级" :plan_id "recog-plan-001" :issue_date "2026-07-15" :status "issued"}
+   {:id "cert-002" :org_id "org-csyxgs" :code "CERT20260002" :cert_no "Y0041GD0000012603001002" :candidate_name "赵小红" :id_card "440301199105152345" :occupation "核反应堆运行值班员" :level "三级" :plan_id "recog-plan-001" :issue_date "2026-07-15" :status "issued"}
+   {:id "cert-003" :org_id "org-csyxgs" :code "CERT20260003" :cert_no "Y0041GD0000012603001003" :candidate_name "周文博" :id_card "440301198512055678" :occupation "核反应堆运行值班员" :level "三级" :plan_id "recog-plan-001" :issue_date "2026-07-15" :status "issued"}])
 
 (def domain-qb-subjects
-  [{:id "qb-subject-001" :org-id "org-cgn" :code "4-07-03-04" :name "核反应堆运行值班员" :level "三级" :question_count 520 :status "active"}
-   {:id "qb-subject-002" :org-id "org-cgn" :code "4-07-03-05" :name "电气试验员" :level "四级" :question_count 380 :status "active"}
-   {:id "qb-subject-003" :org-id "org-cgn" :code "4-07-03-06" :name "核安全工程师" :level "三级" :question_count 450 :status "active"}
-   {:id "qb-subject-004" :org-id "org-cgn" :code "4-07-03-07" :name "核电焊工" :level "四级" :question_count 200 :status "active"}])
+  [{:id "qb-subject-001" :org_id "org-cgn" :code "4-07-03-04" :name "核反应堆运行值班员" :level "三级" :question_count 520 :status "active"}
+   {:id "qb-subject-002" :org_id "org-cgn" :code "4-07-03-05" :name "电气试验员" :level "四级" :question_count 380 :status "active"}
+   {:id "qb-subject-003" :org_id "org-cgn" :code "4-07-03-06" :name "核安全工程师" :level "三级" :question_count 450 :status "active"}
+   {:id "qb-subject-004" :org_id "org-cgn" :code "4-07-03-07" :name "核电焊工" :level "四级" :question_count 200 :status "active"}])
 
 (def domain-qb-questions
-  [{:id "q-001" :org-id "org-cgn" :code "Q20260001" :subject_id "qb-subject-001" :question_type "单选" :difficulty "medium" :content "核反应堆运行值班员的主要职责是什么？" :options_json "[\"A. 负责核反应堆的日常运行监控和操作\",\"B. 负责核电站的安保工作\",\"C. 负责核电站的行政管理工作\",\"D. 负责核电站的设备采购\"]" :answer "A" :score 2.0 :status "valid"}
-   {:id "q-002" :org-id "org-cgn" :code "Q20260002" :subject_id "qb-subject-001" :question_type "单选" :difficulty "medium" :content "核安全文化的核心理念包括哪些？" :options_json "[\"A. 安全第一、预防为主\",\"B. 效率优先、兼顾安全\",\"C. 成本控制、安全次要\",\"D. 技术领先、安全随缘\"]" :answer "A" :score 2.0 :status "valid"}
-   {:id "q-003" :org-id "org-cgn" :code "Q20260003" :subject_id "qb-subject-001" :question_type "判断" :difficulty "easy" :content "核反应堆运行中，控制棒插入越深，反应性越高。" :options_json "[\"A. 正确\",\"B. 错误\"]" :answer "B" :score 1.0 :status "valid"}
-   {:id "q-004" :org-id "org-cgn" :code "Q20260004" :subject_id "qb-subject-002" :question_type "单选" :difficulty "medium" :content "电气设备绝缘电阻测量的常用仪器是？" :options_json "[\"A. 万用表\",\"B. 兆欧表\",\"C. 钳形表\",\"D. 示波器\"]" :answer "B" :score 2.0 :status "valid"}
-   {:id "q-005" :org-id "org-cgn" :code "Q20260005" :subject_id "qb-subject-002" :question_type "判断" :difficulty "easy" :content "电气试验人员必须持证上岗。" :options_json "[\"A. 正确\",\"B. 错误\"]" :answer "A" :score 1.0 :status "valid"}])
+  [{:id "q-001" :org_id "org-cgn" :code "Q20260001" :subject_id "qb-subject-001" :question_type "单选" :difficulty "medium" :content "核反应堆运行值班员的主要职责是什么？" :options_json "[\"A. 负责核反应堆的日常运行监控和操作\",\"B. 负责核电站的安保工作\",\"C. 负责核电站的行政管理工作\",\"D. 负责核电站的设备采购\"]" :answer "A" :score 2.0 :status "valid"}
+   {:id "q-002" :org_id "org-cgn" :code "Q20260002" :subject_id "qb-subject-001" :question_type "单选" :difficulty "medium" :content "核安全文化的核心理念包括哪些？" :options_json "[\"A. 安全第一、预防为主\",\"B. 效率优先、兼顾安全\",\"C. 成本控制、安全次要\",\"D. 技术领先、安全随缘\"]" :answer "A" :score 2.0 :status "valid"}
+   {:id "q-003" :org_id "org-cgn" :code "Q20260003" :subject_id "qb-subject-001" :question_type "判断" :difficulty "easy" :content "核反应堆运行中，控制棒插入越深，反应性越高。" :options_json "[\"A. 正确\",\"B. 错误\"]" :answer "B" :score 1.0 :status "valid"}
+   {:id "q-004" :org_id "org-cgn" :code "Q20260004" :subject_id "qb-subject-002" :question_type "单选" :difficulty "medium" :content "电气设备绝缘电阻测量的常用仪器是？" :options_json "[\"A. 万用表\",\"B. 兆欧表\",\"C. 钳形表\",\"D. 示波器\"]" :answer "B" :score 2.0 :status "valid"}
+   {:id "q-005" :org_id "org-cgn" :code "Q20260005" :subject_id "qb-subject-002" :question_type "判断" :difficulty "easy" :content "电气试验人员必须持证上岗。" :options_json "[\"A. 正确\",\"B. 错误\"]" :answer "A" :score 1.0 :status "valid"}])
 
 (def domain-experts
-  [{:id "expert-001" :org-id "org-cgn" :code "EXP20260001" :name "刘教授" :phone "13800138101" :unit_name "清华大学" :skill_type "题库编制" :skill_project "核反应堆运行值班员" :status "active"}
-   {:id "expert-002" :org-id "org-cgn" :code "EXP20260002" :name "陈高工" :phone "13800138102" :unit_name "中广核研究院" :skill_type "考评专家" :skill_project "电气试验员" :status "active"}
-   {:id "expert-003" :org-id "org-cgn" :code "EXP20260003" :name "王督导" :phone "13800138103" :unit_name "华南理工大学" :skill_type "质量督导" :skill_project "核安全" :status "active"}
-   {:id "expert-004" :org-id "org-cgn" :code "EXP20260004" :name "赵博士" :phone "13800138104" :unit_name "中广核工程公司" :skill_type "题库编制" :skill_project "核电焊工" :status "active"}])
+  [{:id "expert-001" :org_id "org-cgn" :code "EXP20260001" :name "刘教授" :phone "13800138101" :unit_name "清华大学" :skill_type "题库编制" :skill_project "核反应堆运行值班员" :status "active"}
+   {:id "expert-002" :org_id "org-cgn" :code "EXP20260002" :name "陈高工" :phone "13800138102" :unit_name "中广核研究院" :skill_type "考评专家" :skill_project "电气试验员" :status "active"}
+   {:id "expert-003" :org_id "org-cgn" :code "EXP20260003" :name "王督导" :phone "13800138103" :unit_name "华南理工大学" :skill_type "质量督导" :skill_project "核安全" :status "active"}
+   {:id "expert-004" :org_id "org-cgn" :code "EXP20260004" :name "赵博士" :phone "13800138104" :unit_name "中广核工程公司" :skill_type "题库编制" :skill_project "核电焊工" :status "active"}])
 
 (def domain-filing-applications
-  [{:id "filing-001" :org-id "org-cgn" :code "FIL20260001" :name "中广核集团职业技能等级认定备案申请" :filing_type "集团备案" :province "广东" :apply_org "中广核集团" :submit_date "2026-04-15" :status "approved"}
-   {:id "filing-002" :org-id "org-csyxgs" :code "FIL20260002" :name "测试有限公司职业技能等级认定考点备案" :filing_type "分支备案" :province "广东" :apply_org "测试有限公司" :submit_date "2026-04-20" :status "approved"}
-   {:id "filing-003" :org-id "org-yangjiang" :code "FIL20260003" :name "阳江核电职业技能等级认定考点备案" :filing_type "分支备案" :province "广东" :apply_org "阳江核电有限公司" :submit_date "2026-05-10" :status "pending"}])
+  [{:id "filing-001" :org_id "org-cgn" :code "FIL20260001" :name "中广核集团职业技能等级认定备案申请" :filing_type "集团备案" :province "广东" :apply_org "中广核集团" :submit_date "2026-04-15" :status "approved"}
+   {:id "filing-002" :org_id "org-csyxgs" :code "FIL20260002" :name "测试有限公司职业技能等级认定考点备案" :filing_type "分支备案" :province "广东" :apply_org "测试有限公司" :submit_date "2026-04-20" :status "approved"}
+   {:id "filing-003" :org_id "org-yangjiang" :code "FIL20260003" :name "阳江核电职业技能等级认定考点备案" :filing_type "分支备案" :province "广东" :apply_org "阳江核电有限公司" :submit_date "2026-05-10" :status "pending"}])
 
 (def domain-eval-scopes
-  [{:id "eval-scope-001" :org-id "org-cgn" :code "EVS20260001" :name "核反应堆运行值班员三级评价范围" :occupation "核反应堆运行值班员" :level "三级" :scope_type "技能等级认定" :status "active"}
-   {:id "eval-scope-002" :org-id "org-cgn" :code "EVS20260002" :name "电气试验员四级评价范围" :occupation "电气试验员" :level "四级" :scope_type "技能等级认定" :status "active"}
-   {:id "eval-scope-003" :org-id "org-cgn" :code "EVS20260003" :name "核安全工程师三级评价范围" :occupation "核安全工程师" :level "三级" :scope_type "技能等级认定" :status "active"}])
+  [{:id "eval-scope-001" :org_id "org-cgn" :code "EVS20260001" :name "核反应堆运行值班员三级评价范围" :occupation "核反应堆运行值班员" :level "三级" :scope_type "技能等级认定" :status "active"}
+   {:id "eval-scope-002" :org_id "org-cgn" :code "EVS20260002" :name "电气试验员四级评价范围" :occupation "电气试验员" :level "四级" :scope_type "技能等级认定" :status "active"}
+   {:id "eval-scope-003" :org_id "org-cgn" :code "EVS20260003" :name "核安全工程师三级评价范围" :occupation "核安全工程师" :level "三级" :scope_type "技能等级认定" :status "active"}])
 
 ;; Domain table seed helpers
 
@@ -377,13 +371,13 @@
     (ensure-domain-row! ds 'cgn_eval_scope "id" row))
   {:status :domain-seeded})
 
-(defn- ensure-user! [ds {:keys [id username password display-name role org-id phone]}]
+(defn- ensure-user! [ds {:keys [id username password display_name role org_id phone]}]
   (when-not (auth/find-user ds username)
     (db/execute!
      ds
      ["INSERT INTO app_user (id, username, password_hash, display_name, role, org_id, phone, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, 'active')"
-      id username (auth/password-hash username password) display-name role org-id phone])))
+      id username (auth/password-hash username password) display_name role org_id phone])))
 
 (defn- ensure-organization! [ds org]
   (when-not (db/execute-one! ds ["SELECT id FROM organization WHERE id = ?" (:id org)])
@@ -392,9 +386,9 @@
      ["INSERT INTO organization
        (id, parent_id, org_type, name, credit_code, contact_name, contact_phone, mobile, address, duty, email, fax, postcode, login_name, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-      (:id org) (:parent-id org) (:org-type org) (:name org) (:credit-code org)
-      (:contact-name org) (:contact-phone org) (:mobile org) (:address org)
-      (:duty org) (:email org) (:fax org) (:postcode org) (:login-name org)
+      (:id org) (:parent_id org) (:org_type org) (:name org) (:credit_code org)
+      (:contact_name org) (:contact_phone org) (:mobile org) (:address org)
+      (:duty org) (:email org) (:fax org) (:postcode org) (:login_name org)
       (or (:status org) "active")])))
 
 (defn- ensure-resource! [ds resource item]

@@ -218,6 +218,7 @@
     (resource-endpoint ctx "/paper-library" "paper-library" "题库" "卷库")]
    ["/question"
     {:swagger {:tags ["题库兼容路径"]}}
+    (resource-endpoint ctx "/subject-sort" "subject-categories" "题库兼容路径" "科目分类")
     (resource-endpoint ctx "/subjects" "theory-subjects" "题库兼容路径" "科目管理")
     (resource-endpoint ctx "/knowledge" "knowledge-structures" "题库兼容路径" "知识结构")
     (resource-endpoint ctx "/ratio" "structure-ratios" "题库兼容路径" "结构比重")
@@ -225,6 +226,7 @@
     (resource-endpoint ctx "/paper-rules" "theory-paper-rules" "题库兼容路径" "理论组卷规则")
     (resource-endpoint ctx "/paper-require" "theory-paper-requirements" "题库兼容路径" "理论试卷需求")
     (resource-endpoint ctx "/paper-library" "paper-library" "题库兼容路径" "卷库")
+    (resource-endpoint ctx "/skill-subject-sort" "subject-categories" "题库兼容路径" "技能科目分类")
     (resource-endpoint ctx "/skill-subjects" "skill-subjects" "题库兼容路径" "技能科目")
     (resource-endpoint ctx "/skill-modules" "skill-modules" "题库兼容路径" "技能模块")
     (resource-endpoint ctx "/skill" "skill-questions" "题库兼容路径" "技能试题")

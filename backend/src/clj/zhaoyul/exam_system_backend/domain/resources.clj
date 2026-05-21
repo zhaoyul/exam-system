@@ -96,16 +96,12 @@
             :orgId (:org_id row)})))
 
 (defn list-items [ds resource params]
-  (let [q (get params "q")
-        status (get params "status")
-        org-id (get params "org-id")
-        limit (get params "limit")
-        offset (get params "offset")
   (let [resource (canonical-resource resource)
-        q (some-> q str/trim)
-        status (some-> status str/trim)
-        limit (min 200 (max 1 (Integer/parseInt (str (or limit 50)))))
-        offset (max 0 (Integer/parseInt (str (or offset 0))))
+        q (some-> (get params "q") str/trim)
+        status (some-> (get params "status") str/trim)
+        org-id (get params "org-id")
+        limit (min 200 (max 1 (Integer/parseInt (str (or (get params "limit") 50)))))
+        offset (max 0 (Integer/parseInt (str (or (get params "offset") 0))))
         filters (cond-> ["resource = ?"]
                   (seq q) (conj "(name LIKE ? OR code LIKE ? OR payload LIKE ?)")
                   (seq status) (conj "status = ?")
@@ -121,6 +117,7 @@
                                     (conj args limit offset))))
         total-row (db/execute-one! ds (into [(str "SELECT COUNT(*) AS total FROM resource_item WHERE " where)] args))]
     {:items items :total (:total total-row) :limit limit :offset offset}))
+
 
 (defn get-item [ds resource id]
   (inflate

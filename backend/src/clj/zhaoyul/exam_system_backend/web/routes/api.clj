@@ -5,10 +5,16 @@
    [reitit.ring.middleware.parameters :as parameters]
    [reitit.swagger :as swagger]
    [zhaoyul.exam-system-backend.web.controllers.auth :as auth]
+   [zhaoyul.exam-system-backend.web.controllers.candidates :as candidates]
    [zhaoyul.exam-system-backend.web.controllers.catalog :as catalog]
+   [zhaoyul.exam-system-backend.web.controllers.files :as files-ctrl]
+   [zhaoyul.exam-system-backend.web.controllers.filing :as filing]
    [zhaoyul.exam-system-backend.web.controllers.health :as health]
    [zhaoyul.exam-system-backend.web.controllers.organizations :as organizations]
+   [zhaoyul.exam-system-backend.web.controllers.personal :as personal]
    [zhaoyul.exam-system-backend.web.controllers.resources :as resource-controller]
+   [zhaoyul.exam-system-backend.web.controllers.supervision :as supervision]
+   [zhaoyul.exam-system-backend.web.controllers.traceability :as traceability]
    [zhaoyul.exam-system-backend.web.middleware-auth :as auth-middleware]
    [zhaoyul.exam-system-backend.web.middleware.exception :as exception]
    [zhaoyul.exam-system-backend.web.middleware.formats :as formats]
@@ -85,9 +91,31 @@
    ["/data"
     (resource-endpoint ctx "/center" "data-center" "基础数据" "数据管理")]
    ["/filing"
-    (resource-endpoint ctx "/group" "filing-group" "机构备案" "集团备案")
-    (resource-endpoint ctx "/branch" "filing-branch" "机构备案" "分支备案")
-    (resource-endpoint ctx "/province" "filing-province" "机构备案" "省级备案")]
+    {:swagger {:tags ["机构备案"]}}
+    ["/group"
+     [""
+      {:get {:summary "集团备案列表" :handler (partial filing/list-filing-group ctx)}
+       :post {:summary "新增集团备案" :handler (partial filing/create-filing-group ctx)}}]
+     ["/:id"
+      {:get {:summary "查看集团备案" :handler (partial filing/get-filing-group ctx)}
+       :put {:summary "更新集团备案" :handler (partial filing/update-filing-group ctx)}
+       :delete {:summary "删除集团备案" :handler (partial filing/delete-filing-group ctx)}}]]
+    ["/branch"
+     [""
+      {:get {:summary "分支备案列表" :handler (partial filing/list-filing-branch ctx)}
+       :post {:summary "新增分支备案" :handler (partial filing/create-filing-branch ctx)}}]
+     ["/:id"
+      {:get {:summary "查看分支备案" :handler (partial filing/get-filing-branch ctx)}
+       :put {:summary "更新分支备案" :handler (partial filing/update-filing-branch ctx)}
+       :delete {:summary "删除分支备案" :handler (partial filing/delete-filing-branch ctx)}}]]
+    ["/province"
+     [""
+      {:get {:summary "省级备案列表" :handler (partial filing/list-filing-province ctx)}
+       :post {:summary "新增省级备案" :handler (partial filing/create-filing-province ctx)}}]
+     ["/:id"
+      {:get {:summary "查看省级备案" :handler (partial filing/get-filing-province ctx)}
+       :put {:summary "更新省级备案" :handler (partial filing/update-filing-province ctx)}
+       :delete {:summary "删除省级备案" :handler (partial filing/delete-filing-province ctx)}}]]]
    ["/standard"
     (resource-endpoint ctx "/evaluation-scope" "evaluation-scopes" "职业标准" "评价范围")
     (resource-endpoint ctx "/settings" "standard-settings" "职业标准" "标准设置")
@@ -113,7 +141,15 @@
     (resource-endpoint ctx "/view" "certificates" "证书管理" "证书查看" false)
     (resource-endpoint ctx "/reissue" "certificate-reissues" "证书管理" "证书补发")]
    ["/candidates"
-    (resource-endpoint ctx "/manage" "candidates" "考生管理" "考生档案")]
+    {:swagger {:tags ["考生管理"]}}
+    ["/manage"
+     [""
+      {:get {:summary "考生档案列表" :handler (partial candidates/list-candidates ctx)}
+       :post {:summary "新增考生" :handler (partial candidates/create-candidate ctx)}}]
+     ["/:id"
+      {:get {:summary "查看考生详情" :handler (partial candidates/get-candidate ctx)}
+       :put {:summary "更新考生信息" :handler (partial candidates/update-candidate ctx)}
+       :delete {:summary "删除考生" :handler (partial candidates/delete-candidate ctx)}}]]]
    ["/exam"
     (resource-endpoint ctx "/manage" "exams" "考试中心" "考试管理")
     (resource-endpoint ctx "/online" "online-exams" "考试中心" "在线考试" false)
@@ -143,16 +179,69 @@
    ["/messages"
     (resource-endpoint ctx "" "messages" "消息中心" "消息")]
    ["/personal"
-    (resource-endpoint ctx "/register" "personal-registrations" "个人中心" "个人报名")
-    (resource-endpoint ctx "/score" "personal-scores" "个人中心" "成绩查询" false)
-    (resource-endpoint ctx "/cert" "personal-certificates" "个人中心" "证书查询" false)
-    (resource-endpoint ctx "/ticket" "admission-tickets" "个人中心" "准考证" false)]
+    {:swagger {:tags ["个人中心"]}}
+    ["/register"
+     [""
+      {:get {:summary "个人报名列表" :handler (partial personal/list-register ctx)}
+       :post {:summary "新增个人报名" :handler (partial personal/create-register ctx)}}]
+     ["/:id"
+      {:get {:summary "查看报名详情" :handler (partial personal/get-register ctx)}
+       :put {:summary "更新报名信息" :handler (partial personal/update-register ctx)}
+       :delete {:summary "删除报名" :handler (partial personal/delete-register ctx)}}]]
+    ["/score"
+     [""
+      {:get {:summary "成绩查询列表" :handler (partial personal/list-score ctx)}}]
+     ["/:id"
+      {:get {:summary "查看成绩详情" :handler (partial personal/get-score ctx)}}]]
+    ["/cert"
+     [""
+      {:get {:summary "证书查询列表" :handler (partial personal/list-cert ctx)}}]
+     ["/:id"
+      {:get {:summary "查看证书详情" :handler (partial personal/get-cert ctx)}}]]
+    ["/ticket"
+     [""
+      {:get {:summary "准考证列表" :handler (partial personal/list-ticket ctx)}}]
+     ["/:id"
+      {:get {:summary "查看准考证详情" :handler (partial personal/get-ticket ctx)}}]]]
    ["/file"
-    (resource-endpoint ctx "/distribute" "file-distributions" "文件传输" "文档分发")
-    (resource-endpoint ctx "/receive" "file-receives" "文件传输" "文档接收")
-    (resource-endpoint ctx "/viewer" "file-viewers" "文件传输" "文档阅览" false)
-    (resource-endpoint ctx "/private" "private-files" "文件传输" "私有文档")
-    (resource-endpoint ctx "/settings" "file-settings" "文件传输" "参数设置")]])
+    {:swagger {:tags ["文件传输"]}}
+    ["/distribute"
+     [""
+      {:get {:summary "文档分发列表" :handler (partial files-ctrl/list-distribute ctx)}
+       :post {:summary "新增文档分发" :handler (partial files-ctrl/create-distribute ctx)}}]
+     ["/:id"
+      {:get {:summary "查看分发详情" :handler (partial files-ctrl/get-distribute ctx)}
+       :put {:summary "更新分发信息" :handler (partial files-ctrl/update-distribute ctx)}
+       :delete {:summary "删除分发" :handler (partial files-ctrl/delete-distribute ctx)}}]]
+    ["/receive"
+     [""
+      {:get {:summary "文档接收列表" :handler (partial files-ctrl/list-receive ctx)}
+       :post {:summary "新增文档接收" :handler (partial files-ctrl/create-receive ctx)}}]
+     ["/:id"
+      {:get {:summary "查看接收详情" :handler (partial files-ctrl/get-receive ctx)}
+       :put {:summary "更新接收信息" :handler (partial files-ctrl/update-receive ctx)}
+       :delete {:summary "删除接收" :handler (partial files-ctrl/delete-receive ctx)}}]]
+    ["/viewer"
+     [""
+      {:get {:summary "文档阅览列表" :handler (partial files-ctrl/list-viewer ctx)}}]
+     ["/:id"
+      {:get {:summary "查看文档详情" :handler (partial files-ctrl/get-viewer ctx)}}]]
+    ["/private"
+     [""
+      {:get {:summary "私有文档列表" :handler (partial files-ctrl/list-private ctx)}
+       :post {:summary "新增私有文档" :handler (partial files-ctrl/create-private ctx)}}]
+     ["/:id"
+      {:get {:summary "查看私有文档" :handler (partial files-ctrl/get-private ctx)}
+       :put {:summary "更新私有文档" :handler (partial files-ctrl/update-private ctx)}
+       :delete {:summary "删除私有文档" :handler (partial files-ctrl/delete-private ctx)}}]]
+    ["/settings"
+     [""
+      {:get {:summary "参数设置列表" :handler (partial files-ctrl/list-settings ctx)}
+       :post {:summary "新增参数设置" :handler (partial files-ctrl/create-settings ctx)}}]
+     ["/:id"
+      {:get {:summary "查看参数详情" :handler (partial files-ctrl/get-settings ctx)}
+       :put {:summary "更新参数设置" :handler (partial files-ctrl/update-settings ctx)}
+       :delete {:summary "删除参数设置" :handler (partial files-ctrl/delete-settings ctx)}}]]]])
 
 (defn business-routes [ctx]
   [["/certification"
@@ -245,18 +334,76 @@
     (resource-endpoint ctx "/hiring" "expert-hiring" "评价专家" "专家聘用")
     (resource-endpoint ctx "/dispatch" "expert-dispatch" "评价专家" "专家派遣")]
    ["/supervision"
-    {:swagger {:tags ["评价专家"]}}
-    (resource-endpoint ctx "/expert-info" "experts" "评价专家" "专家信息")
-    (resource-endpoint ctx "/hiring" "expert-hiring" "评价专家" "专家聘用")
-    (resource-endpoint ctx "/training" "expert-training" "评价专家" "督导培训")
-    (resource-endpoint ctx "/evaluator-training" "evaluator-training" "评价专家" "考评培训")
-    (resource-endpoint ctx "/dispatch" "expert-dispatch" "评价专家" "专家派遣")
-    (resource-endpoint ctx "/forms" "expert-forms" "评价专家" "表单管理")
-    (resource-endpoint ctx "/personnel-statistics" "expert-statistics" "评价专家" "人员统计")]
+    {:swagger {:tags ["督导专家"]}}
+    ["/expert-info"
+     [""
+      {:get {:summary "专家信息列表" :handler (partial supervision/list-experts ctx)}
+       :post {:summary "新增专家" :handler (partial supervision/create-expert ctx)}}]
+     ["/:id"
+      {:get {:summary "查看专家详情" :handler (partial supervision/get-expert ctx)}
+       :put {:summary "更新专家信息" :handler (partial supervision/update-expert ctx)}
+       :delete {:summary "删除专家" :handler (partial supervision/delete-expert ctx)}}]]
+    ["/hiring"
+     [""
+      {:get {:summary "专家聘用列表" :handler (partial supervision/list-hiring ctx)}
+       :post {:summary "新增聘用" :handler (partial supervision/create-hiring ctx)}}]
+     ["/:id"
+      {:get {:summary "查看聘用详情" :handler (partial supervision/get-hiring ctx)}
+       :put {:summary "更新聘用信息" :handler (partial supervision/update-hiring ctx)}
+       :delete {:summary "删除聘用" :handler (partial supervision/delete-hiring ctx)}}]]
+    ["/training"
+     [""
+      {:get {:summary "督导培训列表" :handler (partial supervision/list-training ctx)}
+       :post {:summary "新增培训" :handler (partial supervision/create-training ctx)}}]
+     ["/:id"
+      {:get {:summary "查看培训详情" :handler (partial supervision/get-training ctx)}
+       :put {:summary "更新培训信息" :handler (partial supervision/update-training ctx)}
+       :delete {:summary "删除培训" :handler (partial supervision/delete-training ctx)}}]]
+    ["/evaluator-training"
+     [""
+      {:get {:summary "考评培训列表" :handler (partial supervision/list-evaluator-training ctx)}
+       :post {:summary "新增考评培训" :handler (partial supervision/create-evaluator-training ctx)}}]
+     ["/:id"
+      {:get {:summary "查看考评培训详情" :handler (partial supervision/get-evaluator-training ctx)}
+       :put {:summary "更新考评培训" :handler (partial supervision/update-evaluator-training ctx)}
+       :delete {:summary "删除考评培训" :handler (partial supervision/delete-evaluator-training ctx)}}]]
+    ["/dispatch"
+     [""
+      {:get {:summary "专家派遣列表" :handler (partial supervision/list-dispatch ctx)}
+       :post {:summary "新增派遣" :handler (partial supervision/create-dispatch ctx)}}]
+     ["/:id"
+      {:get {:summary "查看派遣详情" :handler (partial supervision/get-dispatch ctx)}
+       :put {:summary "更新派遣信息" :handler (partial supervision/update-dispatch ctx)}
+       :delete {:summary "删除派遣" :handler (partial supervision/delete-dispatch ctx)}}]]
+    ["/forms"
+     [""
+      {:get {:summary "表单列表" :handler (partial supervision/list-forms ctx)}
+       :post {:summary "新增表单" :handler (partial supervision/create-form ctx)}}]
+     ["/:id"
+      {:get {:summary "查看表单详情" :handler (partial supervision/get-form ctx)}
+       :put {:summary "更新表单" :handler (partial supervision/update-form ctx)}
+       :delete {:summary "删除表单" :handler (partial supervision/delete-form ctx)}}]]
+    ["/personnel-statistics"
+     [""
+      {:get {:summary "人员统计" :handler (partial supervision/get-personnel-statistics ctx)}}]]]
    ["/traceability"
     {:swagger {:tags ["溯源中心"]}}
-    (resource-endpoint ctx "/cases" "trace-cases" "溯源中心" "溯源案例")
-    (resource-endpoint ctx "/alerts" "trace-alerts" "溯源中心" "溯源预警")]])
+    ["/cases"
+     [""
+      {:get {:summary "溯源案例列表" :handler (partial traceability/list-cases ctx)}
+       :post {:summary "新增案例" :handler (partial traceability/create-case ctx)}}]
+     ["/:id"
+      {:get {:summary "查看案例详情" :handler (partial traceability/get-case ctx)}
+       :put {:summary "更新案例" :handler (partial traceability/update-case ctx)}
+       :delete {:summary "删除案例" :handler (partial traceability/delete-case ctx)}}]]
+    ["/alerts"
+     [""
+      {:get {:summary "溯源预警列表" :handler (partial traceability/list-alerts ctx)}
+       :post {:summary "新增预警" :handler (partial traceability/create-alert ctx)}}]
+     ["/:id"
+      {:get {:summary "查看预警详情" :handler (partial traceability/get-alert ctx)}
+       :put {:summary "更新预警" :handler (partial traceability/update-alert ctx)}
+       :delete {:summary "删除预警" :handler (partial traceability/delete-alert ctx)}}]]]])
 
 (defn api-routes [opts]
   (let [ctx {:datasource (:datasource opts)

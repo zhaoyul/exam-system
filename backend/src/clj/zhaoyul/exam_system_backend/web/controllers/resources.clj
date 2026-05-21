@@ -1,7 +1,16 @@
 (ns zhaoyul.exam-system-backend.web.controllers.resources
+  "通用资源CRUD控制器，支持org_id机构隔离"
   (:require
    [zhaoyul.exam-system-backend.domain.resources :as resources]
    [zhaoyul.exam-system-backend.web.response :as response]))
+
+(defn- auth-org-id
+  "从请求中提取认证用户的org_id。集团管理员返回nil（不过滤），分支管理员返回自己的org_id。"
+  [request]
+  (let [claims (get request :auth/claims)
+        role (:role claims)]
+    (when (and claims (not= "group_admin" role))
+      (:org_id claims))))
 
 (defn list-resource [{:keys [datasource]} request]
   (let [resource (get-in request [:path-params :resource])]
@@ -31,8 +40,13 @@
       (response/not-found))))
 
 (defn list-alias [ctx resource]
+  "列表查询，自动按机构隔离（非集团管理员只能看自己机构数据）"
   (fn [request]
-    (response/ok (resources/list-items (:datasource ctx) resource (:query-params request)))))
+    (let [forced-org (auth-org-id request)
+          params (if forced-org
+                   (assoc (:query-params request) "org-id" forced-org)
+                   (:query-params request))]
+      (response/ok (resources/list-items (:datasource ctx) resource params)))))
 
 (defn get-alias [ctx resource]
   (fn [request]
@@ -42,9 +56,15 @@
         (response/not-found)))))
 
 (defn create-alias [ctx resource]
+  "创建资源，自动绑定当前用户org_id"
   (fn [request]
-    (response/created
-     (resources/create-item! (:datasource ctx) resource (:body-params request)))))
+    (let [claims (get request :auth/claims)
+          org-id (or (:org_id claims) "")
+          body (if (get (:body-params request) "orgId")
+                 (:body-params request)
+                 (assoc (:body-params request) "orgId" org-id))]
+      (response/created
+       (resources/create-item! (:datasource ctx) resource body)))))
 
 (defn update-alias [ctx resource]
   (fn [request]

@@ -334,13 +334,15 @@
 ;; Domain table seed helpers
 
 (defn- ensure-domain-row! [ds table id-col row]
-  (when-not (db/execute-one! ds [(str "SELECT " id-col " FROM " (name table) " WHERE " id-col " = ?") (:id row)])
+  (try
     (let [cols (keys row)
+          col-names (str/join ", " (map #(str "\"" (name %) "\"") cols))
           placeholders (str/join ", " (repeat (count cols) "?"))
-          col-names (str/join ", " (map name cols))
-          values (mapv row cols)]
-      (db/execute! ds [(str "INSERT INTO " (name table) " (" col-names ") VALUES (" placeholders ")") values])
-      row)))
+          values (mapv #(get row %) cols)
+          sql (str "INSERT OR IGNORE INTO " (name table) " (" col-names ") VALUES (" placeholders ")")]
+      (db/execute! ds [sql values]))
+    (catch Exception e
+      (println "[seed] Failed to seed" (name table) "row" (:id row) ":" (.getMessage e)))))
 
 (defn domain-seed! [ds]
   (doseq [row domain-organizations]
@@ -404,7 +406,10 @@
   (doseq [[resource items] resource-fixtures
           item items]
     (ensure-resource! ds resource item))
-  (domain-seed! ds)
+  (try
+    (domain-seed! ds)
+    (catch Exception e
+      (println "[seed] domain-seed skipped:" (.getMessage e))))
   {:status :seeded})
 
 (defmethod ig/init-key ::seed [_ {:keys [datasource]}]

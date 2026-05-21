@@ -10,7 +10,7 @@
   (let [claims (get request :auth/claims)
         role (:role claims)]
     (when (and claims (not= "group_admin" role))
-      (or (:orgId claims) (:org_id claims)))))
+      (:org_id claims))))
 
 (defn list-resource [{:keys [datasource]} request]
   (let [resource (get-in request [:path-params :resource])]

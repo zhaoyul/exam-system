@@ -49,7 +49,7 @@
 (defn issue-token [config user]
   (let [now (.getEpochSecond (Instant/now))
         exp (+ now (long (get-in config [:auth :token-ttl-seconds] 28800)))
-        payload {:sub (:id user) :username (:username user) :role (:role user) :exp exp}
+        payload {:sub (:id user) :username (:username user) :role (:role user) :org_id (:org_id user) :exp exp}
         body (b64url-encode (json/generate-string payload))
         signature (sha256 (str body "." (get-in config [:auth :token-secret])))]
     (str body "." signature)))

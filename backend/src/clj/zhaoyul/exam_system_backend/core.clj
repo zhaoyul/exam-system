@@ -31,10 +31,15 @@
 
 (defn start-app [& [params]]
   ((or (:start params) (:start defaults) (fn [])))
-  (->> (config/system-config (or (:opts params) (:opts defaults) {}))
-       (ig/expand)
-       (ig/init)
-       (reset! system)))
+  (let [sys (->> (config/system-config (or (:opts params) (:opts defaults) {}))
+                 (ig/expand)
+                 (ig/init))]
+    (reset! system sys)
+    (try
+      (zhaoyul.exam-system-backend.domain.seed/seed!
+        (get sys :zhaoyul.exam-system-backend.infra.datasource/datasource))
+      (catch Exception _
+        (println "[core] Seed failed, continuing...")))))
 
 (defn -main [& _]
   (start-app)

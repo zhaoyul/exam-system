@@ -150,7 +150,11 @@
    "knowledge-structures"
    [{:id "knowledge-001" :name "核安全基础" :status "active" :subjectId "theory-subject-001" :questionCount 120}]
    "theory-questions"
-   [{:id "theory-question-001" :name "核反应堆功率控制的基本原则是什么？" :status "valid" :type "单选题" :difficulty "medium"}]
+   [{:id "theory-question-001" :name "核反应堆运行值班员的主要职责是什么？" :content "核反应堆运行值班员的主要职责是什么？" :options ["A. 负责核反应堆的日常运行监控和操作" "B. 负责核电站的安保工作" "C. 负责核电站的行政管理工作" "D. 负责核电站的设备采购"] :status "valid" :type "单选" :difficulty "medium"}
+    {:id "theory-question-002" :name "核安全文化的核心理念包括哪些？" :content "核安全文化的核心理念包括哪些？" :options ["A. 安全第一、预防为主" "B. 效率优先、兼顾安全" "C. 成本控制、安全次要" "D. 技术领先、安全随缘"] :status "valid" :type "单选" :difficulty "medium"}
+    {:id "theory-question-003" :name "核反应堆控制棒的主要作用是什么？" :content "核反应堆控制棒的主要作用是什么？" :options ["A. 控制核裂变反应的速率" "B. 用于冷却反应堆" "C. 用于发电" "D. 用于测量温度"] :status "valid" :type "单选" :difficulty "medium"}
+    {:id "theory-question-004" :name "核反应堆运行中，控制棒插入越深，反应性越高。" :content "核反应堆运行中，控制棒插入越深，反应性越高。" :options ["A. 正确" "B. 错误"] :status "valid" :type "判断" :difficulty "easy"}
+    {:id "theory-question-005" :name "核电站工作人员必须持有相应的资格证书才能上岗。" :content "核电站工作人员必须持有相应的资格证书才能上岗。" :options ["A. 正确" "B. 错误"] :status "valid" :type "判断" :difficulty "easy"}]
    "structure-ratios"
    [{:id "ratio-001" :name "核安全基础比重" :status "active" :subjectId "theory-subject-001" :ratio 30}]
    "theory-paper-rules"

@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { FileText, Award, BarChart3, Bell, CheckCircle, Clock } from 'lucide-react'
-import { useBackendListState } from '@/hooks/useBackendListState'
+import { useBackendResourceList } from '@/hooks/useBackendListState'
 
 const myRegistrations = [
   { id: 1, occupation: '核反应堆运行值班员', level: '三级', status: 'approved', date: '2026-03-15', examDate: '2026-05-20' },
@@ -23,10 +23,10 @@ const examResults = [
 
 export default function CandidatePortal() {
   const navigate = useNavigate()
-  const [backendRegistrations] = useBackendListState(myRegistrations)
-  const [backendNotifications] = useBackendListState(notifications)
-  const [backendCertificates] = useBackendListState(myCertificates)
-  const [backendResults] = useBackendListState(examResults)
+  const backendRegistrations = useBackendResourceList('/personal/register', myRegistrations)
+  const backendNotifications = useBackendResourceList('/messages', notifications)
+  const backendCertificates = useBackendResourceList('/personal/cert', myCertificates)
+  const backendResults = useBackendResourceList('/personal/score', examResults)
 
   return (
     <div>

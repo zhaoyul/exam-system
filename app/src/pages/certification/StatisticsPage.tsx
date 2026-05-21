@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Download, RefreshCw, TrendingUp, Users, Award, FileCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useBackendListState } from '@/hooks/useBackendListState'
+import { toast } from 'sonner'
+import { useBackendResourceList } from '@/hooks/useBackendListState'
 
 const data = [
   { id: '1', org: '大亚湾核电', total: 320, pass: 280, cert: 275, rate: '87.5%' },
@@ -22,10 +23,37 @@ export default function StatisticsPage() {
   const [mode, setMode] = useState<'按职业统计' | '按机构统计'>('按职业统计')
   const [startMonth, setStartMonth] = useState('2026-01')
   const [endMonth, setEndMonth] = useState('2026-05')
-  const [items, setItems] = useBackendListState(data)
+  const backendItems = useBackendResourceList('/certification/organizations', data.map(item => ({ id: item.id, org: item.org, name: item.org, total: item.total, pass: item.pass, cert: item.cert, rate: item.rate })))
+  const backendOccupationRows = useBackendResourceList('/standard/evaluation-scope', occupationData.map(item => ({ ...item, name: item.occupation })))
+
+  const items = backendItems.map((item, index) => {
+    const fallback = data[index] || data[0]
+    return {
+      id: String(item.id || fallback.id),
+      org: item.org || item.name || fallback.org,
+      total: Number(item.total ?? fallback.total),
+      pass: Number(item.pass ?? fallback.pass),
+      cert: Number(item.cert ?? fallback.cert),
+      rate: String(item.rate ?? fallback.rate),
+    }
+  })
+
+  const occupationRows = backendOccupationRows.map((item, index) => {
+    const fallback = occupationData[index] || occupationData[0]
+    return {
+      id: String(item.id || fallback.id),
+      occupation: item.occupation || item.name || fallback.occupation,
+      plans: Number(item.plans ?? fallback.plans),
+      registered: Number(item.registered ?? fallback.registered),
+      exams: Number(item.exams ?? fallback.exams),
+      passed: Number(item.passed ?? fallback.passed),
+      certified: Number(item.certified ?? fallback.certified),
+      rate: String(item.rate ?? fallback.rate),
+    }
+  })
 
   const refresh = () => {
-    setItems(prev => prev.map(d => ({ ...d, total: d.total + Math.floor(Math.random() * 10), pass: d.pass + Math.floor(Math.random() * 8) })))
+    toast.success('统计数据已刷新')
   }
 
   const totalSum = items.reduce((a, b) => a + b.total, 0)
@@ -68,7 +96,7 @@ export default function StatisticsPage() {
           <table className="w-full text-sm">
             <thead className="bg-[#F9FAFB] text-gray-600 font-medium"><tr><th className="px-4 py-3 text-left">职业</th><th className="px-4 py-3 text-right">计划数</th><th className="px-4 py-3 text-right">报名人数</th><th className="px-4 py-3 text-right">参考人数</th><th className="px-4 py-3 text-right">通过人数</th><th className="px-4 py-3 text-right">获证人数</th><th className="px-4 py-3 text-right">通过率</th></tr></thead>
             <tbody className="divide-y divide-gray-100">
-              {occupationData.map(i => (
+              {occupationRows.map(i => (
                 <tr key={i.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-900">{i.occupation}</td>
                   <td className="px-4 py-3 text-right text-gray-600">{i.plans}</td>

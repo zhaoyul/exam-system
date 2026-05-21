@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { Calendar, Monitor, ClipboardCheck, LayoutGrid, AlertCircle, CheckCircle, Clock } from 'lucide-react'
-import { useBackendListState } from '@/hooks/useBackendListState'
+import { useBackendResourceList } from '@/hooks/useBackendListState'
 
 const tasks = [
   { id: 1, title: '2026年第二批理论考试考场编排', deadline: '2026-05-20', status: 'urgent', type: '编排' },
@@ -16,8 +16,8 @@ const todayExams = [
 
 export default function ExamStaffWorkbench() {
   const navigate = useNavigate()
-  const [backendTasks] = useBackendListState(tasks)
-  const [backendTodayExams] = useBackendListState(todayExams)
+  const backendTasks = useBackendResourceList('/certification/exam-arrangement', tasks)
+  const backendTodayExams = useBackendResourceList('/exam/manage', todayExams)
 
   return (
     <div>

@@ -3,7 +3,7 @@ import { Users, Settings, ChevronRight, PenTool, X, Save, Search, Plus, Edit3, T
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
-import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
+import { useBackendResourceList, useBackendResourceState } from '@/hooks/useBackendListState'
 
 const initialPlans = [
   { id: '1', name: '2026年第一批技能认定-理论阅卷', subject: '核反应堆运行值班员', type: '理论', status: 'in_progress' as const, experts: 3, candidates: 45 },
@@ -36,7 +36,7 @@ export default function GradingPage() {
   const [candidateIdx, setCandidateIdx] = useState(0)
 
   // Expert management state
-  const [experts, setExperts] = useBackendListState<Expert>(initialExperts)
+  const [experts, setExperts] = useBackendResourceState<Expert>('/supervision/expert-info', initialExperts)
   const [expertSearch, setExpertSearch] = useState('')
   const [showExpertForm, setShowExpertForm] = useState(false)
   const [editingExpert, setEditingExpert] = useState<Expert | null>(null)

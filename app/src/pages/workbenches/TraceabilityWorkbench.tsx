@@ -4,22 +4,23 @@ import { AlertTriangle, ArrowRight, Award, BarChart3, CheckCircle2, FileSearch, 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { stageOrder, traceAlerts, traceCases, traceSummary } from '@/pages/traceability/traceabilityData'
-import { useBackendListState } from '@/hooks/useBackendListState'
+import { useBackendResourceList } from '@/hooks/useBackendListState'
 
 const summary = traceSummary()
 
-const orgStats = [
-  { name: '大亚湾核电', total: 4250, complete: 98, abnormal: 2 },
-  { name: '阳江核电', total: 3560, complete: 94, abnormal: 6 },
-  { name: '台山核电', total: 3120, complete: 91, abnormal: 9 },
-  { name: '防城港核电', total: 2800, complete: 96, abnormal: 3 },
-]
-
 export default function TraceabilityWorkbench() {
   const navigate = useNavigate()
-  const [backendTraceCases] = useBackendListState(traceCases)
-  const [backendTraceAlerts] = useBackendListState(traceAlerts)
-  const [backendOrgStats] = useBackendListState(orgStats)
+  const backendTraceCases = useBackendResourceList('/traceability/cases', traceCases)
+  const backendTraceAlerts = useBackendResourceList('/traceability/alerts', traceAlerts)
+  const backendOrgStats = Object.values(backendTraceCases.reduce<Record<string, { name: string; total: number; complete: number; abnormal: number }>>((acc, item) => {
+    const key = item.org || '未分组机构'
+    const current = acc[key] || { name: key, total: 0, complete: 0, abnormal: 0 }
+    current.total += 1
+    current.complete += item.status === '已完成' ? 100 : 80
+    current.abnormal += item.status === '异常' ? 1 : 0
+    acc[key] = current
+    return acc
+  }, {}))
   const [query, setQuery] = useState('')
   const quickSearch = () => {
     const match = backendTraceCases.find(item => [item.traceNo, item.candidateName, item.idCard, item.certNo].some(value => value.includes(query)))

@@ -3,13 +3,13 @@ import { Award, BarChart3, ClipboardCheck, FileSpreadsheet, GraduationCap, Shiel
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { dispatchTasks, experts, trainingPlans } from '@/pages/supervision/expertData'
-import { useBackendListState } from '@/hooks/useBackendListState'
+import { useBackendResourceList } from '@/hooks/useBackendListState'
 
 export default function ExpertWorkbench() {
   const navigate = useNavigate()
-  const [backendExperts] = useBackendListState(experts)
-  const [backendTrainingPlans] = useBackendListState(trainingPlans)
-  const [backendDispatchTasks] = useBackendListState(dispatchTasks)
+  const backendExperts = useBackendResourceList('/supervision/expert-info', experts)
+  const backendTrainingPlans = useBackendResourceList('/supervision/training', trainingPlans)
+  const backendDispatchTasks = useBackendResourceList('/supervision/dispatch', dispatchTasks)
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">

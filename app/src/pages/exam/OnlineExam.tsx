@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Clock, ChevronLeft, ChevronRight, Flag, Send, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useBackendListState } from '@/hooks/useBackendListState'
+import { useBackendResourceList } from '@/hooks/useBackendListState'
 
 const questions = [
   { id: 1, type: '单选', content: '核反应堆运行值班员的主要职责是什么？', options: ['A. 负责核反应堆的日常运行监控和操作', 'B. 负责核电站的安保工作', 'C. 负责核电站的行政管理工作', 'D. 负责核电站的设备采购'] },
@@ -13,7 +13,17 @@ const questions = [
 ]
 
 export default function OnlineExam() {
-  const [examQuestions] = useBackendListState(questions)
+  const questionRows = useBackendResourceList('/question/theory', questions)
+  const examQuestions = questionRows.map((item, index) => {
+    const template = questions[index] || questions[0]
+    const backendItem = item as typeof item & { name?: string }
+    return {
+      id: Number(index + 1),
+      type: backendItem.type || template.type,
+      content: backendItem.content || backendItem.name || template.content,
+      options: backendItem.options?.length ? backendItem.options : template.options,
+    }
+  })
   const [current, setCurrent] = useState(0)
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [marked, setMarked] = useState<number[]>([])
@@ -139,7 +149,7 @@ export default function OnlineExam() {
           <DialogHeader><DialogTitle>确认提交</DialogTitle></DialogHeader>
           <div className="text-center py-2">
             <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-2" />
-            <p className="text-sm text-gray-600">您已作答 {answeredCount}/{questions.length} 题</p>
+            <p className="text-sm text-gray-600">您已作答 {answeredCount}/{examQuestions.length} 题</p>
             {answeredCount < examQuestions.length && <p className="text-xs text-red-500 mt-1">还有 {examQuestions.length - answeredCount} 题未作答，确定提交吗？</p>}
           </div>
           <div className="flex justify-end gap-2 mt-4">

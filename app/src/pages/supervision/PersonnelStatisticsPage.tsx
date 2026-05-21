@@ -2,15 +2,14 @@ import { Award, Building2, Download, GraduationCap, PieChart, Star, Users } from
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { dispatchTasks, experts, trainingPlans } from './expertData'
-import { useBackendListState } from '@/hooks/useBackendListState'
-
-const orgs = ['大亚湾核电', '中广核研究院', '阳江核电', '台山核电']
-const fields = ['核反应堆运行', '电气试验', '机械设备检修', '仪控设备检修']
+import { useBackendResourceList } from '@/hooks/useBackendListState'
 
 export default function PersonnelStatisticsPage() {
-  const [backendExperts] = useBackendListState(experts)
-  const [backendTrainingPlans] = useBackendListState(trainingPlans)
-  const [backendDispatchTasks] = useBackendListState(dispatchTasks)
+  const backendExperts = useBackendResourceList('/supervision/expert-info', experts)
+  const backendTrainingPlans = useBackendResourceList('/supervision/training', trainingPlans)
+  const backendDispatchTasks = useBackendResourceList('/supervision/dispatch', dispatchTasks)
+  const orgs = Array.from(new Set(backendExperts.map(item => item.org).filter(Boolean)))
+  const fields = Array.from(new Set(backendExperts.map(item => item.specialty).filter(Boolean)))
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3"><div><h1 className="text-xl font-bold text-gray-900">人员统计</h1><p className="mt-1 text-sm text-gray-500">统计评价专家、督导人员、考评人员的培训、聘用、派遣和回评情况</p></div><Button variant="outline"><Download className="mr-2 h-4 w-4" />导出统计</Button></div>

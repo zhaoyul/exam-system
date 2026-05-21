@@ -218,6 +218,7 @@
     (resource-endpoint ctx "/paper-library" "paper-library" "题库" "卷库")]
    ["/question"
     {:swagger {:tags ["题库兼容路径"]}}
+    (resource-endpoint ctx "/subject-sort" "subject-categories" "题库兼容路径" "科目分类")
     (resource-endpoint ctx "/subjects" "theory-subjects" "题库兼容路径" "科目管理")
     (resource-endpoint ctx "/knowledge" "knowledge-structures" "题库兼容路径" "知识结构")
     (resource-endpoint ctx "/ratio" "structure-ratios" "题库兼容路径" "结构比重")

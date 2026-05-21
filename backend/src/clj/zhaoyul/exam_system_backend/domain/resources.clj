@@ -40,6 +40,7 @@
    "video-monitor" "video-monitor"
    "public-query" "certificates"
    "subject-categories" "subject-categories"
+   "subject-sort" "subject-categories"
    "theory-subjects" "theory-subjects"
    "subjects" "theory-subjects"
    "knowledge" "knowledge-structures"

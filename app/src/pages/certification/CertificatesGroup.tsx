@@ -1,14 +1,13 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import {
-  Search, Award, FileText, ChevronDown, ChevronRight, Eye, FileSpreadsheet, MoreHorizontal, Download, CheckCircle
+  Search, Award, FileText, MoreHorizontal, CheckCircle
 } from 'lucide-react'
 import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
 
@@ -16,9 +15,13 @@ interface CertPlan {
   id: string
   planNo: string
   name: string
+  warning: string
   filingOrg: string
+  site: string
   examMonth: string
-  status: '待生成' | '已生成' | '部分生成'
+  examDate: string
+  regDeadline: string
+  status: string
   certCount: number
   children: CertChild[]
 }
@@ -46,7 +49,7 @@ interface CandidateCert {
 
 const mockPlans: CertPlan[] = [
   {
-    id: '1', planNo: '22118800880003', name: '20220324中国同辐股份有限公司第2批认定', filingOrg: '北京市', examMonth: '2022年04月', status: '部分生成', certCount: 2,
+    id: '1', planNo: '26440310050001', name: '20260402中广核测试第1批认定', warning: '', filingOrg: '广东省', site: '深圳市中广核', examMonth: '2026年04月', examDate: '2026-04-09', regDeadline: '2026-04-08', status: '--', certCount: 2,
     children: [
       { id: 'c1', profession: '道路客运汽车驾驶员', level: '五级/初级工', theoryEnrolled: 0, groupEnrolled: 1, examSubjects: '理论（知识）技能（实操）' },
       { id: 'c2', profession: '抄表核算收费员', level: '五级/初级工', theoryEnrolled: 0, groupEnrolled: 1, examSubjects: '理论（知识）技能（实操）' },
@@ -54,7 +57,7 @@ const mockPlans: CertPlan[] = [
     ]
   },
   {
-    id: '2', planNo: '22119999660044', name: '2021-04-27年第28批认定', filingOrg: '北京市', examMonth: '2021年04月', status: '已生成', certCount: 3,
+    id: '2', planNo: '22119999660044', name: '2021-04-27年第28批认定', warning: '', filingOrg: '北京市', site: '北京市', examMonth: '2021年04月', examDate: '2021-04-27', regDeadline: '2021-04-27', status: '--', certCount: 3,
     children: [
       { id: 'c4', profession: '秘书', level: '五级/初级工', theoryEnrolled: 0, groupEnrolled: 1, examSubjects: '理论（知识）技能（实操）' },
     ]
@@ -71,8 +74,6 @@ export default function CertificatesGroup() {
   const [plans, setPlans] = useBackendListState<CertPlan>(mockPlans)
   const candidateCerts = useBackendResourceList('/certificate/view', mockCandidateCerts)
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'全部' | CertPlan['status']>('全部')
-  const [expandedId, setExpandedId] = useState<string | null>(null)
   const [showGenerate, setShowGenerate] = useState(false)
   const [showCandidates, setShowCandidates] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<CertPlan | null>(null)
@@ -80,12 +81,11 @@ export default function CertificatesGroup() {
 
   const filtered = plans.filter(p => {
     const bySearch = !search || p.name.includes(search) || p.planNo.includes(search)
-    const byStatus = statusFilter === '全部' || p.status === statusFilter
-    return bySearch && byStatus
+    return bySearch
   })
 
   const handleGenerate = () => {
-    setPlans(prev => prev.map(p => selectedPlan && p.id !== selectedPlan.id ? p : { ...p, status: '已生成' as const, certCount: Math.max(p.certCount, 3) }))
+    setPlans(prev => prev.map(p => selectedPlan && p.id !== selectedPlan.id ? p : { ...p, status: '--', certCount: Math.max(p.certCount, 3) }))
     setShowGenerate(false)
     toast.success(`证书生成成功！发证日期：${issueDate}`)
   }
@@ -100,120 +100,70 @@ export default function CertificatesGroup() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">证书管理</h1>
-          <p className="text-sm text-gray-500 mt-1">生成职业技能等级证书，查看考生证书编号和成绩</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => toast.success('证书数据已导出')}><Download className="w-4 h-4 mr-2" />导出证书数据</Button>
-          <Button onClick={() => setShowGenerate(true)} className="bg-[#1A56DB] hover:bg-[#1748B5]">
-            <Award className="w-4 h-4 mr-2" />批量生成证书
-          </Button>
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)} className="h-9 rounded-md border border-gray-200 px-3 text-sm">
-            <option>全部</option>
-            <option>待生成</option>
-            <option>部分生成</option>
-            <option>已生成</option>
-          </select>
+      <div className="rounded-lg border border-gray-200 bg-white p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm font-medium text-gray-700">计划名称</span>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input placeholder="计划名称" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 w-64" />
+            <Input value={search} onChange={e => setSearch(e.target.value)} className="pl-9 w-64" />
           </div>
+          <Button className="h-9 bg-[#1A56DB] px-5 hover:bg-[#1748B5]">搜索</Button>
+          <Button variant="outline" className="h-9" onClick={() => toast.success('证书生成日志已打开')}>证书生成日志</Button>
         </div>
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[1120px] text-sm">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-3 py-3 text-left w-8"></th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">序号</th>
+              <th className="px-3 py-3 text-left font-medium text-gray-600">预警</th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">计划编号</th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">计划名称</th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">备案地</th>
-              <th className="px-3 py-3 text-left font-medium text-gray-600">考试月份</th>
-              <th className="px-3 py-3 text-left font-medium text-gray-600">证书数</th>
+              <th className="px-3 py-3 text-left font-medium text-gray-600">站点名称</th>
+              <th className="px-3 py-3 text-left font-medium text-gray-600">拟考月份</th>
+              <th className="px-3 py-3 text-left font-medium text-gray-600">拟考日期</th>
+              <th className="px-3 py-3 text-left font-medium text-gray-600">报名截止</th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">状态</th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filtered.map((plan, idx) => (
-              <>
-                <tr key={plan.id} className="hover:bg-gray-50">
-                  <td className="px-3 py-3">
-                    <button onClick={() => setExpandedId(expandedId === plan.id ? null : plan.id)} className="text-gray-400 hover:text-gray-600">
-                      {expandedId === plan.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+              <tr key={plan.id} className="hover:bg-gray-50">
+                <td className="px-3 py-3 text-gray-600">{idx + 1}</td>
+                <td className="px-3 py-3 text-gray-600">{plan.warning}</td>
+                <td className="px-3 py-3 font-mono text-xs text-gray-600">{plan.planNo}</td>
+                <td className="px-3 py-3 font-medium text-gray-900">{plan.name}</td>
+                <td className="px-3 py-3 text-gray-600">{plan.filingOrg}</td>
+                <td className="px-3 py-3 text-gray-600">{plan.site}</td>
+                <td className="px-3 py-3 text-gray-600">{plan.examMonth}</td>
+                <td className="px-3 py-3 text-gray-600">{plan.examDate}</td>
+                <td className="px-3 py-3 text-gray-600">{plan.regDeadline}</td>
+                <td className="px-3 py-3 text-gray-600">{plan.status}</td>
+                <td className="px-3 py-3">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => toast.success('认定已结束')} className="text-blue-600 hover:underline text-xs flex items-center gap-0.5">
+                      <CheckCircle className="w-3 h-3" />结束
                     </button>
-                  </td>
-                  <td className="px-3 py-3 text-gray-600">{idx + 1}</td>
-                  <td className="px-3 py-3 font-mono text-xs text-gray-600">{plan.planNo}</td>
-                  <td className="px-3 py-3 font-medium text-gray-900">{plan.name}</td>
-                  <td className="px-3 py-3 text-gray-600">{plan.filingOrg}</td>
-                  <td className="px-3 py-3 text-gray-600">{plan.examMonth}</td>
-                  <td className="px-3 py-3 text-gray-600">{plan.certCount}本</td>
-                  <td className="px-3 py-3">
-                    <Badge className={`text-[10px] ${plan.status === '已生成' ? 'bg-green-50 text-green-700' : plan.status === '部分生成' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'}`}>{plan.status}</Badge>
-                  </td>
-                  <td className="px-3 py-3">
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => openCandidates(plan)} className="text-blue-600 hover:underline text-xs flex items-center gap-0.5">
-                        <Eye className="w-3 h-3" />考生
-                      </button>
-                      <button onClick={() => { setSelectedPlan(plan); setShowGenerate(true) }} className="text-blue-600 hover:underline text-xs flex items-center gap-0.5">
-                        <Award className="w-3 h-3" />生成证书
-                      </button>
-                      <button onClick={() => toast.success('证书生成状态已确认')} className="text-blue-600 hover:underline text-xs flex items-center gap-0.5">
-                        <CheckCircle className="w-3 h-3" />确认
-                      </button>
-                      <button onClick={() => toast.success('申报表已导出')} className="text-blue-600 hover:underline text-xs flex items-center gap-0.5">
-                        <FileSpreadsheet className="w-3 h-3" />申报表
-                      </button>
-                      <button onClick={() => {}} className="text-gray-400 hover:text-gray-600">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                {expandedId === plan.id && (
-                  <tr className="bg-gray-50">
-                    <td colSpan={9} className="px-3 py-3">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="text-xs text-gray-500">
-                            <th className="px-3 py-2 text-left w-8">序号</th>
-                            <th className="px-3 py-2 text-left">职业工种</th>
-                            <th className="px-3 py-2 text-left">技能等级</th>
-                            <th className="px-3 py-2 text-left">网报人数</th>
-                            <th className="px-3 py-2 text-left">集体报名</th>
-                            <th className="px-3 py-2 text-left">操作</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {plan.children.map((child, cIdx) => (
-                            <tr key={child.id} className="border-t border-gray-100">
-                              <td className="px-3 py-2 text-gray-600">{idx + 1}-{cIdx + 1}</td>
-                              <td className="px-3 py-2 text-gray-900">{child.profession}</td>
-                              <td className="px-3 py-2"><Badge className="text-[10px] bg-blue-50 text-blue-700">{child.level}</Badge></td>
-                              <td className="px-3 py-2 text-gray-600">{child.theoryEnrolled}</td>
-                              <td className="px-3 py-2 text-gray-600">{child.groupEnrolled}</td>
-                              <td className="px-3 py-2">
-                                <button onClick={() => openCandidates(plan)} className="text-blue-600 hover:underline text-xs">
-                                  考生
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </td>
-                  </tr>
-                )}
-              </>
+                    <button onClick={() => { setSelectedPlan(plan); setShowGenerate(true) }} className="text-blue-600 hover:underline text-xs">导入证书申报表</button>
+                    <button onClick={() => openCandidates(plan)} className="text-blue-600 hover:underline text-xs">考生</button>
+                    <button onClick={() => toast.success('更多操作已打开')} className="inline-flex items-center gap-1 text-xs text-gray-600 hover:text-[#1A56DB]">
+                      更多...<MoreHorizontal className="w-4 h-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
             ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={11} className="px-3 py-12 text-center text-sm text-gray-400">暂无数据</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

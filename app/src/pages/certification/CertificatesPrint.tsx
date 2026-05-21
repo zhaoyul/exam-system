@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import {
-  Search, Printer, ChevronDown, ChevronRight, MoreHorizontal, CheckCircle, Users, Eye, Download, RotateCcw
+  Search, Printer, MoreHorizontal, CheckCircle, Users, Eye
 } from 'lucide-react'
 import { useBackendResourceList, useBackendResourceState } from '@/hooks/useBackendListState'
 
@@ -15,9 +15,11 @@ interface PrintPlan {
   id: string
   planNo: string
   name: string
+  warning: string
   filingOrg: string
   site: string
   examMonth: string
+  examDate: string
   regDeadline: string
   status: string
   children: PrintChild[]
@@ -46,7 +48,16 @@ type BorderType = 'none' | 'border' | 'photo'
 
 const mockPlans: PrintPlan[] = [
   {
-    id: '1', planNo: '21119999660044', name: '2021-04-27年第28批认定', filingOrg: '北京市', site: '北京市', examMonth: '2021年04月', regDeadline: '2021-04-27', status: '--',
+    id: '1',
+    planNo: '21119999660044',
+    name: '2021-04-27年第28批认定',
+    warning: '--',
+    filingOrg: '北京市',
+    site: '北京市',
+    examMonth: '2021年04月',
+    examDate: '2021-04-27',
+    regDeadline: '2021-04-27',
+    status: '--',
     children: [
       { id: 'c1', profession: '道路客运汽车驾驶员', level: '五级/初级工', theoryEnrolled: 0, groupEnrolled: 1 },
     ]
@@ -63,8 +74,6 @@ export default function CertificatesPrint() {
   const plans = useBackendResourceList('/certification/certificates-print', mockPlans)
   const [candidates, setCandidates] = useBackendResourceState<CandidatePrint>('/certificate/view', mockCandidates)
   const [search, setSearch] = useState('')
-  const [printStatus, setPrintStatus] = useState<'全部' | CandidatePrint['status']>('全部')
-  const [expandedId, setExpandedId] = useState<string | null>(null)
   const [borderType, setBorderType] = useState<BorderType>('border')
   const [printPhoto, setPrintPhoto] = useState(true)
   const [showCandidates, setShowCandidates] = useState(false)
@@ -73,7 +82,7 @@ export default function CertificatesPrint() {
   const [showPreview, setShowPreview] = useState<CandidatePrint | null>(null)
 
   const filtered = plans.filter(p => !search || p.name.includes(search) || p.planNo.includes(search))
-  const candidateList = candidates.filter(c => printStatus === '全部' || c.status === printStatus)
+  const candidateList = candidates
 
   const handlePrint = () => {
     setCandidates(prev => prev.map(c => selectedCandidates.includes(c.id) ? { ...c, status: 'printed' as const } : c))
@@ -99,11 +108,6 @@ export default function CertificatesPrint() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">证书打印</h1>
-          <p className="text-sm text-gray-500 mt-1">按计划筛选证书，预览并批量打印，回写打印状态</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => toast.success('打印清单已导出')}><Download className="w-4 h-4 mr-2" />导出打印清单</Button>
-          <Button variant="outline" onClick={() => { setCandidates(prev => prev.map(c => ({ ...c, status: 'pending' as const }))); toast.success('打印状态已重置') }}><RotateCcw className="w-4 h-4 mr-2" />重置打印状态</Button>
         </div>
       </div>
 
@@ -114,16 +118,9 @@ export default function CertificatesPrint() {
             <span className="text-sm font-medium text-gray-700">计划名称</span>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input placeholder="搜索" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 w-48" />
+              <Input value={search} onChange={e => setSearch(e.target.value)} className="pl-9 w-56" />
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-gray-700">打印状态：</span>
-            <select value={printStatus} onChange={e => setPrintStatus(e.target.value as typeof printStatus)} className="h-9 rounded-md border border-gray-200 px-3 text-sm">
-              <option>全部</option>
-              <option value="pending">未打印</option>
-              <option value="printed">已打印</option>
-            </select>
+            <Button className="h-9 bg-[#1A56DB] px-5 hover:bg-[#1748B5]">搜索</Button>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-gray-700">证书边框设置：</span>
@@ -156,16 +153,17 @@ export default function CertificatesPrint() {
 
       {/* Plans Table */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[1080px] text-sm">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-3 py-3 text-left w-8"></th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">序号</th>
+              <th className="px-3 py-3 text-left font-medium text-gray-600">预警</th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">计划编号</th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">计划名称</th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">备案地</th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">站点名称</th>
-              <th className="px-3 py-3 text-left font-medium text-gray-600">考试月份</th>
+              <th className="px-3 py-3 text-left font-medium text-gray-600">拟考月份</th>
+              <th className="px-3 py-3 text-left font-medium text-gray-600">拟考日期</th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">报名截止</th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">状态</th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">操作</th>
@@ -173,63 +171,37 @@ export default function CertificatesPrint() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filtered.map((plan, idx) => (
-              <>
-                <tr key={plan.id} className="hover:bg-gray-50">
-                  <td className="px-3 py-3">
-                    <button onClick={() => setExpandedId(expandedId === plan.id ? null : plan.id)} className="text-gray-400 hover:text-gray-600">
-                      {expandedId === plan.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+              <tr key={plan.id} className="hover:bg-gray-50">
+                <td className="px-3 py-3 text-gray-600">{idx + 1}</td>
+                <td className="px-3 py-3 text-gray-500">{plan.warning}</td>
+                <td className="px-3 py-3 font-mono text-xs text-gray-600">{plan.planNo}</td>
+                <td className="px-3 py-3 font-medium text-gray-900">{plan.name}</td>
+                <td className="px-3 py-3 text-gray-600">{plan.filingOrg}</td>
+                <td className="px-3 py-3 text-gray-600">{plan.site}</td>
+                <td className="px-3 py-3 text-gray-600">{plan.examMonth}</td>
+                <td className="px-3 py-3 text-gray-600">{plan.examDate}</td>
+                <td className="px-3 py-3 text-gray-600">{plan.regDeadline}</td>
+                <td className="px-3 py-3 text-gray-500">{plan.status}</td>
+                <td className="px-3 py-3">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => openCandidates(plan)} className="text-blue-600 hover:underline text-xs flex items-center gap-0.5">
+                      <Users className="w-3 h-3" />考生
                     </button>
-                  </td>
-                  <td className="px-3 py-3 text-gray-600">{idx + 1}</td>
-                  <td className="px-3 py-3 font-mono text-xs text-gray-600">{plan.planNo}</td>
-                  <td className="px-3 py-3 font-medium text-gray-900">{plan.name}</td>
-                  <td className="px-3 py-3 text-gray-600">{plan.filingOrg}</td>
-                  <td className="px-3 py-3 text-gray-600">{plan.site}</td>
-                  <td className="px-3 py-3 text-gray-600">{plan.examMonth}</td>
-                  <td className="px-3 py-3 text-gray-600">{plan.regDeadline}</td>
-                  <td className="px-3 py-3 text-gray-500">{plan.status}</td>
-                  <td className="px-3 py-3">
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => openCandidates(plan)} className="text-blue-600 hover:underline text-xs flex items-center gap-0.5">
-                        <Users className="w-3 h-3" />考生
-                      </button>
-                      <button onClick={() => toast.success('认定已结束')} className="text-blue-600 hover:underline text-xs flex items-center gap-0.5">
-                        <CheckCircle className="w-3 h-3" />结束
-                      </button>
-                      <button onClick={() => {}} className="text-gray-400 hover:text-gray-600">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                {expandedId === plan.id && (
-                  <tr className="bg-gray-50">
-                    <td colSpan={10} className="px-3 py-3">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="text-xs text-gray-500">
-                            <th className="px-3 py-2 text-left">职业工种</th>
-                            <th className="px-3 py-2 text-left">技能等级</th>
-                            <th className="px-3 py-2 text-left">网报人数</th>
-                            <th className="px-3 py-2 text-left">集体报名</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {plan.children.map(child => (
-                            <tr key={child.id} className="border-t border-gray-100">
-                              <td className="px-3 py-2 text-gray-900">{child.profession}</td>
-                              <td className="px-3 py-2"><Badge className="text-[10px] bg-blue-50 text-blue-700">{child.level}</Badge></td>
-                              <td className="px-3 py-2 text-gray-600">{child.theoryEnrolled}</td>
-                              <td className="px-3 py-2 text-gray-600">{child.groupEnrolled}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </td>
-                  </tr>
-                )}
-              </>
+                    <button onClick={() => openCandidates(plan)} className="text-blue-600 hover:underline text-xs flex items-center gap-0.5">
+                      <Printer className="w-3 h-3" />打印
+                    </button>
+                    <button onClick={() => toast.success('更多操作已打开')} className="inline-flex items-center gap-1 text-xs text-gray-600 hover:text-[#1A56DB]">
+                      更多...<MoreHorizontal className="w-4 h-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
             ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={11} className="px-3 py-12 text-center text-sm text-gray-400">暂无数据</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

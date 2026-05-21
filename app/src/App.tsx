@@ -44,6 +44,8 @@ import ApprovalPage from '@/pages/certification/ApprovalPage'
 import ViolationsPage from '@/pages/certification/ViolationsPage'
 import SpecialPage from '@/pages/certification/SpecialPage'
 // Question Bank
+import SubjectSort from '@/pages/question/SubjectSort'
+import SkillSubjectSort from '@/pages/question/SkillSubjectSort'
 import SubjectManage from '@/pages/question/SubjectManage'
 import KnowledgeStructure from '@/pages/question/KnowledgeStructure'
 import StructureRatio from '@/pages/question/StructureRatio'
@@ -60,6 +62,7 @@ import ExamSessionArrange from '@/pages/certification/ExamSessionArrange'
 import CertDeclaration from '@/pages/certification/CertDeclaration'
 import EvaluatorStaff from '@/pages/certification/EvaluatorStaff'
 import MarkingLeadPage from '@/pages/certification/MarkingLeadPage'
+import EnrollModifyPage from '@/pages/certification/EnrollModifyPage'
 import FinanceWorkbench from '@/pages/finance/FinanceWorkbench'
 import FeeChargePage from '@/pages/finance/FeeChargePage'
 import FeeListPage from '@/pages/finance/FeeListPage'
@@ -230,6 +233,7 @@ export default function App() {
           <Route path="/cert/exam-staff" element={<ExamStaffManage />} />
           <Route path="/cert/evaluator-staff" element={<EvaluatorStaff />} />
           <Route path="/cert/marking-lead" element={<MarkingLeadPage />} />
+          <Route path="/cert/enroll-modify" element={<EnrollModifyPage />} />
           <Route path="/cert/declaration" element={<CertDeclaration />} />
           {/* Finance System */}
           <Route path="/finance/workbench" element={<FinanceWorkbench />} />
@@ -238,12 +242,14 @@ export default function App() {
           <Route path="/finance/ledger" element={<FeeLedgerPage />} />
           <Route path="/finance/standard" element={<FeeStandardPage />} />
           {/* Question Bank */}
+          <Route path="/question/subject-sort" element={<SubjectSort />} />
           <Route path="/question/subjects" element={<SubjectManage />} />
           <Route path="/question/knowledge" element={<KnowledgeStructure />} />
           <Route path="/question/ratio" element={<StructureRatio />} />
           <Route path="/question/paper-rules" element={<PaperRules />} />
           <Route path="/question/paper-require" element={<PaperRequirements />} />
           <Route path="/question/skill-subjects" element={<SkillSubjectManage />} />
+          <Route path="/question/skill-subject-sort" element={<SkillSubjectSort />} />
           <Route path="/question/skill-modules" element={<SkillModuleManage />} />
           <Route path="/question/skill-rules" element={<SkillPaperRules />} />
           <Route path="/question/skill-require" element={<SkillPaperRequirements />} />

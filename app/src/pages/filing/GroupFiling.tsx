@@ -1,311 +1,140 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { FileText, MapPin, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { toast } from 'sonner'
-import {
-  Building2, FileText, MapPin, Users, Shield,
-  Upload, Search, Plus, Edit3, CheckCircle
-} from 'lucide-react'
-import { useBackendListState } from '@/hooks/useBackendListState'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useBackendResourceList } from '@/hooks/useBackendListState'
 
-// 集团备案 - 区别于分支机构备案
-// 集团备案：集团向人社部备案，管理集团层面信息、认定项目、分支机构授权
-// 分支机构备案：分支机构向省级人社部门备案，管理8个详细信息标签
-
-interface BranchOrg {
-  id: number
+interface FilingOrg {
+  id: string
   name: string
-  orgCode: string
-  province: string
-  city: string
+  orgType: string
+  creditCode: string
   contact: string
   phone: string
-  certCount: number
-  status: 'active' | 'pending' | 'inactive'
+  address: string
+  filingPlaces: string[]
+  siteCount: number
+  rejectCount: number
+  materialCount: number
+  projectCount: number
+  staffCount: number
+  supervisorCount: number
+  assessorCount: number
+  examRoomCount: number
 }
 
-interface EvalProject {
-  id: number
-  professionName: string
-  jobTypeName: string
-  level: string
-  levelCode: string
-  examTheory: boolean
-  examSkill: boolean
-  examComposite: boolean
-  passScore: number
-  conditionCount: number
-}
-
-const mockBranches: BranchOrg[] = [
-  { id: 1, name: '大亚湾核电运营管理有限责任公司', orgCode: 'CSN-DYW', province: '广东', city: '深圳', contact: '张主任', phone: '0755-12345678', certCount: 12, status: 'active' },
-  { id: 2, name: '阳江核电有限公司', orgCode: 'CSN-YJ', province: '广东', city: '阳江', contact: '李主任', phone: '0755-12345679', certCount: 8, status: 'active' },
-  { id: 3, name: '台山核电合营有限公司', orgCode: 'CSN-TS', province: '广东', city: '江门', contact: '王主任', phone: '0755-12345680', certCount: 10, status: 'active' },
-  { id: 4, name: '广西防城港核电有限公司', orgCode: 'CSN-FCG', province: '广西', city: '防城港', contact: '赵主任', phone: '0770-12345678', certCount: 6, status: 'pending' },
-  { id: 5, name: '福建宁德核电有限公司', orgCode: 'CSN-ND', province: '福建', city: '宁德', contact: '孙主任', phone: '0593-12345678', certCount: 5, status: 'active' },
+const initialOrgs: FilingOrg[] = [
+  { id: 'fo1', name: '中广测试有限公司', orgType: '全国性用人单位分支机构', creditCode: '123456789QWE123', contact: '张三', phone: '13412341234', address: '', filingPlaces: ['北京市', '广东省'], siteCount: 1, rejectCount: 0, materialCount: 0, projectCount: 0, staffCount: 0, supervisorCount: 0, assessorCount: 0, examRoomCount: 0 },
+  { id: 'fo2', name: '福建宁德核电有限公司', orgType: '全国性用人单位分支机构', creditCode: '91350900111111111X', contact: '李四', phone: '13512341234', address: '福建省宁德市', filingPlaces: ['福建省'], siteCount: 1, rejectCount: 0, materialCount: 6, projectCount: 5, staffCount: 12, supervisorCount: 3, assessorCount: 8, examRoomCount: 2 },
+  { id: 'fo3', name: '防城港核电', orgType: '全国性用人单位分支机构', creditCode: '91450600111111111X', contact: '王五', phone: '13612341234', address: '广西防城港', filingPlaces: ['广西壮族自治区'], siteCount: 1, rejectCount: 0, materialCount: 6, projectCount: 6, staffCount: 9, supervisorCount: 3, assessorCount: 10, examRoomCount: 3 },
 ]
 
-const mockProjects: EvalProject[] = [
-  { id: 1, professionName: '核反应堆运行值班员', jobTypeName: '核反应堆运行值班员', level: '三级', levelCode: '3', examTheory: true, examSkill: true, examComposite: false, passScore: 60.0, conditionCount: 3 },
-  { id: 2, professionName: '电气值班员', jobTypeName: '电气值班员', level: '四级', levelCode: '4', examTheory: true, examSkill: true, examComposite: false, passScore: 60.0, conditionCount: 2 },
-  { id: 3, professionName: '汽轮机运行值班员', jobTypeName: '汽轮机运行值班员', level: '三级', levelCode: '3', examTheory: true, examSkill: true, examComposite: false, passScore: 60.0, conditionCount: 3 },
-  { id: 4, professionName: '仪器仪表维修工', jobTypeName: '仪器仪表维修工', level: '四级', levelCode: '4', examTheory: true, examSkill: true, examComposite: false, passScore: 60.0, conditionCount: 2 },
-]
-
-const statusMap: Record<string, { label: string; color: string }> = {
-  active: { label: '已备案', color: 'bg-green-100 text-green-700' },
-  pending: { label: '待备案', color: 'bg-yellow-100 text-yellow-700' },
-  inactive: { label: '已停用', color: 'bg-gray-100 text-gray-700' },
-}
+const tabs = ['备案材料', '站点信息', '认定项目', '工作人员', '督导人员', '考评人员', '考点信息']
 
 export default function GroupFiling() {
-  const [activeTab, setActiveTab] = useState('basic')
-  const [branches] = useBackendListState<BranchOrg>(mockBranches)
-  const [projects] = useBackendListState<EvalProject>(mockProjects)
+  const backendOrgs = useBackendResourceList<FilingOrg>('/filing/group', initialOrgs)
+  const orgs = useMemo(() => appendBackendItems(initialOrgs, backendOrgs), [backendOrgs])
   const [search, setSearch] = useState('')
+  const [selectedId, setSelectedId] = useState('fo1')
+  const [activeTab, setActiveTab] = useState('备案材料')
+  const [dialog, setDialog] = useState<string | null>(null)
 
-  const filteredProjects = projects.filter(p => !search || p.professionName.includes(search) || p.jobTypeName.includes(search))
+  const filtered = useMemo(() => orgs.filter(item => !search || item.name.includes(search)), [orgs, search])
+  const selected = orgs.find(item => item.id === selectedId) || orgs[0]
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">集团备案</h1>
-          <p className="text-sm text-gray-500 mt-1">集团向人社部备案，管理集团层面信息、认定项目、分支机构授权</p>
-        </div>
-        <Badge className="bg-blue-100 text-blue-700">区别于分支机构备案（向省级人社部门备案）</Badge>
-      </div>
+    <div className="space-y-4">
+      <h1 className="text-xl font-bold text-gray-900">备案查看</h1>
 
-      {/* Group Basic Info Card */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex items-center gap-3 mb-4">
-          <Building2 className="w-6 h-6 text-blue-600" />
-          <div>
-            <h2 className="font-bold text-gray-900">中国广核集团有限公司</h2>
-            <p className="text-sm text-gray-500">统一社会信用代码：91440300100016901X</p>
+      <section className="grid grid-cols-[300px_1fr] gap-4">
+        <aside className="rounded-lg border border-gray-200 bg-white">
+          <div className="border-b border-gray-100 p-3">
+            <div className="text-sm font-semibold text-gray-900">分支机构</div>
+            <div className="relative mt-3">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input value={search} onChange={event => setSearch(event.target.value)} className="h-9 w-full rounded-md border border-gray-200 pl-9 pr-3 text-sm focus:border-[#1A56DB] focus:outline-none" />
+            </div>
           </div>
-        </div>
-        <div className="grid grid-cols-4 gap-4 text-sm">
-          <div><span className="text-gray-500">机构类型：</span><span>央企集团</span></div>
-          <div><span className="text-gray-500">联系人：</span><span>王集团</span></div>
-          <div><span className="text-gray-500">联系电话：</span><span>0755-88618888</span></div>
-          <div><span className="text-gray-500">电子邮箱：</span><span>cgnc@cgnpc.com.cn</span></div>
-          <div><span className="text-gray-500">企业性质：</span><span>央企</span></div>
-          <div><span className="text-gray-500">主管部门：</span><span>国务院国资委</span></div>
-          <div><span className="text-gray-500">单位地址：</span><span>深圳市福田区深南大道2002号中广核大厦</span></div>
-          <div><span className="text-gray-500">分支机构数：</span><span className="font-bold text-blue-600">{branches.length}家</span></div>
-        </div>
-      </div>
+          <div className="space-y-2 p-3">
+            {filtered.map(org => (
+              <button key={org.id} onClick={() => setSelectedId(org.id)} className={`w-full rounded-md border p-3 text-left ${selected?.id === org.id ? 'border-[#1A56DB] bg-blue-50' : 'border-gray-100 hover:bg-gray-50'}`}>
+                <div className="font-medium text-gray-900">{org.name}</div>
+                <div className="mt-2 text-xs text-gray-500">{org.siteCount}个站点</div>
+                <div className="text-xs text-gray-500">退回:{org.rejectCount}次</div>
+              </button>
+            ))}
+          </div>
+        </aside>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="basic">
-            <Building2 className="w-4 h-4 mr-1" /> 基本信息
-          </TabsTrigger>
-          <TabsTrigger value="projects">
-            <FileText className="w-4 h-4 mr-1" /> 认定项目
-          </TabsTrigger>
-          <TabsTrigger value="branches">
-            <MapPin className="w-4 h-4 mr-1" /> 分支机构
-          </TabsTrigger>
-        </TabsList>
+        <main className="space-y-4">
+          <section className="rounded-lg border border-gray-200 bg-white p-4">
+            <div className="mb-3 flex items-center gap-2 text-base font-semibold text-gray-900"><FileText className="h-4 w-4 text-[#1A56DB]" />采集表</div>
+            {selected && (
+              <>
+                <div className="text-lg font-semibold text-gray-900">{selected.orgType}{selected.name}</div>
+                <div className="mt-3 grid gap-2 text-sm text-gray-600 md:grid-cols-2">
+                  <div>统一社会信用代码：{selected.creditCode}</div>
+                  <div>联系方式：{selected.contact}（{selected.phone}）</div>
+                  <div className="md:col-span-2">联系地址：{selected.address || '-'}</div>
+                  <div className="md:col-span-2">备案地：{selected.filingPlaces.join('、')}</div>
+                </div>
+              </>
+            )}
+          </section>
 
-        {/* 基本信息 */}
-        <TabsContent value="basic" className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-6 bg-white rounded-lg border border-gray-200 p-6">
-            <div className="space-y-4">
-              <h3 className="font-medium text-gray-900 flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-blue-600" /> 机构信息
-              </h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between border-b pb-2">
-                  <span className="text-gray-500">机构全称</span>
-                  <span>中国广核集团有限公司</span>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span className="text-gray-500">机构简称</span>
-                  <span>中广核集团</span>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span className="text-gray-500">统一社会信用代码</span>
-                  <span className="font-mono">91440300100016901X</span>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span className="text-gray-500">企业性质</span>
-                  <span>央企</span>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span className="text-gray-500">负责人</span>
-                  <span>杨长利</span>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span className="text-gray-500">负责人职务</span>
-                  <span>董事长</span>
-                </div>
+          <section className="grid grid-cols-7 gap-3">
+            <Stat label="站点" value={selected?.siteCount || 0} />
+            <Stat label="职业等级" value={selected?.projectCount || 0} />
+            <Stat label="工作人员" value={selected?.staffCount || 0} />
+            <Stat label="督导人员" value={selected?.supervisorCount || 0} />
+            <Stat label="考评人员" value={selected?.assessorCount || 0} />
+            <Stat label="考点" value={selected?.examRoomCount || 0} />
+            <Stat label="备案材料" value={selected?.materialCount || 0} />
+          </section>
+
+          <section className="rounded-lg border border-gray-200 bg-white">
+            <div className="flex flex-wrap gap-2 border-b border-gray-100 p-3">
+              {tabs.map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`h-8 rounded-md px-3 text-xs ${activeTab === tab ? 'bg-[#1A56DB] text-white' : 'bg-gray-100 text-gray-600'}`}>{tab}</button>)}
+            </div>
+            <div className="min-h-56 p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="text-sm font-medium text-gray-900">{activeTab}</div>
+                <Button size="sm" variant="outline" onClick={() => setDialog(activeTab)}>查看详情</Button>
               </div>
+              <table className="w-full text-sm">
+                <thead className="bg-[#F9FAFB] text-gray-600"><tr><th className="px-3 py-2 text-left">序号</th><th className="px-3 py-2 text-left">名称</th><th className="px-3 py-2 text-left">状态</th><th className="px-3 py-2 text-left">操作</th></tr></thead>
+                <tbody><tr><td className="px-3 py-3">1</td><td className="px-3 py-3">{selected?.name}-{activeTab}</td><td className="px-3 py-3 text-gray-600">已备案</td><td className="px-3 py-3"><button className="text-xs text-[#1A56DB] hover:underline">详情</button></td></tr></tbody>
+              </table>
             </div>
-            <div className="space-y-4">
-              <h3 className="font-medium text-gray-900 flex items-center gap-2">
-                <Users className="w-4 h-4 text-green-600" /> 联系信息
-              </h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between border-b pb-2">
-                  <span className="text-gray-500">联系人</span>
-                  <span>王集团</span>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span className="text-gray-500">联系人职务</span>
-                  <span>人力资源部主任</span>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span className="text-gray-500">联系电话</span>
-                  <span>0755-88618888</span>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span className="text-gray-500">电子邮箱</span>
-                  <span>cgnc@cgnpc.com.cn</span>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span className="text-gray-500">单位地址</span>
-                  <span>深圳市福田区深南大道2002号</span>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span className="text-gray-500">主管部门</span>
-                  <span>国务院国资委</span>
-                </div>
-              </div>
-            </div>
-            <div className="col-span-2">
-              <h3 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
-                <Shield className="w-4 h-4 text-purple-600" /> 人员场地、设备设施以及组织优势、专业优势
-              </h3>
-              <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                中国广核集团是我国唯一以核电为主业、由国务院国资委监管的大型清洁能源中央企业。
-                集团拥有大亚湾、阳江、台山、防城港、宁德、红沿河等核电站，具备完善的技能人才培养体系和鉴定设施。
-                集团人力资源部门设有专门的职业技能鉴定中心，配备先进的实训设备和考评场地。
-              </p>
-            </div>
-          </div>
-        </TabsContent>
+          </section>
+        </main>
+      </section>
 
-        {/* 认定项目 */}
-        <TabsContent value="projects" className="space-y-4 pt-4">
-          <div className="flex items-center justify-between">
-            <div className="relative max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input placeholder="搜索职业工种..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => toast.success('下载模板')}>
-                <Upload className="w-3.5 h-3.5 mr-1" /> 下载模板
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => toast.success('导入认定项目')}>
-                <Upload className="w-3.5 h-3.5 mr-1" /> 导入
-              </Button>
-              <Button size="sm" onClick={() => toast.success('新增认定项目')}>
-                <Plus className="w-3.5 h-3.5 mr-1" /> 添加
-              </Button>
-            </div>
+      <Dialog open={!!dialog} onOpenChange={() => setDialog(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{dialog}</DialogTitle></DialogHeader>
+          <div className="space-y-2 text-sm">
+            <Info label="机构" value={selected?.name || ''} />
+            <Info label="备案地" value={selected?.filingPlaces.join('、') || ''} />
+            <Info label="当前页签" value={dialog || ''} />
           </div>
-          <div className="bg-white rounded-lg border border-gray-200">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">序号</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">职业名称</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">工种名称</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">认定等级</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">理论考试</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">技能考试</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">综合</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">及格线</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">申报条件</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">操作</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredProjects.map((p, idx) => (
-                  <tr key={p.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-xs">{idx + 1}</td>
-                    <td className="px-4 py-3 font-medium">{p.professionName}</td>
-                    <td className="px-4 py-3 text-xs">{p.jobTypeName}</td>
-                    <td className="px-4 py-3">
-                      <Badge variant="outline" className="text-[10px]">{p.level}</Badge>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {p.examTheory ? <CheckCircle className="w-4 h-4 text-green-500 mx-auto" /> : <span className="text-gray-300">-</span>}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {p.examSkill ? <CheckCircle className="w-4 h-4 text-green-500 mx-auto" /> : <span className="text-gray-300">-</span>}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {p.examComposite ? <CheckCircle className="w-4 h-4 text-green-500 mx-auto" /> : <span className="text-gray-300">-</span>}
-                    </td>
-                    <td className="px-4 py-3 text-xs">{p.passScore}分</td>
-                    <td className="px-4 py-3 text-xs">{p.conditionCount}个</td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-blue-600">详情</Button>
-                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"><Edit3 className="w-3 h-3" /></Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </TabsContent>
-
-        {/* 分支机构 */}
-        <TabsContent value="branches" className="space-y-4 pt-4">
-          <div className="bg-white rounded-lg border border-gray-200">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">序号</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">分支机构名称</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">机构编码</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">省份</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">城市</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">联系人</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">联系电话</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">职业等级数</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">状态</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">操作</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {branches.map((b, idx) => (
-                  <tr key={b.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-xs">{idx + 1}</td>
-                    <td className="px-4 py-3 font-medium">{b.name}</td>
-                    <td className="px-4 py-3 text-xs font-mono text-gray-500">{b.orgCode}</td>
-                    <td className="px-4 py-3 text-xs">{b.province}</td>
-                    <td className="px-4 py-3 text-xs">{b.city}</td>
-                    <td className="px-4 py-3 text-xs">{b.contact}</td>
-                    <td className="px-4 py-3 text-xs">{b.phone}</td>
-                    <td className="px-4 py-3 text-xs">{b.certCount}个</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium ${statusMap[b.status].color}`}>
-                        {statusMap[b.status].label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-blue-600">授权</Button>
-                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">查看</Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </TabsContent>
-      </Tabs>
+        </DialogContent>
+      </Dialog>
     </div>
   )
+}
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return <div className="rounded-lg border border-gray-200 bg-white p-3 text-center"><MapPin className="mx-auto mb-1 h-4 w-4 text-[#1A56DB]" /><div className="text-xl font-bold text-gray-900">{value}个</div><div className="text-xs text-gray-500">{label}</div></div>
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return <div className="flex justify-between rounded-md border border-gray-100 px-3 py-2"><span className="text-gray-500">{label}</span><span className="font-medium text-gray-900">{value}</span></div>
+}
+
+function appendBackendItems(base: FilingOrg[], incoming: FilingOrg[]) {
+  const knownIds = new Set(base.map(item => item.id))
+  const knownNames = new Set(base.map(item => item.name))
+  const extras = incoming.filter(item => item.id && item.name && !knownIds.has(item.id) && !knownNames.has(item.name))
+  return [...base, ...extras]
 }

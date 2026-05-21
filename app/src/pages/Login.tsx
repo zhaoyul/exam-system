@@ -98,7 +98,7 @@ export default function Login() {
     if (orgId === 'org-cgn') return '中广核集团'
     if (orgId === 'org-csyxgs') return '测试有限公司'
     return role === 'group_admin' ? '集团' :
-      role === 'branch_admin' ? '中国同辐股份有限公司' :
+      role === 'branch_admin' ? '测试有限公司' :
       role === 'expert' ? '评价专家组' :
       role === 'supervisor' ? '督导组' :
       role === 'exam_staff' ? '考务组' :

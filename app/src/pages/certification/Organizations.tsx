@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Building2,
   ChevronDown,
@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
-import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
+import { useBackendResourceState } from '@/hooks/useBackendListState'
 
 interface OrgUnit {
   id: string
@@ -36,30 +36,42 @@ interface OrgUnit {
   users: OrgUser[]
 }
 
+interface BackendOrganization {
+  id: string
+  parentId?: string | null
+  orgType?: string | null
+  name: string
+  creditCode?: string | null
+  status?: string | null
+  contactName?: string | null
+  contactPhone?: string | null
+  mobile?: string | null
+  address?: string | null
+  duty?: string | null
+  email?: string | null
+  fax?: string | null
+  postcode?: string | null
+  loginName?: string | null
+}
+
+interface TreeNode {
+  id: string
+  name: string
+  children: TreeNode[]
+}
+
 interface OrgUser {
   id: string
   loginName: string
   phone: string
 }
 
-const treeNodes = [
-  {
-    id: 'root',
-    name: '中国工业集团有限公司',
-    children: [
-      { id: 'national', name: '全国性用人单位分支机构' },
-      { id: 'province', name: '省级备案分支机构' },
-      { id: 'test', name: '测试机构' },
-    ],
-  },
-]
-
 const orgUnits: OrgUnit[] = [
   {
     id: '1',
-    name: '中广测试有限公司',
+    name: '测试有限公司',
     type: '全国性用人单位分支机构',
-    creditCode: '123456789QWE123',
+    creditCode: '91440000MA00000001',
     area: '广东深圳',
     status: '正常',
     contact: '王老师',
@@ -101,7 +113,7 @@ const orgUnits: OrgUnit[] = [
     type: '全国性用人单位分支机构',
     creditCode: '91450600677748862L',
     area: '广西防城港',
-    status: '待完善',
+    status: '正常',
     contact: '陈老师',
     phone: '13700137001',
     mobile: '13700137001',
@@ -119,7 +131,7 @@ const orgUnits: OrgUnit[] = [
     id: '4',
     name: '宁德',
     type: '省级备案分支机构',
-    creditCode: '91350900ND000001',
+    creditCode: '--',
     area: '福建宁德',
     status: '正常',
     contact: '林老师',
@@ -135,33 +147,100 @@ const orgUnits: OrgUnit[] = [
     scopes: ['焊工（四级）'],
     users: [],
   },
-  {
-    id: '5',
-    name: '002',
-    type: '测试机构',
-    creditCode: 'TEST00000000002',
-    area: '广东深圳',
-    status: '停用',
-    contact: '测试员',
-    phone: '13500135001',
-    mobile: '13500135001',
-    address: '广东深圳',
-    contactTitle: '测试',
-    email: 'test@example.com',
-    fax: '0755-10000002',
-    postcode: '518000',
-    loginName: 'test002',
-    registerMobile: '13500135001',
-    scopes: [],
-    users: [],
-  },
 ]
 
+const fallbackOrganizations: BackendOrganization[] = [
+  { id: 'org-cgn', parentId: null, orgType: 'group', name: '中广核集团', status: 'active', contactName: '张总', contactPhone: '13800138000' },
+  { id: 'org-csyxgs', parentId: 'org-cgn', orgType: 'branch', name: '测试有限公司', creditCode: '91440000MA00000001', status: 'active', contactName: '李经理', contactPhone: '13800138001', mobile: '13800138001', address: '广东省深圳市', loginName: 'Csyxgs001' },
+  { id: 'org-dayawan', parentId: 'org-cgn', orgType: 'branch', name: '大亚湾核电', status: 'active', contactName: '李经理', contactPhone: '13800138002' },
+  { id: 'org-yangjiang', parentId: 'org-cgn', orgType: 'branch', name: '阳江核电', status: 'active', contactName: '王经理', contactPhone: '13800138003' },
+]
+
+const extraOrgData = orgUnits.reduce<Record<string, Pick<OrgUnit, 'scopes' | 'users'>>>((acc, item) => {
+  acc[item.name] = { scopes: item.scopes, users: item.users }
+  return acc
+}, {})
+
+const orgTypeLabels: Record<string, string> = {
+  group: '集团公司',
+  branch: '分支机构',
+  province: '省级备案分支机构',
+  test: '测试机构',
+}
+
+const statusLabels: Record<string, OrgUnit['status']> = {
+  active: '正常',
+  pending: '待完善',
+  disabled: '停用',
+}
+
+function mapOrgType(orgType?: string | null) {
+  return orgTypeLabels[orgType || ''] || '分支机构'
+}
+
+function mapStatus(status?: string | null): OrgUnit['status'] {
+  return statusLabels[status || ''] || '待完善'
+}
+
+function mapBackendOrganization(item: BackendOrganization): OrgUnit {
+  const extras = extraOrgData[item.name] || { scopes: [], users: [] }
+  return {
+    id: item.id,
+    name: item.name,
+    type: mapOrgType(item.orgType),
+    creditCode: item.creditCode || '--',
+    area: (item.address || '').slice(0, 12) || '未填写',
+    status: mapStatus(item.status),
+    contact: item.contactName || '',
+    phone: item.contactPhone || '',
+    mobile: item.mobile || '',
+    address: item.address || '',
+    contactTitle: item.duty || '',
+    email: item.email || '',
+    fax: item.fax || '',
+    postcode: item.postcode || '',
+    loginName: item.loginName || '',
+    registerMobile: item.mobile || '',
+    scopes: extras.scopes,
+    users: extras.users,
+  }
+}
+
+function buildTree(items: BackendOrganization[]): TreeNode[] {
+  const nodeMap = new Map<string, TreeNode>()
+  items.forEach(item => {
+    nodeMap.set(item.id, { id: item.id, name: item.name, children: [] })
+  })
+  const groupRoot = items.find(item => item.orgType === 'group')
+  const roots: TreeNode[] = []
+  items.forEach(item => {
+    const node = nodeMap.get(item.id)
+    if (!node) return
+    if (item.parentId && nodeMap.has(item.parentId)) {
+      nodeMap.get(item.parentId)?.children.push(node)
+    } else if (groupRoot && item.id !== groupRoot.id && groupRoot.id !== item.parentId) {
+      nodeMap.get(groupRoot.id)?.children.push(node)
+    } else {
+      roots.push(node)
+    }
+  })
+  return groupRoot ? roots.filter(root => root.id === groupRoot.id) : roots
+}
+
+function isInSubtree(orgId: string, selectedId: string | null, parentMap: Map<string, string | null>) {
+  if (!selectedId) return true
+  let current: string | null | undefined = orgId
+  while (current) {
+    if (current === selectedId) return true
+    current = parentMap.get(current)
+  }
+  return false
+}
+
 export default function Organizations() {
-  const [units, setUnits] = useBackendListState<OrgUnit>(orgUnits)
-  const backendTreeNodes = useBackendResourceList('/certification/organizations', treeNodes)
-  const [expanded, setExpanded] = useState(true)
-  const [selectedTree, setSelectedTree] = useState('root')
+  const [organizations, setOrganizations] = useBackendResourceState<BackendOrganization>('/certification/organizations', fallbackOrganizations)
+  const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({})
+  const [selectedTree, setSelectedTree] = useState<string | null>(null)
   const [searchType, setSearchType] = useState('评价机构')
   const [query, setQuery] = useState('')
   const [viewItem, setViewItem] = useState<OrgUnit | null>(null)
@@ -169,17 +248,29 @@ export default function Organizations() {
   const [addOpen, setAddOpen] = useState(false)
   const [viewMode, setViewMode] = useState<'detail' | 'edit'>('detail')
 
+  const units = useMemo(() => organizations.map(mapBackendOrganization), [organizations])
+  const treeNodes = useMemo(() => buildTree(organizations), [organizations])
+  const parentMap = useMemo(() => new Map(organizations.map(item => [item.id, item.parentId || null])), [organizations])
+
+  useEffect(() => {
+    if (!selectedTree && treeNodes[0]) {
+      setSelectedTree(treeNodes[0].id)
+    }
+    if (!Object.keys(expandedIds).length && treeNodes.length) {
+      setExpandedIds(treeNodes.reduce<Record<string, boolean>>((acc, node) => {
+        acc[node.id] = true
+        return acc
+      }, {}))
+    }
+  }, [expandedIds, selectedTree, treeNodes])
+
   const filtered = useMemo(() => {
     return units.filter(item => {
-      const treeMatch =
-        selectedTree === 'root' ||
-        (selectedTree === 'national' && item.type === '全国性用人单位分支机构') ||
-        (selectedTree === 'province' && item.type === '省级备案分支机构') ||
-        (selectedTree === 'test' && item.type === '测试机构')
+      const treeMatch = isInSubtree(item.id, selectedTree, parentMap)
       const source = searchType === '评价机构' ? item.name : item.creditCode
-      return treeMatch && (!query || source.includes(query))
+      return item.type !== '集团公司' && treeMatch && (!query || source.includes(query))
     })
-  }, [query, searchType, selectedTree, units])
+  }, [parentMap, query, searchType, selectedTree, units])
 
   const handleAddOrg = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -190,27 +281,25 @@ export default function Organizations() {
       toast.error('请填写机构名称和社会统一信用代码')
       return
     }
-    const newOrg: OrgUnit = {
+    const selectedOrg = organizations.find(item => item.id === selectedTree)
+    const newOrg: BackendOrganization = {
       id: String(Date.now()),
-      type: String(fd.get('type') || '全国性用人单位分支机构'),
+      parentId: selectedOrg?.orgType === 'group' ? selectedOrg.id : 'org-cgn',
+      orgType: String(fd.get('type') || 'branch'),
       name,
       creditCode,
-      area: String(fd.get('address') || '').slice(0, 12) || '未填写',
-      status: '待完善',
-      contact: String(fd.get('contact') || ''),
-      phone: String(fd.get('phone') || ''),
+      status: 'pending',
+      contactName: String(fd.get('contact') || ''),
+      contactPhone: String(fd.get('phone') || ''),
       mobile: String(fd.get('mobile') || ''),
       address: String(fd.get('address') || ''),
-      contactTitle: String(fd.get('contactTitle') || ''),
+      duty: String(fd.get('contactTitle') || ''),
       email: String(fd.get('email') || ''),
       fax: String(fd.get('fax') || ''),
       postcode: String(fd.get('postcode') || ''),
       loginName: String(fd.get('loginName') || ''),
-      registerMobile: String(fd.get('registerMobile') || ''),
-      scopes: [],
-      users: [],
     }
-    setUnits(prev => [newOrg, ...prev])
+    setOrganizations(prev => [newOrg, ...prev])
     setAddOpen(false)
     toast.success(`已新增认定机构：${name}`)
     event.currentTarget.reset()
@@ -220,31 +309,31 @@ export default function Organizations() {
     event.preventDefault()
     if (!viewItem) return
     const fd = new FormData(event.currentTarget)
-    const updated: OrgUnit = {
-      ...viewItem,
-      type: String(fd.get('type') || viewItem.type),
+    const current = organizations.find(item => item.id === viewItem.id)
+    if (!current) return
+    const updated: BackendOrganization = {
+      ...current,
+      orgType: String(fd.get('type') || current.orgType || 'branch'),
       name: String(fd.get('name') || viewItem.name),
       creditCode: String(fd.get('creditCode') || viewItem.creditCode),
-      area: String(fd.get('address') || viewItem.area).slice(0, 12) || viewItem.area,
-      contact: String(fd.get('contact') || ''),
-      phone: String(fd.get('phone') || ''),
+      contactName: String(fd.get('contact') || ''),
+      contactPhone: String(fd.get('phone') || ''),
       mobile: String(fd.get('mobile') || ''),
       address: String(fd.get('address') || ''),
-      contactTitle: String(fd.get('contactTitle') || ''),
+      duty: String(fd.get('contactTitle') || ''),
       email: String(fd.get('email') || ''),
       fax: String(fd.get('fax') || ''),
       postcode: String(fd.get('postcode') || ''),
       loginName: String(fd.get('loginName') || ''),
-      registerMobile: String(fd.get('registerMobile') || ''),
     }
-    setUnits(prev => prev.map(item => item.id === updated.id ? updated : item))
-    setViewItem(updated)
+    setOrganizations(prev => prev.map(item => item.id === updated.id ? updated : item))
+    setViewItem(mapBackendOrganization(updated))
     setViewMode('detail')
     toast.success('认定机构信息已保存')
   }
 
   const handleToggleOrgStatus = (id: string) => {
-    setUnits(prev => prev.map(item => item.id === id ? { ...item, status: item.status === '停用' ? '正常' : '停用' } : item))
+    setOrganizations(prev => prev.map(item => item.id === id ? { ...item, status: item.status === 'disabled' ? 'active' : 'disabled' } : item))
     setViewItem(prev => prev && prev.id === id ? { ...prev, status: prev.status === '停用' ? '正常' : '停用' } : prev)
     toast.success('机构状态已更新')
   }
@@ -261,7 +350,6 @@ export default function Organizations() {
       return
     }
     const nextUser: OrgUser = { id: String(Date.now()), loginName, phone }
-    setUnits(prev => prev.map(item => item.id === userItem.id ? { ...item, users: [...item.users, nextUser] } : item))
     setViewItem(prev => prev && prev.id === userItem.id ? { ...prev, users: [...prev.users, nextUser] } : prev)
     setUserItem(null)
     toast.success(`已为 ${userItem.name} 新增用户：${loginName}`)
@@ -287,36 +375,16 @@ export default function Organizations() {
             机构目录
           </div>
           <div className="p-3">
-            {backendTreeNodes.map(root => (
-              <div key={root.id}>
-                <button
-                  onClick={() => {
-                    setExpanded(!expanded)
-                    setSelectedTree(root.id)
-                  }}
-                  className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm ${
-                    selectedTree === root.id ? 'bg-[#E8EFFF] text-[#1A56DB]' : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                  <span className="font-medium">{root.name}</span>
-                </button>
-                {expanded && (
-                  <div className="ml-5 mt-1 space-y-1 border-l border-gray-100 pl-2">
-                    {root.children.map(child => (
-                      <button
-                        key={child.id}
-                        onClick={() => setSelectedTree(child.id)}
-                        className={`block w-full rounded-md px-3 py-2 text-left text-sm ${
-                          selectedTree === child.id ? 'bg-[#E8EFFF] text-[#1A56DB]' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                        }`}
-                      >
-                        {child.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+            {treeNodes.map(root => (
+              <TreeItem
+                key={root.id}
+                node={root}
+                depth={0}
+                selectedId={selectedTree}
+                expandedIds={expandedIds}
+                onSelect={setSelectedTree}
+                onToggle={id => setExpandedIds(prev => ({ ...prev, [id]: !prev[id] }))}
+              />
             ))}
           </div>
         </aside>
@@ -480,7 +548,7 @@ export default function Organizations() {
                 <div>
                   <div className="mb-3 border-l-4 border-[#1A56DB] pl-2 text-sm font-semibold text-gray-900">单位信息</div>
                   <div className="grid grid-cols-2 gap-3">
-                    <Field label="机构类型" name="type" type="select" required defaultValue={viewItem.type} options={['全国性用人单位分支机构', '省级备案分支机构', '测试机构']} />
+                    <Field label="机构类型" name="type" type="select" required defaultValue={organizations.find(item => item.id === viewItem.id)?.orgType || 'branch'} options={[{ value: 'group', label: '集团公司' }, { value: 'branch', label: '分支机构' }, { value: 'province', label: '省级备案分支机构' }, { value: 'test', label: '测试机构' }]} />
                     <Field label="机构名称" name="name" required defaultValue={viewItem.name} />
                     <Field label="社会统一信用代码" name="creditCode" required defaultValue={viewItem.creditCode} />
                     <Field label="联 系 人" name="contact" defaultValue={viewItem.contact} />
@@ -517,7 +585,7 @@ export default function Organizations() {
             <div>
               <div className="mb-3 border-l-4 border-[#1A56DB] pl-2 text-sm font-semibold text-gray-900">单位信息</div>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="机构类型" name="type" type="select" required options={['全国性用人单位分支机构', '省级备案分支机构', '测试机构']} />
+                <Field label="机构类型" name="type" type="select" required options={[{ value: 'branch', label: '分支机构' }, { value: 'province', label: '省级备案分支机构' }, { value: 'test', label: '测试机构' }]} />
                 <Field label="机构名称" name="name" required placeholder="请输入机构名称" />
                 <Field label="社会统一信用代码" name="creditCode" required placeholder="请输入统一社会信用代码" />
                 <Field label="联 系 人" name="contact" placeholder="请输入联系人" />
@@ -578,6 +646,62 @@ function Info({ label, value }: { label: string; value: string }) {
   )
 }
 
+function TreeItem({
+  node,
+  depth,
+  selectedId,
+  expandedIds,
+  onSelect,
+  onToggle,
+}: {
+  node: TreeNode
+  depth: number
+  selectedId: string | null
+  expandedIds: Record<string, boolean>
+  onSelect: (id: string) => void
+  onToggle: (id: string) => void
+}) {
+  const hasChildren = node.children.length > 0
+  const expanded = expandedIds[node.id] ?? true
+
+  return (
+    <div>
+      <button
+        onClick={() => {
+          onSelect(node.id)
+          if (hasChildren) onToggle(node.id)
+        }}
+        className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm ${
+          selectedId === node.id ? 'bg-[#E8EFFF] text-[#1A56DB]' : 'text-gray-700 hover:bg-gray-50'
+        }`}
+        style={{ paddingLeft: `${12 + depth * 20}px` }}
+      >
+        {hasChildren ? (
+          expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />
+        ) : (
+          <span className="inline-block h-4 w-4" />
+        )}
+        <span className={depth === 0 ? 'font-medium' : ''}>{node.name}</span>
+      </button>
+      {hasChildren && expanded && (
+        <div className="space-y-1">
+          {node.children.map(child => (
+            <TreeItem
+              key={child.id}
+              node={child}
+              depth={depth + 1}
+              selectedId={selectedId}
+              expandedIds={expandedIds}
+              onSelect={onSelect}
+              onToggle={onToggle}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function Field({
   label,
   name,
@@ -592,7 +716,7 @@ function Field({
   required?: boolean
   placeholder?: string
   type?: 'text' | 'password' | 'select'
-  options?: string[]
+  options?: Array<string | { value: string; label: string }>
   defaultValue?: string
 }) {
   return (
@@ -602,7 +726,11 @@ function Field({
       </span>
       {type === 'select' ? (
         <select name={name} required={required} defaultValue={defaultValue} className="h-9 w-full rounded-md border border-gray-200 px-3 text-sm focus:border-[#1A56DB] focus:outline-none">
-          {options.map(option => <option key={option} value={option}>{option}</option>)}
+          {options.map(option => {
+            const value = typeof option === 'string' ? option : option.value
+            const text = typeof option === 'string' ? option : option.label
+            return <option key={value} value={value}>{text}</option>
+          })}
         </select>
       ) : (
         <input

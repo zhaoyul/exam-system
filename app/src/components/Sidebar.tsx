@@ -10,8 +10,8 @@ import {
   Settings, Database, GraduationCap, Printer, FileSpreadsheet,
   Archive, Receipt, AlertTriangle, Clock, PenTool,
   MapPin, UserCheck, Eye, Link2, Monitor, Bell,
-  Ticket, Search, Globe, UserPlus, Calendar, Megaphone,
-  Building2, LayoutGrid, SlidersHorizontal, Wrench, Layers,
+  Ticket, Search, Globe, UserPlus,
+  Building2, LayoutGrid, Wrench, Layers,
   ShieldCheck
 } from 'lucide-react'
 
@@ -20,8 +20,7 @@ function BuildingIcon(props: any) { return <FileText {...props} /> }
 function EyeIcon(props: any) { return <Award {...props} /> }
 function EditIcon(props: any) { return <PenTool {...props} /> }
 
-// 7 top-level module workbenches with their child menus
-const moduleGroups = [
+const groupModuleGroups = [
   {
     key: 'cert',
     label: '等级认定',
@@ -33,7 +32,7 @@ const moduleGroups = [
       { label: '认定监督', path: '/cert/supervision', icon: Shield },
       { label: '认定统计', path: '/cert/statistics', icon: BarChart3 },
       { label: '统计报表', path: '/report/statistics', icon: FileSpreadsheet },
-      { label: '集团证书', path: '/certificate/issue', icon: Award },
+      { label: '集团证书', path: '/cert/certificates-group', icon: Award },
       { label: '历次认定', path: '/cert/historical', icon: Clock },
       { label: '视频监控', path: '/cert/video-monitor', icon: Monitor },
       { label: '批复设置', path: '/cert/approval-settings', icon: Settings },
@@ -49,7 +48,8 @@ const moduleGroups = [
     path: '/wb/theory',
     icon: BookOpen,
     children: [
-      { label: '科目分类', path: '/wb/theory', icon: LayoutDashboard },
+      { label: '工作台', path: '/wb/theory', icon: LayoutDashboard },
+      { label: '科目分类', path: '/question/subject-sort', icon: Layers },
       { label: '科目管理', path: '/question/subjects', icon: BookOpen },
       { label: '知识结构', path: '/question/knowledge', icon: Layers },
       { label: '试题管理', path: '/question/theory', icon: FileText },
@@ -65,32 +65,14 @@ const moduleGroups = [
     path: '/wb/skill',
     icon: Wrench,
     children: [
-      { label: '科目分类', path: '/wb/skill', icon: LayoutDashboard },
+      { label: '工作台', path: '/wb/skill', icon: LayoutDashboard },
+      { label: '科目分类', path: '/question/skill-subject-sort', icon: Layers },
       { label: '技能科目', path: '/question/skill-subjects', icon: BookOpen },
       { label: '技能模块', path: '/question/skill-modules', icon: Layers },
       { label: '技能试题', path: '/question/skill', icon: PenTool },
       { label: '组卷规则', path: '/question/skill-rules', icon: FileSpreadsheet },
       { label: '试卷需求', path: '/question/skill-require', icon: FileText },
       { label: '卷库管理', path: '/question/paper-library', icon: FolderOpen },
-    ],
-  },
-  {
-    key: 'cert-org',
-    label: '等级认定',
-    path: '/cert/exec/plans',
-    icon: Users,
-    children: [
-      { label: '工作台', path: '/wb/cert', icon: LayoutDashboard },
-      { label: '等级认定', path: '/cert/exec/plans', icon: LayoutDashboard },
-      { label: '考场信息', path: '/cert/exam-rooms', icon: MapPin },
-      { label: '报名机构', path: '/cert/registration-orgs', icon: Globe },
-      { label: '考务人员', path: '/cert/exam-staff', icon: UserCheck },
-      { label: '监考人员', path: '/cert/supervisors', icon: Shield },
-      { label: '阅卷负责', path: '/cert/marking-lead', icon: PenTool },
-      { label: '历次认定', path: '/cert/historical', icon: Clock },
-      { label: '视频监控', path: '/cert/video-monitor', icon: Monitor },
-      { label: '报名修改', path: '/personal/register', icon: PenTool },
-      { label: '申请特办', path: '/cert/special', icon: Receipt },
     ],
   },
   {
@@ -126,33 +108,154 @@ const moduleGroups = [
     icon: Building2,
     children: [
       { label: '工作台', path: '/wb/filing', icon: LayoutDashboard },
-      { label: '集团备案(集团端)', path: '/filing/group', icon: FileCheck },
-      { label: '集团备案', path: '/system/filing-group', icon: FileCheck },
-      { label: '分支备案', path: '/filing/branch', icon: MapPin },
-      { label: '省级备案', path: '/filing/province', icon: Globe },
-      { label: '认定机构', path: '/cert/organizations', icon: BuildingIcon },
-      { label: '报名机构', path: '/cert/registration-orgs', icon: Users },
+      { label: '备案查看', path: '/filing/group', icon: FileCheck },
+      { label: '备案修改', path: '/system/filing-group', icon: PenTool },
+      { label: '站点复核', path: '/filing/province', icon: MapPin },
+      { label: '集团审核', path: '/filing/branch', icon: Shield },
       { label: '评价范围', path: '/standard/evaluation-scope', icon: BookOpen },
     ],
   },
   {
     key: 'basic',
     label: '基础数据',
-    path: '/wb/basic-data',
+    path: '/system/users',
     icon: Database,
     children: [
-      { label: '工作台', path: '/wb/basic-data', icon: LayoutDashboard },
-      { label: '系统用户', path: '/system/users', icon: Users },
-      { label: '人员信息', path: '/system/personnel', icon: User },
-      { label: '标准管理', path: '/standard/settings', icon: Settings },
-      { label: '职业标准库', path: '/standard/library', icon: Layers },
-      { label: '操作日志', path: '/system/logs', icon: Calendar },
-      { label: '系统配置', path: '/system/config', icon: SlidersHorizontal },
-      { label: '公告管理', path: '/system/announcements', icon: Megaphone },
-      { label: '数据管理', path: '/data/center', icon: Database },
+      { label: '机构用户', path: '/system/users', icon: Users },
     ],
   },
 ]
+
+const branchModuleGroups = [
+  {
+    key: 'cert-branch',
+    label: '等级认定',
+    path: '/branch/portal',
+    icon: Award,
+    children: [
+      { label: '工作台', path: '/branch/portal', icon: LayoutDashboard },
+      { label: '等级认定', path: '/cert/exec/plans', icon: LayoutDashboard },
+      { label: '考场信息', path: '/cert/exam-rooms', icon: MapPin },
+      { label: '报名机构', path: '/cert/registration-orgs', icon: Globe },
+      { label: '考务人员', path: '/cert/exam-staff', icon: UserCheck },
+      { label: '监考人员', path: '/cert/supervisors', icon: Shield },
+      { label: '阅卷负责', path: '/cert/marking-lead', icon: PenTool },
+      { label: '历次认定', path: '/cert/historical', icon: Clock },
+      { label: '视频监控', path: '/cert/video-monitor', icon: Monitor },
+      { label: '报名修改', path: '/cert/enroll-modify', icon: PenTool },
+      { label: '申请特办', path: '/cert/special', icon: Receipt },
+    ],
+  },
+  {
+    key: 'theory',
+    label: '理论题库',
+    path: '/wb/theory',
+    icon: BookOpen,
+    children: [
+      { label: '工作台', path: '/wb/theory', icon: LayoutDashboard },
+      { label: '科目分类', path: '/question/subject-sort', icon: Layers },
+      { label: '科目管理', path: '/question/subjects', icon: BookOpen },
+      { label: '知识结构', path: '/question/knowledge', icon: Layers },
+      { label: '试题管理', path: '/question/theory', icon: FileText },
+      { label: '结构比重', path: '/question/ratio', icon: BarChart3 },
+      { label: '组卷规则', path: '/question/paper-rules', icon: FileSpreadsheet },
+      { label: '试卷需求', path: '/question/paper-require', icon: FileText },
+      { label: '卷库管理', path: '/question/paper-library', icon: FolderOpen },
+    ],
+  },
+  {
+    key: 'skill',
+    label: '技能题库',
+    path: '/wb/skill',
+    icon: Wrench,
+    children: [
+      { label: '工作台', path: '/wb/skill', icon: LayoutDashboard },
+      { label: '科目分类', path: '/question/skill-subject-sort', icon: Layers },
+      { label: '技能科目', path: '/question/skill-subjects', icon: BookOpen },
+      { label: '技能模块', path: '/question/skill-modules', icon: Layers },
+      { label: '技能试题', path: '/question/skill', icon: PenTool },
+      { label: '组卷规则', path: '/question/skill-rules', icon: FileSpreadsheet },
+      { label: '试卷需求', path: '/question/skill-require', icon: FileText },
+      { label: '卷库管理', path: '/question/paper-library', icon: FolderOpen },
+    ],
+  },
+  {
+    key: 'trace',
+    label: '溯源中心',
+    path: '/wb/traceability',
+    icon: Link2,
+    children: [
+      { label: '工作台', path: '/wb/traceability', icon: LayoutDashboard },
+      { label: '溯源查询', path: '/traceability', icon: Search },
+    ],
+  },
+  {
+    key: 'finance',
+    label: '财务系统',
+    path: '/finance/workbench',
+    icon: Receipt,
+    children: [
+      { label: '工作台', path: '/finance/workbench', icon: LayoutDashboard },
+      { label: '财务收费', path: '/finance/charge', icon: Receipt },
+      { label: '收费清单', path: '/finance/list', icon: FileSpreadsheet },
+      { label: '记账清单', path: '/finance/ledger', icon: FileText },
+      { label: '收费标准', path: '/finance/standard', icon: Settings },
+    ],
+  },
+  {
+    key: 'docs',
+    label: '文档管理',
+    path: '/file/distribute',
+    icon: FolderOpen,
+    children: [
+      { label: '文档反馈', path: '/file/distribute', icon: FileCheck },
+      { label: '文档阅览', path: '/file/viewer', icon: Eye },
+      { label: '私有文档', path: '/file/private', icon: FolderOpen },
+      { label: '文档接收', path: '/file/receive', icon: Receipt },
+    ],
+  },
+  {
+    key: 'expert',
+    label: '评价专家',
+    path: '/wb/expert',
+    icon: Shield,
+    children: [
+      { label: '工作台', path: '/wb/expert', icon: LayoutDashboard },
+      { label: '专家信息', path: '/supervision/expert-info', icon: User },
+      { label: '专家聘用', path: '/supervision/hiring', icon: Award },
+      { label: '督导培训', path: '/supervision/training', icon: Shield },
+      { label: '考评培训', path: '/supervision/evaluator-training', icon: GraduationCap },
+      { label: '专家派遣', path: '/supervision/dispatch', icon: ClipboardCheck },
+      { label: '表单管理', path: '/supervision/forms', icon: FileSpreadsheet },
+      { label: '人员统计', path: '/supervision/personnel-statistics', icon: BarChart3 },
+    ],
+  },
+  {
+    key: 'filing-branch',
+    label: '机构备案',
+    path: '/wb/filing',
+    icon: Building2,
+    children: [
+      { label: '工作台', path: '/wb/filing', icon: LayoutDashboard },
+      { label: '备案信息', path: '/filing/branch', icon: FileCheck },
+      { label: '备案申报', path: '/cert/declaration', icon: Upload },
+      { label: '备案查看', path: '/filing/group', icon: Search },
+      { label: '备案修改', path: '/system/filing-branch', icon: PenTool },
+    ],
+  },
+  {
+    key: 'basic-branch',
+    label: '基础数据',
+    path: '/system/users',
+    icon: Database,
+    children: [
+      { label: '机构用户', path: '/system/users', icon: Users },
+      { label: '认定人员', path: '/system/personnel', icon: User },
+    ],
+  },
+]
+
+const defaultModuleGroups = branchModuleGroups
 
 // Other functional menus (not in 7 main modules)
 const otherMenus = [
@@ -271,36 +374,42 @@ export default function Sidebar() {
   const location = useLocation()
   const navigate = useNavigate()
   const currentRole = (user?.role || 'group_admin') as UserRole
+  const brandName = user?.org || '中广核集团'
 
   // Filter menus by role
   const filteredModuleGroups = useMemo(() => {
-    if (currentRole === 'group_admin') return moduleGroups
-    return moduleGroups.filter(g => {
-      if (g.key === 'cert') return false
+    if (currentRole === 'group_admin') return groupModuleGroups
+    const source = currentRole === 'branch_admin' ? branchModuleGroups : defaultModuleGroups
+    return source.filter(g => {
       // Check if any child has access
       return g.children.some(c => hasMenuAccess(currentRole, c.path))
     })
   }, [currentRole])
 
   const filteredOtherMenus = useMemo(() => {
-    if (currentRole === 'group_admin') return otherMenus
+    if (currentRole === 'group_admin' || currentRole === 'branch_admin') return []
     return otherMenus.filter(m => {
       if (hasMenuAccess(currentRole, m.path)) return true
       if (m.children) return m.children.some(c => hasMenuAccess(currentRole, c.path))
       return false
     })
   }, [currentRole])
+  const hasOtherMenus = filteredOtherMenus.length > 0
 
   // Expand state for filtered groups
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({
     cert: false,
-    'cert-org': true,
+    'cert-branch': true,
     theory: false,
     skill: false,
     trace: false,
+    finance: false,
+    docs: false,
     expert: false,
     filing: false,
+    'filing-branch': false,
     basic: false,
+    'basic-branch': false,
   })
   const [expandedOthers, setExpandedOthers] = useState<Record<string, boolean>>({
     '成绩管理': false,
@@ -349,24 +458,28 @@ export default function Sidebar() {
               </button>
             )
           })}
-          <div className="mx-2 my-2 border-t border-gray-200" />
-          {/* Other menu icons */}
-          {filteredOtherMenus.map(item => {
-            const Icon = item.icon
-            const active = isActive(item.path)
-            return (
-              <button
-                key={item.path}
-                onClick={() => navigate(item.path)}
-                className={`w-full h-10 flex items-center justify-center mb-1 transition-all duration-200 ${
-                  active ? 'text-[#1A56DB] bg-[#E8EFFF] border-l-[3px] border-[#1A56DB]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                }`}
-                title={item.label}
-              >
-                <Icon className="w-5 h-5" />
-              </button>
-            )
-          })}
+          {hasOtherMenus && (
+            <>
+              <div className="mx-2 my-2 border-t border-gray-200" />
+              {/* Other menu icons */}
+              {filteredOtherMenus.map(item => {
+                const Icon = item.icon
+                const active = isActive(item.path)
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className={`w-full h-10 flex items-center justify-center mb-1 transition-all duration-200 ${
+                      active ? 'text-[#1A56DB] bg-[#E8EFFF] border-l-[3px] border-[#1A56DB]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    }`}
+                    title={item.label}
+                  >
+                    <Icon className="w-5 h-5" />
+                  </button>
+                )
+              })}
+            </>
+          )}
         </div>
         <button
           onClick={toggleSidebar}
@@ -383,7 +496,7 @@ export default function Sidebar() {
       <div className="h-14 flex items-center gap-2 px-4 border-b border-gray-200">
         <Atom className="w-8 h-8 text-[#1A56DB] flex-shrink-0" />
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-bold text-gray-900 truncate">中广核集团</div>
+          <div className="text-sm font-bold text-gray-900 truncate">{brandName}</div>
           <div className="text-[11px] text-gray-500 truncate">职业技能等级认定系统</div>
         </div>
       </div>
@@ -476,72 +589,76 @@ export default function Sidebar() {
           )
         })}
 
-        <div className="mx-4 my-2 border-t border-gray-200" />
-        <div className="px-4 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">功能菜单</div>
+        {hasOtherMenus && (
+          <>
+            <div className="mx-4 my-2 border-t border-gray-200" />
+            <div className="px-4 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">功能菜单</div>
 
-        {/* Other menus */}
-        {filteredOtherMenus.filter(item => !item.children).map(item => {
-          const Icon = item.icon
-          return (
-            <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-all duration-200 ${
-                isActive(item.path)
-                  ? 'text-[#1A56DB] bg-[#E8EFFF] border-l-[3px] border-[#1A56DB]'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-            >
-              <Icon className="w-4 h-4 flex-shrink-0" />
-              <span className="truncate">{item.label}</span>
-            </button>
-          )
-        })}
+            {/* Other menus */}
+            {filteredOtherMenus.filter(item => !item.children).map(item => {
+              const Icon = item.icon
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => navigate(item.path)}
+                  className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-all duration-200 ${
+                    isActive(item.path)
+                      ? 'text-[#1A56DB] bg-[#E8EFFF] border-l-[3px] border-[#1A56DB]'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">{item.label}</span>
+                </button>
+              )
+            })}
 
-        {filteredOtherMenus.filter(item => item.children).map(item => {
-          const Icon = item.icon
-          // Filter children by role
-          const visibleChildren = item.children?.filter(c => hasMenuAccess(currentRole, c.path)) || []
-          const isMenuActive = visibleChildren.some(c => location.pathname === c.path)
-          const isExpanded = expandedOthers[item.label] || false
-          return (
-            <div key={item.label} className="mb-0.5">
-              <button
-                onClick={() => toggleOther(item.label)}
-                className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-all duration-200 ${
-                  isMenuActive
-                    ? 'text-[#1A56DB] bg-[#E8EFFF]'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                <Icon className="w-4 h-4 flex-shrink-0" />
-                <span className="flex-1 text-left truncate">{item.label}</span>
-                {isExpanded ? <ChevronDown className="w-3 h-3 flex-shrink-0" /> : <ChevronRight className="w-3 h-3 flex-shrink-0" />}
-              </button>
-              {isExpanded && visibleChildren.length > 0 && (
-                <div className="bg-gray-50/50">
-                  {visibleChildren.map(child => {
-                    const CIcon = child.icon
-                    return (
-                      <button
-                        key={child.path}
-                        onClick={() => navigate(child.path)}
-                        className={`w-full flex items-center gap-2.5 pl-10 pr-4 py-1.5 text-xs transition-all duration-200 ${
-                          isActive(child.path)
-                            ? 'text-[#1A56DB] bg-[#E8EFFF]'
-                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        <CIcon className="w-3.5 h-3.5 flex-shrink-0" />
-                        <span className="truncate">{child.label}</span>
-                      </button>
-                    )
-                  })}
+            {filteredOtherMenus.filter(item => item.children).map(item => {
+              const Icon = item.icon
+              // Filter children by role
+              const visibleChildren = item.children?.filter(c => hasMenuAccess(currentRole, c.path)) || []
+              const isMenuActive = visibleChildren.some(c => location.pathname === c.path)
+              const isExpanded = expandedOthers[item.label] || false
+              return (
+                <div key={item.label} className="mb-0.5">
+                  <button
+                    onClick={() => toggleOther(item.label)}
+                    className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-all duration-200 ${
+                      isMenuActive
+                        ? 'text-[#1A56DB] bg-[#E8EFFF]'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    <span className="flex-1 text-left truncate">{item.label}</span>
+                    {isExpanded ? <ChevronDown className="w-3 h-3 flex-shrink-0" /> : <ChevronRight className="w-3 h-3 flex-shrink-0" />}
+                  </button>
+                  {isExpanded && visibleChildren.length > 0 && (
+                    <div className="bg-gray-50/50">
+                      {visibleChildren.map(child => {
+                        const CIcon = child.icon
+                        return (
+                          <button
+                            key={child.path}
+                            onClick={() => navigate(child.path)}
+                            className={`w-full flex items-center gap-2.5 pl-10 pr-4 py-1.5 text-xs transition-all duration-200 ${
+                              isActive(child.path)
+                                ? 'text-[#1A56DB] bg-[#E8EFFF]'
+                                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                            }`}
+                          >
+                            <CIcon className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span className="truncate">{child.label}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          )
-        })}
+              )
+            })}
+          </>
+        )}
       </div>
       <button
         onClick={toggleSidebar}

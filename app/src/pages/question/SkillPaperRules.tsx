@@ -1,45 +1,85 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { Copy, Edit3, Eye, FileSpreadsheet, Plus, Search, Trash2 } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { skillLevels, skillModules, skillSubjectName, skillSubjects } from './skillData'
+import { skillSubjects } from './skillData'
 import { useBackendListState } from '@/hooks/useBackendListState'
 
-type RuleMode = '单科目' | '跨科目'
-interface SkillRule { id: string; name: string; mode: RuleMode; subjectIds: string[]; level: string; totalScore: number; passScore: number; duration: number; status: '启用' | '草稿'; modules: Array<{ module: string; score: number; time: number }> }
+interface SkillRule {
+  id: string
+  name: string
+  standardCompose: string
+  totalScore: number
+  status: string
+}
+
 const initialRules: SkillRule[] = [
-  { id: 'sr1', name: '控制棒操作三级-A卷规则', mode: '单科目', subjectIds: ['ss1'], level: '三级', totalScore: 100, passScore: 60, duration: 180, status: '启用', modules: [{ module: '控制棒手动操作', score: 40, time: 60 }, { module: '异常工况处理', score: 60, time: 120 }] },
-  { id: 'sr2', name: '运行检修跨科目综合规则', mode: '跨科目', subjectIds: ['ss1', 'ss2'], level: '四级', totalScore: 100, passScore: 60, duration: 150, status: '草稿', modules: [{ module: '操作前检查', score: 30, time: 45 }, { module: '主泵拆装检查', score: 70, time: 105 }] },
+  { id: 'sr1', name: '测试技能组卷规则', standardCompose: '是', totalScore: 100, status: '启用' },
 ]
 
 export default function SkillPaperRules() {
   const [rules, setRules] = useBackendListState<SkillRule>(initialRules)
-  const [mode, setMode] = useState<'全部' | RuleMode>('全部')
+  const [selectedSubjectId, setSelectedSubjectId] = useState('')
   const [search, setSearch] = useState('')
-  const [dialog, setDialog] = useState<'add' | 'detail' | null>(null)
-  const [active, setActive] = useState<SkillRule | null>(null)
-  const filtered = useMemo(() => rules.filter(rule => (mode === '全部' || rule.mode === mode) && (!search || rule.name.includes(search) || rule.subjectIds.some(id => skillSubjectName(id).includes(search)))), [mode, rules, search])
+  const [activeSort, setActiveSort] = useState('技能题库')
+  const [dialog, setDialog] = useState(false)
+  const selectedSubject = skillSubjects.find(subject => subject.id === selectedSubjectId)
+
+  const filteredSubjects = useMemo(() => skillSubjects.filter(subject => {
+    return !search || subject.name.includes(search) || subject.code.includes(search)
+  }), [search])
 
   const saveRule = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const fd = new FormData(event.currentTarget)
-    const subjectIds = fd.getAll('subjectIds').map(String)
-    const next: SkillRule = { id: active?.id || String(Date.now()), name: String(fd.get('name') || ''), mode: String(fd.get('mode') || '单科目') as RuleMode, subjectIds: subjectIds.length ? subjectIds : [skillSubjects[0].id], level: String(fd.get('level') || '三级'), totalScore: Number(fd.get('totalScore') || 100), passScore: Number(fd.get('passScore') || 60), duration: Number(fd.get('duration') || 120), status: String(fd.get('status') || '草稿') as SkillRule['status'], modules: active?.modules || [{ module: skillModules[0].name, score: 40, time: 60 }] }
-    if (!next.name) { toast.error('请填写规则名称'); return }
-    setRules(prev => active ? prev.map(item => item.id === active.id ? next : item) : [next, ...prev])
-    setDialog(null); setActive(null); toast.success(active ? '组卷规则已更新' : '组卷规则已添加')
+    const next: SkillRule = {
+      id: String(Date.now()),
+      name: String(fd.get('name') || ''),
+      standardCompose: String(fd.get('standardCompose') || '是'),
+      totalScore: Number(fd.get('totalScore') || 100),
+      status: String(fd.get('status') || '启用'),
+    }
+    if (!next.name) {
+      toast.error('请填写规则名称')
+      return
+    }
+    setRules(prev => [next, ...prev])
+    setDialog(false)
+    toast.success('组卷规则已添加')
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3"><div><h1 className="text-xl font-bold text-gray-900">组卷规则</h1><p className="mt-1 text-sm text-gray-500">管理技能实操单科目/跨科目组卷规则，配置模块组合、分值和时长</p></div><div className="flex gap-2"><Button variant="outline" onClick={() => toast.success('技能组卷规则已导入')}><FileSpreadsheet className="mr-2 h-4 w-4" />导入</Button><Button onClick={() => { setActive(null); setDialog('add') }}><Plus className="mr-2 h-4 w-4" />添加</Button></div></div>
-      <div className="rounded-lg border border-gray-200 bg-white"><div className="flex items-center justify-between border-b border-gray-100 p-3"><div className="flex gap-2">{(['全部', '单科目', '跨科目'] as const).map(item => <button key={item} onClick={() => setMode(item)} className={`h-8 rounded-md px-3 text-xs font-medium ${mode === item ? 'bg-[#1A56DB] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{item}</button>)}</div><div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" /><input value={search} onChange={event => setSearch(event.target.value)} placeholder="规则名称 / 科目" className="h-9 w-72 rounded-md border border-gray-200 pl-9 pr-3 text-sm focus:border-[#1A56DB] focus:outline-none" /></div></div><div className="overflow-auto"><table className="w-full text-sm"><thead className="bg-[#F9FAFB] text-gray-600"><tr><th className="px-4 py-3 text-left font-medium">规则名称</th><th className="px-4 py-3 text-left font-medium">规则体系</th><th className="px-4 py-3 text-left font-medium">技能科目</th><th className="px-4 py-3 text-left font-medium">等级</th><th className="px-4 py-3 text-right font-medium">总分</th><th className="px-4 py-3 text-right font-medium">时长</th><th className="px-4 py-3 text-left font-medium">状态</th><th className="px-4 py-3 text-left font-medium">操作</th></tr></thead><tbody className="divide-y divide-gray-100">{filtered.map(rule => <tr key={rule.id} className="hover:bg-gray-50"><td className="px-4 py-3 font-medium text-gray-900">{rule.name}</td><td className="px-4 py-3"><Badge className={rule.mode === '跨科目' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}>{rule.mode}</Badge></td><td className="px-4 py-3 text-gray-600">{rule.subjectIds.map(skillSubjectName).join('、')}</td><td className="px-4 py-3 text-gray-600">{rule.level}</td><td className="px-4 py-3 text-right">{rule.totalScore}</td><td className="px-4 py-3 text-right">{rule.duration}分钟</td><td className="px-4 py-3"><Badge className={rule.status === '启用' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}>{rule.status}</Badge></td><td className="px-4 py-3"><div className="flex gap-2"><button onClick={() => { setActive(rule); setDialog('detail') }} className="text-xs text-[#1A56DB] hover:underline"><Eye className="mr-0.5 inline h-3.5 w-3.5" />详情</button><button onClick={() => { setActive(rule); setDialog('add') }} className="text-xs text-gray-600 hover:text-[#1A56DB]"><Edit3 className="mr-0.5 inline h-3.5 w-3.5" />编辑</button><button onClick={() => { setRules(prev => [{ ...rule, id: String(Date.now()), name: `${rule.name}（副本）`, status: '草稿' }, ...prev]); toast.success('规则已复制') }} className="text-xs text-gray-600 hover:text-[#1A56DB]"><Copy className="mr-0.5 inline h-3.5 w-3.5" />复制</button><button onClick={() => { setRules(prev => prev.filter(item => item.id !== rule.id)); toast.success('规则已删除') }} className="text-xs text-red-600 hover:underline"><Trash2 className="mr-0.5 inline h-3.5 w-3.5" />删除</button></div></td></tr>)}</tbody></table></div></div>
-      <Dialog open={dialog === 'add'} onOpenChange={() => { setDialog(null); setActive(null) }}><DialogContent className="sm:max-w-xl"><DialogHeader><DialogTitle>{active ? '编辑组卷规则' : '添加组卷规则'}</DialogTitle></DialogHeader><form onSubmit={saveRule} className="grid grid-cols-2 gap-3 text-sm"><Field label="规则名称" name="name" defaultValue={active?.name} /><SelectField label="规则体系" name="mode" defaultValue={active?.mode || '单科目'} options={['单科目', '跨科目']} /><div className="col-span-2"><div className="mb-2 font-medium text-gray-700">适用技能科目</div><div className="grid grid-cols-2 gap-2">{skillSubjects.map(subject => <label key={subject.id} className="inline-flex items-center gap-1.5"><input type="checkbox" name="subjectIds" value={subject.id} defaultChecked={active?.subjectIds.includes(subject.id) || subject.id === skillSubjects[0].id} />{subject.name}</label>)}</div></div><SelectField label="等级" name="level" defaultValue={active?.level || '三级'} options={skillLevels} /><SelectField label="状态" name="status" defaultValue={active?.status || '草稿'} options={['启用', '草稿']} /><Field label="总分" name="totalScore" defaultValue={String(active?.totalScore || 100)} type="number" /><Field label="及格线" name="passScore" defaultValue={String(active?.passScore || 60)} type="number" /><Field label="考试时长(分钟)" name="duration" defaultValue={String(active?.duration || 120)} type="number" /><div className="col-span-2 flex justify-end gap-2 border-t border-gray-100 pt-3"><Button type="button" variant="outline" onClick={() => setDialog(null)}>取消</Button><Button type="submit">保存</Button></div></form></DialogContent></Dialog>
-      <Dialog open={dialog === 'detail'} onOpenChange={() => setDialog(null)}><DialogContent><DialogHeader><DialogTitle>规则详情 - {active?.name}</DialogTitle></DialogHeader>{active && <div className="space-y-2 text-sm">{active.modules.map(row => <div key={row.module} className="flex justify-between rounded-md border border-gray-100 px-3 py-2"><span>{row.module}</span><span>{row.score}分 / {row.time}分钟</span></div>)}</div>}</DialogContent></Dialog>
+      <h1 className="text-xl font-bold text-gray-900">组卷规则</h1>
+
+      <section className="rounded-lg border border-gray-200 bg-white p-4">
+        <div className="mb-3 text-sm text-gray-600">{selectedSubject ? `当前操作科目：${selectedSubject.name}` : '请选择操作科目...'}</div>
+        <Button className="h-8 bg-[#1A56DB] px-3 text-xs hover:bg-[#1748B5]" onClick={() => setDialog(true)}><Plus className="mr-1.5 h-3.5 w-3.5" />添 加</Button>
+      </section>
+
+      <section className="overflow-auto rounded-lg border border-gray-200 bg-white">
+        <table className="w-full min-w-[760px] text-sm">
+          <thead className="bg-[#F9FAFB] text-gray-600"><tr><th className="px-4 py-3 text-left font-medium">序号</th><th className="px-4 py-3 text-left font-medium">规则名称</th><th className="px-4 py-3 text-left font-medium">标准组卷</th><th className="px-4 py-3 text-left font-medium">总分</th><th className="px-4 py-3 text-left font-medium">状态</th><th className="px-4 py-3 text-left font-medium">操作</th></tr></thead>
+          <tbody className="divide-y divide-gray-100">{rules.map((rule, index) => <tr key={rule.id} className="hover:bg-gray-50"><td className="px-4 py-3 text-gray-600">{index + 1}</td><td className="px-4 py-3 font-medium text-gray-900">{rule.name}</td><td className="px-4 py-3 text-gray-600">{rule.standardCompose}</td><td className="px-4 py-3 text-gray-600">{rule.totalScore}</td><td className="px-4 py-3 text-gray-600">{rule.status}</td><td className="px-4 py-3"><button className="text-xs text-[#1A56DB] hover:underline" onClick={() => toast.success('规则已打开')}>编辑</button></td></tr>)}</tbody>
+        </table>
+      </section>
+
+      <section className="grid grid-cols-[220px_1fr] gap-4">
+        <aside className="rounded-lg border border-gray-200 bg-white p-3"><TreeButton label="技能题库" active={activeSort === '技能题库'} onClick={() => setActiveSort('技能题库')} level={0} /><TreeButton label="测试下级科目" active={activeSort === '测试下级科目'} onClick={() => setActiveSort('测试下级科目')} level={1} /></aside>
+        <div className="rounded-lg border border-gray-200 bg-white"><div className="flex flex-wrap items-center gap-3 border-b border-gray-100 p-3"><span className="text-sm font-medium text-gray-700">科目名称</span><div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" /><input value={search} onChange={event => setSearch(event.target.value)} className="h-9 w-72 rounded-md border border-gray-200 pl-9 pr-3 text-sm focus:border-[#1A56DB] focus:outline-none" /></div><Button className="h-9 bg-[#1A56DB] px-5 hover:bg-[#1748B5]">搜 索</Button></div><div className="overflow-auto"><table className="w-full min-w-[760px] text-sm"><thead className="bg-[#F9FAFB] text-gray-600"><tr><th className="px-4 py-3 text-left font-medium">序号</th><th className="px-4 py-3 text-left font-medium">科目编码</th><th className="px-4 py-3 text-left font-medium">科目名称</th><th className="px-4 py-3 text-left font-medium">科目版本</th><th className="px-4 py-3 text-left font-medium">权限</th><th className="px-4 py-3 text-left font-medium">操作</th></tr></thead><tbody className="divide-y divide-gray-100">{filteredSubjects.map((subject, index) => <tr key={subject.id} className="hover:bg-gray-50"><td className="px-4 py-3 text-gray-600">{index + 1}</td><td className="px-4 py-3 font-mono text-xs text-gray-600">{subject.code}</td><td className="px-4 py-3 font-medium text-gray-900">{subject.name}</td><td className="px-4 py-3 text-gray-600">{subject.version}</td><td className="px-4 py-3 text-gray-600">维护</td><td className="px-4 py-3"><button onClick={() => setSelectedSubjectId(subject.id)} className="text-xs text-[#1A56DB] hover:underline">确定</button></td></tr>)}</tbody></table></div></div>
+      </section>
+
+      <Dialog open={dialog} onOpenChange={setDialog}><DialogContent><DialogHeader><DialogTitle>添加组卷规则</DialogTitle></DialogHeader><form onSubmit={saveRule} className="space-y-3 text-sm"><Field label="规则名称" name="name" /><SelectField label="标准组卷" name="standardCompose" defaultValue="是" options={['是', '否']} /><Field label="总分" name="totalScore" defaultValue="100" type="number" /><SelectField label="状态" name="status" defaultValue="启用" options={['启用', '停用']} /><div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setDialog(false)}>取消</Button><Button type="submit">保存</Button></div></form></DialogContent></Dialog>
     </div>
   )
 }
-function Field({ label, name, defaultValue, type = 'text' }: { label: string; name: string; defaultValue?: string; type?: string }) { return <label className="block"><span className="font-medium text-gray-700">{label}</span><input name={name} type={type} defaultValue={defaultValue} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3" /></label> }
-function SelectField({ label, name, defaultValue, options }: { label: string; name: string; defaultValue: string; options: string[] }) { return <label className="block"><span className="font-medium text-gray-700">{label}</span><select name={name} defaultValue={defaultValue} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-2">{options.map(option => <option key={option}>{option}</option>)}</select></label> }
+function TreeButton({ label, active, level, onClick }: { label: string; active: boolean; level: number; onClick: () => void }) {
+  return <button onClick={onClick} className={`block w-full rounded-md px-3 py-2 text-left text-sm ${active ? 'bg-[#E8EFFF] text-[#1A56DB]' : 'text-gray-700 hover:bg-gray-50'}`} style={{ paddingLeft: 12 + level * 18 }}>{label}</button>
+}
+function Field({ label, name, defaultValue, type = 'text' }: { label: string; name: string; defaultValue?: string; type?: string }) {
+  return <label className="block"><span className="font-medium text-gray-700">{label}</span><input name={name} type={type} defaultValue={defaultValue} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3" /></label>
+}
+function SelectField({ label, name, defaultValue, options }: { label: string; name: string; defaultValue: string; options: string[] }) {
+  return <label className="block"><span className="font-medium text-gray-700">{label}</span><select name={name} defaultValue={defaultValue} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-2">{options.map(option => <option key={option}>{option}</option>)}</select></label>
+}

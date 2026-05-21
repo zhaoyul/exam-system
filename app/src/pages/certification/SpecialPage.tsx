@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { CheckCircle2, Download, Eye, FileClock, MessageSquare, Plus, RotateCcw, Search, Trash2, Upload } from 'lucide-react'
+import { CheckCircle2, Eye, FileClock, MessageSquare, Plus, RotateCcw, Search, Trash2, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
@@ -8,12 +8,15 @@ import { useApp } from '@/context/AppContext'
 import { useBackendListState } from '@/hooks/useBackendListState'
 
 type SpecialType = '回退计划到上一步' | '删除计划'
-type SpecialStatus = '正在审核' | '通过' | '不通过' | '拒绝'
-type AuditChoice = '通过' | '不通过' | '拒绝'
+type SpecialCategory = '认定' | '申报' | '自主认定' | '特首技师'
+type SpecialStatus = '正在审核' | '通过' | '不通过'
+type AuditChoice = '通过' | '不通过'
 
 interface SpecialItem {
   id: string
   type: SpecialType
+  applicationType: SpecialCategory
+  planNo: string
   planName: string
   currentNode: string
   targetNode: string
@@ -35,6 +38,8 @@ const initialItems: SpecialItem[] = [
   {
     id: 's1',
     type: '回退计划到上一步',
+    applicationType: '认定',
+    planNo: 'JH20220324002',
     planName: '20220324中国同辐股份有限公司第2批认定',
     currentNode: '考试报名',
     targetNode: '制定计划',
@@ -51,6 +56,8 @@ const initialItems: SpecialItem[] = [
   {
     id: 's2',
     type: '删除计划',
+    applicationType: '申报',
+    planNo: 'JH20220412003',
     planName: '20220412第3批认定',
     currentNode: '成绩管理',
     targetNode: '删除计划',
@@ -67,6 +74,8 @@ const initialItems: SpecialItem[] = [
   {
     id: 's3',
     type: '回退计划到上一步',
+    applicationType: '自主认定',
+    planNo: 'JH20260508001',
     planName: '20260508阳江核电第1批认定',
     currentNode: '考试成绩',
     targetNode: '考务安排',
@@ -85,6 +94,8 @@ const initialItems: SpecialItem[] = [
   {
     id: 's4',
     type: '删除计划',
+    applicationType: '特首技师',
+    planNo: 'JH20260401002',
     planName: '20260401台山核电第2批认定',
     currentNode: '制定计划',
     targetNode: '删除计划',
@@ -95,29 +106,30 @@ const initialItems: SpecialItem[] = [
     reason: '申请理由不充分。',
     phone: '13600006666',
     materials: [],
-    status: '拒绝',
+    status: '不通过',
     auditUser: '集团管理员',
     auditTime: '2026-05-16 11:30:00',
-    auditOpinion: '缺少必要证明，且同类删除申请不可重复提交。',
+    auditOpinion: '缺少必要证明，需补充后重新提交。',
   },
 ]
 
-const statusTabs: Array<'全部' | SpecialStatus> = ['全部', '正在审核', '通过', '不通过', '拒绝']
-const typeFilters: Array<'全部' | SpecialType> = ['全部', '回退计划到上一步', '删除计划']
+const applicationTypes: SpecialCategory[] = ['认定', '申报', '自主认定', '特首技师']
+const statusTabs: Array<'全部' | '正在审核' | '审核通过' | '不通过'> = ['全部', '正在审核', '审核通过', '不通过']
 
 export default function SpecialPage() {
   const { user } = useApp()
   const isBranch = user?.role === 'branch_admin'
   const [items, setItems] = useBackendListState<SpecialItem>(initialItems)
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'全部' | SpecialStatus>('全部')
-  const [typeFilter, setTypeFilter] = useState<'全部' | SpecialType>('全部')
+  const [statusFilter, setStatusFilter] = useState<'全部' | '正在审核' | '审核通过' | '不通过'>('全部')
+  const [applicationType, setApplicationType] = useState<SpecialCategory>('认定')
   const [detailItem, setDetailItem] = useState<SpecialItem | null>(null)
   const [auditItem, setAuditItem] = useState<SpecialItem | null>(null)
   const [auditChoice, setAuditChoice] = useState<AuditChoice>('通过')
   const [auditOpinion, setAuditOpinion] = useState('')
   const [showApply, setShowApply] = useState(false)
   const [form, setForm] = useState({
+    applicationType: '认定' as SpecialCategory,
     type: '回退计划到上一步' as SpecialType,
     planName: '',
     currentNode: '',
@@ -130,15 +142,25 @@ export default function SpecialPage() {
 
   const filtered = useMemo(() => {
     return items.filter(item => {
-      const byStatus = statusFilter === '全部' || item.status === statusFilter
-      const byType = typeFilter === '全部' || item.type === typeFilter
-      const bySearch = !search || item.planName.includes(search) || item.org.includes(search) || item.applicant.includes(search)
+      const byStatus = statusFilter === '全部' || (statusFilter === '审核通过' ? item.status === '通过' : item.status === statusFilter)
+      const byType = item.applicationType === applicationType
+      const bySearch = !search || item.planName.includes(search) || item.planNo.includes(search)
       return byStatus && byType && bySearch
     })
-  }, [items, search, statusFilter, typeFilter])
+  }, [items, search, statusFilter, applicationType])
 
   const openApply = () => {
-    setForm({ type: '回退计划到上一步', planName: '', currentNode: '', targetNode: '', phone: '', code: '', reason: '', materials: [] })
+    setForm({
+      applicationType: '认定',
+      type: '回退计划到上一步',
+      planName: '',
+      currentNode: '',
+      targetNode: '',
+      phone: '',
+      code: '',
+      reason: '',
+      materials: [],
+    })
     setShowApply(true)
   }
 
@@ -155,6 +177,8 @@ export default function SpecialPage() {
     setItems(prev => [{
       id: String(Date.now()),
       type: form.type,
+      applicationType: form.applicationType,
+      planNo: `JH${Date.now().toString().slice(-8)}`,
       planName: form.planName,
       currentNode: form.currentNode,
       targetNode: form.type === '删除计划' ? '删除计划' : form.targetNode,
@@ -168,6 +192,8 @@ export default function SpecialPage() {
       materials: form.materials.length ? form.materials : ['证明材料.pdf'],
       status: '正在审核',
     }, ...prev])
+    setApplicationType(form.applicationType)
+    setStatusFilter('正在审核')
     setShowApply(false)
     toast.success('特办申请已提交，等待集团审核')
   }
@@ -192,15 +218,21 @@ export default function SpecialPage() {
       auditOpinion,
     } : item))
     setAuditItem(null)
-    toast.success(auditChoice === '通过' ? '审核通过，计划将执行删除或回退' : auditChoice === '不通过' ? '审核不通过，机构可修改后重新提交' : '审核已拒绝，该申请不可重复提交')
+    toast.success(auditChoice === '通过' ? '审核通过，计划将执行删除或回退' : '审核不通过，机构可修改原因或材料后重新提交')
   }
 
   const statusBadge = (status: SpecialStatus) => {
-    if (status === '通过') return <Badge className="bg-green-50 text-green-700">{status}</Badge>
-    if (status === '不通过') return <Badge className="bg-amber-50 text-amber-700">{status}</Badge>
-    if (status === '拒绝') return <Badge className="bg-red-50 text-red-700">{status}</Badge>
-    return <Badge className="bg-blue-50 text-blue-700">{status}</Badge>
+    if (status === '通过') return <Badge className="bg-green-50 text-green-700">审核通过</Badge>
+    if (status === '不通过') return <Badge className="bg-amber-50 text-amber-700">不通过</Badge>
+    return <Badge className="bg-blue-50 text-blue-700">正在审核</Badge>
   }
+
+  const typeBadge = (type: SpecialType) => (
+    <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${type === '删除计划' ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'}`}>
+      {type === '删除计划' ? <Trash2 className="h-3 w-3" /> : <RotateCcw className="h-3 w-3" />}
+      {type}
+    </span>
+  )
 
   return (
     <div className="space-y-4">
@@ -212,50 +244,51 @@ export default function SpecialPage() {
             <p className="mt-1 text-sm text-gray-500">{isBranch ? '提交删除计划或回退计划到上一步的特殊办理申请' : '审核分支机构提交的删除计划、回退计划到上一步申请'}</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => toast.success('特办申请记录已导出')}><Download className="mr-2 h-4 w-4" />导出</Button>
-          {isBranch && <Button onClick={openApply} className="bg-[#1A56DB] hover:bg-[#1748B5]"><Plus className="mr-2 h-4 w-4" />添加申请</Button>}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-4 gap-3">
-        <StatCard label="申请总数" value={items.length} tone="blue" />
-        <StatCard label="正在审核" value={items.filter(item => item.status === '正在审核').length} tone="amber" />
-        <StatCard label="审核通过" value={items.filter(item => item.status === '通过').length} tone="green" />
-        <StatCard label="拒绝" value={items.filter(item => item.status === '拒绝').length} tone="red" />
       </div>
 
       <div className="rounded-lg border border-gray-200 bg-white p-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-2">
-            {statusTabs.map(status => (
-              <button key={status} onClick={() => setStatusFilter(status)} className={`rounded-md px-3 py-1.5 text-xs font-medium ${statusFilter === status ? 'bg-[#1A56DB] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                {status}
-              </button>
-            ))}
-            <select value={typeFilter} onChange={event => setTypeFilter(event.target.value as typeof typeFilter)} className="h-8 rounded-md border border-gray-200 px-2 text-xs">
-              {typeFilters.map(type => <option key={type}>{type}</option>)}
-            </select>
-          </div>
+        <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 pb-3">
+          <span className="text-sm text-gray-600">计划名称</span>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input value={search} onChange={event => setSearch(event.target.value)} placeholder="计划名称 / 机构 / 申请人" className="h-9 w-72 rounded-md border border-gray-200 pl-9 pr-3 text-sm focus:border-[#1A56DB] focus:outline-none" />
+            <input value={search} onChange={event => setSearch(event.target.value)} className="h-9 w-72 rounded-md border border-gray-200 pl-9 pr-3 text-sm focus:border-[#1A56DB] focus:outline-none" />
           </div>
+          <Button className="h-9 bg-[#1A56DB] px-5 hover:bg-[#1748B5]"><Search className="mr-1 h-4 w-4" />搜索</Button>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
+            {applicationTypes.map(type => (
+              <button key={type} onClick={() => setApplicationType(type)} className={`rounded-md px-4 py-1.5 text-sm ${applicationType === type ? 'bg-[#1A56DB] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                {type}
+              </button>
+            ))}
+          </div>
+          <Button onClick={openApply} className="h-9 bg-[#1A56DB] px-4 hover:bg-[#1748B5]"><Plus className="mr-2 h-4 w-4" />添加申请</Button>
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          {statusTabs.map(status => (
+            <button key={status} onClick={() => setStatusFilter(status)} className={`rounded-md px-4 py-1.5 text-sm ${statusFilter === status ? 'bg-[#1A56DB] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+              {status}
+            </button>
+          ))}
         </div>
       </div>
 
       <div className="overflow-auto rounded-lg border border-gray-200 bg-white">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[1120px] text-sm">
           <thead className="bg-[#F9FAFB] text-gray-600">
             <tr>
               <th className="px-4 py-3 text-left font-medium">序号</th>
               <th className="px-4 py-3 text-left font-medium">申请类型</th>
+              <th className="px-4 py-3 text-left font-medium">计划编号</th>
               <th className="px-4 py-3 text-left font-medium">计划名称</th>
               <th className="px-4 py-3 text-left font-medium">当前节点</th>
-              <th className="px-4 py-3 text-left font-medium">目标节点</th>
-              <th className="px-4 py-3 text-left font-medium">申请机构</th>
-              <th className="px-4 py-3 text-left font-medium">申请人</th>
-              <th className="px-4 py-3 text-left font-medium">申请时间</th>
+              <th className="px-4 py-3 text-left font-medium">上个节点</th>
+              <th className="px-4 py-3 text-left font-medium">操作人</th>
+              <th className="px-4 py-3 text-left font-medium">操作人电话</th>
+              <th className="px-4 py-3 text-left font-medium">操作时间</th>
               <th className="px-4 py-3 text-left font-medium">状态</th>
               <th className="px-4 py-3 text-left font-medium">操作</th>
             </tr>
@@ -264,28 +297,28 @@ export default function SpecialPage() {
             {filtered.map((item, index) => (
               <tr key={item.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 text-gray-600">{index + 1}</td>
-                <td className="px-4 py-3">
-                  <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${item.type === '删除计划' ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'}`}>
-                    {item.type === '删除计划' ? <Trash2 className="h-3 w-3" /> : <RotateCcw className="h-3 w-3" />}
-                    {item.type}
-                  </span>
-                </td>
-                <td className="max-w-[280px] truncate px-4 py-3 font-medium text-gray-900">{item.planName}</td>
+                <td className="px-4 py-3 text-gray-600">{item.applicationType}</td>
+                <td className="px-4 py-3 font-mono text-xs text-gray-600">{item.planNo}</td>
+                <td className="max-w-[260px] truncate px-4 py-3 font-medium text-gray-900">{item.planName}</td>
                 <td className="px-4 py-3 text-gray-600">{item.currentNode}</td>
                 <td className="px-4 py-3 text-gray-600">{item.targetNode}</td>
-                <td className="px-4 py-3 text-gray-600">{item.org}</td>
                 <td className="px-4 py-3 text-gray-600">{item.applicant}</td>
+                <td className="px-4 py-3 text-gray-600">{item.applicantPhone}</td>
                 <td className="px-4 py-3 text-xs text-gray-600">{item.applyTime}</td>
                 <td className="px-4 py-3">{statusBadge(item.status)}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <button onClick={() => setDetailItem(item)} className="inline-flex items-center gap-1 text-xs text-[#1A56DB] hover:underline"><Eye className="h-3.5 w-3.5" />查看</button>
-                    {item.materials.length > 0 && <button onClick={() => toast.success(`${item.materials[0]} 已开始下载`)} className="inline-flex items-center gap-1 text-xs text-gray-600 hover:text-[#1A56DB]"><Download className="h-3.5 w-3.5" />下载</button>}
                     {!isBranch && item.status === '正在审核' && <button onClick={() => openAudit(item)} className="text-xs text-green-600 hover:underline">审核</button>}
                   </div>
                 </td>
               </tr>
             ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={11} className="px-4 py-12 text-center text-sm text-gray-400">暂无数据</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -297,15 +330,17 @@ export default function SpecialPage() {
             <div className="space-y-4 text-sm">
               <div className="rounded-md bg-[#F9FAFB] p-3">
                 <div className="font-semibold text-gray-900">{detailItem.planName}</div>
-                <div className="mt-1 text-xs text-gray-500">{detailItem.currentNode} → {detailItem.targetNode}</div>
+                <div className="mt-1 text-xs text-gray-500">{detailItem.currentNode} 到 {detailItem.targetNode}</div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Info label="申请类型" value={detailItem.type} />
+                <Info label="申请类型" value={detailItem.applicationType} />
+                <Info label="特办类型" value={detailItem.type} />
+                <Info label="计划编号" value={detailItem.planNo} />
                 <Info label="申请机构" value={detailItem.org} />
-                <Info label="申请人" value={detailItem.applicant} />
-                <Info label="联系电话" value={detailItem.applicantPhone} />
-                <Info label="申请时间" value={detailItem.applyTime} />
-                <Info label="状态" value={detailItem.status} />
+                <Info label="操作人" value={detailItem.applicant} />
+                <Info label="操作人电话" value={detailItem.applicantPhone} />
+                <Info label="操作时间" value={detailItem.applyTime} />
+                <Info label="状态" value={detailItem.status === '通过' ? '审核通过' : detailItem.status} />
               </div>
               <div className="rounded-md border border-blue-100 bg-blue-50 p-3 text-blue-700">{detailItem.reason}</div>
               <div>
@@ -342,22 +377,23 @@ export default function SpecialPage() {
             <div className="space-y-4 text-sm">
               <div className="rounded-md bg-[#F9FAFB] p-3">
                 <div className="font-medium text-gray-900">{auditItem.planName}</div>
-                <div className="mt-1 text-xs text-gray-500">{auditItem.type} / {auditItem.org}</div>
+                <div className="mt-1 text-xs text-gray-500">{auditItem.applicationType} / {auditItem.org}</div>
+                <div className="mt-2">{typeBadge(auditItem.type)}</div>
               </div>
               <div>
                 <div className="mb-2 font-medium text-gray-700">审核状态</div>
                 <div className="flex gap-4">
-                  {(['通过', '不通过', '拒绝'] as AuditChoice[]).map(choice => (
+                  {(['通过', '不通过'] as AuditChoice[]).map(choice => (
                     <label key={choice} className="inline-flex items-center gap-1.5">
                       <input type="radio" checked={auditChoice === choice} onChange={() => setAuditChoice(choice)} />
-                      {choice}
+                      {choice === '通过' ? '审核通过' : choice}
                     </label>
                   ))}
                 </div>
               </div>
               <textarea value={auditOpinion} onChange={event => setAuditOpinion(event.target.value)} placeholder="请输入审核意见" className="h-28 w-full rounded-md border border-gray-200 px-3 py-2 focus:border-[#1A56DB] focus:outline-none" />
               <div className="rounded-md bg-gray-50 p-3 text-xs text-gray-500">
-                通过：准许删除计划或回退计划至上一步；不通过：机构可修改原因或材料后重新提交；拒绝：不可重新提交相同申请。
+                通过：准许删除计划或回退计划至上一步；不通过：机构可修改原因或材料后重新提交。
               </div>
               <div className="flex justify-end gap-2 border-t border-gray-100 pt-3">
                 <Button variant="outline" onClick={() => setAuditItem(null)}>取消</Button>
@@ -378,24 +414,30 @@ export default function SpecialPage() {
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
+                <span className="font-medium text-gray-700">申请类型</span>
+                <select value={form.applicationType} onChange={event => setForm({ ...form, applicationType: event.target.value as SpecialCategory })} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3">
+                  {applicationTypes.map(type => <option key={type}>{type}</option>)}
+                </select>
+              </label>
+              <label className="block">
                 <span className="font-medium text-gray-700">特办类型</span>
                 <select value={form.type} onChange={event => setForm({ ...form, type: event.target.value as SpecialType })} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3">
                   <option>回退计划到上一步</option>
                   <option>删除计划</option>
                 </select>
               </label>
-              <label className="block">
-                <span className="font-medium text-gray-700">手机号</span>
-                <input value={form.phone} onChange={event => setForm({ ...form, phone: event.target.value })} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3" />
-              </label>
             </div>
+            <label className="block">
+              <span className="font-medium text-gray-700">手机号</span>
+              <input value={form.phone} onChange={event => setForm({ ...form, phone: event.target.value })} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3" />
+            </label>
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
                 <span className="font-medium text-gray-700">当前节点</span>
                 <input value={form.currentNode} onChange={event => setForm({ ...form, currentNode: event.target.value })} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3" />
               </label>
               <label className="block">
-                <span className="font-medium text-gray-700">目标节点</span>
+                <span className="font-medium text-gray-700">上个节点</span>
                 <input value={form.targetNode} disabled={form.type === '删除计划'} onChange={event => setForm({ ...form, targetNode: event.target.value })} placeholder={form.type === '删除计划' ? '删除计划' : '如：制定计划'} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3 disabled:bg-gray-100" />
               </label>
             </div>
@@ -424,21 +466,6 @@ export default function SpecialPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
-  )
-}
-
-function StatCard({ label, value, tone }: { label: string; value: number; tone: 'blue' | 'amber' | 'green' | 'red' }) {
-  const color = {
-    blue: 'text-blue-700',
-    amber: 'text-amber-700',
-    green: 'text-green-700',
-    red: 'text-red-700',
-  }[tone]
-  return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
-      <div className="text-sm text-gray-500">{label}</div>
-      <div className={`mt-1 text-2xl font-bold ${color}`}>{value}</div>
     </div>
   )
 }

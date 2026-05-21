@@ -151,8 +151,8 @@ export default function CertPlanManage() {
   const [plans, setPlans] = useBackendListState<CertPlan>(mockPlans)
   const backendOccupationOptions = useBackendResourceList('/standard/evaluation-scope', occupationOptions)
   const [search, setSearch] = useState('')
-  const [queryType, setQueryType] = useState('办证计划')
-  const [activeTab, setActiveTab] = useState<'待办' | '已办'>('待办')
+  const [queryType, setQueryType] = useState('计划名称')
+  const [activeTab, setActiveTab] = useState<'待发布' | '已发布'>('待发布')
   const [expandedId, setExpandedId] = useState<string | null>('1')
   const [showMoreMenu, setShowMoreMenu] = useState<string | null>(null)
   const [showPlanDialog, setShowPlanDialog] = useState(false)
@@ -166,7 +166,9 @@ export default function CertPlanManage() {
 
   const filtered = useMemo(() => {
     return plans.filter(plan => {
-      const tabMatch = activeTab === '待办' ? plan.status !== 'done' : plan.status === 'done'
+      const tabMatch = activeTab === '待发布'
+        ? plan.status !== 'published' && plan.status !== 'done'
+        : plan.status === 'published' || plan.status === 'done'
       const searchMatch = !search || plan.name.includes(search) || plan.planNo.includes(search)
       return tabMatch && searchMatch
     })
@@ -272,7 +274,7 @@ export default function CertPlanManage() {
     toast.success('职业工种已删除')
   }
 
-  const selectedPlan = selectedPlanForAction || plans[0]
+  const selectedPlan = selectedPlanForAction || filtered[0] || plans[0]
 
   return (
     <div className="space-y-4">
@@ -290,6 +292,7 @@ export default function CertPlanManage() {
             <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="办证计划">办证计划</SelectItem>
+              <SelectItem value="计划名称">计划名称</SelectItem>
               <SelectItem value="计划编号">计划编号</SelectItem>
               <SelectItem value="站点名称">站点名称</SelectItem>
             </SelectContent>
@@ -301,7 +304,7 @@ export default function CertPlanManage() {
           <Button variant="outline" onClick={() => toast.success('查询完成')}>查询</Button>
         </div>
         <div className="flex rounded-md border border-gray-200 bg-gray-50 p-0.5">
-          {(['待办', '已办'] as const).map(tab => (
+          {(['待发布', '已发布'] as const).map(tab => (
             <button
               key={tab}
               className={`px-4 py-1.5 text-xs rounded ${activeTab === tab ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-white'}`}
@@ -313,8 +316,37 @@ export default function CertPlanManage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-auto">
-        <table className="w-full text-sm">
+      <div className="grid min-h-[560px] grid-cols-[300px_minmax(0,1fr)] gap-4">
+        <aside className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+          <div className="border-b border-gray-100 px-4 py-3 text-base font-medium text-[#4F73D9]">计划列表</div>
+          <div className="divide-y divide-gray-100">
+            {filtered.map((plan, index) => {
+              const isSelected = selectedPlan?.id === plan.id
+              return (
+                <button
+                  key={plan.id}
+                  onClick={() => {
+                    setSelectedPlanForAction(plan)
+                    setExpandedId(plan.id)
+                  }}
+                  className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-50 ${isSelected ? 'bg-blue-50 text-blue-700' : 'text-gray-700'}`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium">{plan.name}</span>
+                    <span className="text-xs text-gray-400">{index + 1}</span>
+                  </div>
+                  <div className="mt-1 text-xs text-gray-500">{plan.planNo}</div>
+                </button>
+              )
+            })}
+            {filtered.length === 0 && (
+              <div className="px-4 py-24 text-center text-sm text-gray-400">暂无数据</div>
+            )}
+          </div>
+        </aside>
+
+        <div className="overflow-auto rounded-lg border border-gray-200 bg-white">
+          <table className="w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-3 py-3 text-left font-medium text-gray-600 w-8"></th>
@@ -446,7 +478,8 @@ export default function CertPlanManage() {
               </Fragment>
             ))}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
 
       <Dialog open={showPlanDialog} onOpenChange={setShowPlanDialog}>

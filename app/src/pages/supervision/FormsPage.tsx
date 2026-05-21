@@ -9,10 +9,16 @@ import { useBackendListState } from '@/hooks/useBackendListState'
 
 export default function FormsPage() {
   const [tab, setTab] = useState<'表单定义' | '使用设置'>('表单定义')
-  const [items, setItems] = useBackendListState<ExpertFormDef>(formDefs)
+  const [backendItems, setItems] = useBackendListState<ExpertFormDef>(formDefs)
   const [search, setSearch] = useState('')
   const [dialog, setDialog] = useState<'add' | 'view' | 'setting' | null>(null)
   const [active, setActive] = useState<ExpertFormDef | null>(null)
+  const items = useMemo(() => {
+    const byId = new Map<string, ExpertFormDef>()
+    formDefs.forEach(item => byId.set(item.id, item))
+    backendItems.forEach(item => byId.set(item.id, item))
+    return Array.from(byId.values())
+  }, [backendItems])
 
   const filtered = useMemo(() => items.filter(item => !search || item.name.includes(search) || item.type.includes(search)), [items, search])
 

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { Building2, LayoutGrid, PenTool, Award, AlertCircle, Clock, ChevronRight, FileText } from 'lucide-react'
 import { useBackendListState } from '@/hooks/useBackendListState'
+import { useApp } from '@/context/AppContext'
 
 const flowSteps = [
   { id: 1, label: '制定计划', count: 1, status: 'completed', path: '/cert/exec/plans' },
@@ -21,8 +22,10 @@ const urgentTasks = [
 
 export default function BranchPortal() {
   const navigate = useNavigate()
+  const { user } = useApp()
   const [backendFlowSteps] = useBackendListState(flowSteps)
   const [backendUrgentTasks] = useBackendListState(urgentTasks)
+  const orgName = user?.org || '测试有限公司'
 
   return (
     <div>
@@ -32,7 +35,7 @@ export default function BranchPortal() {
         </div>
         <div>
           <h1 className="text-xl font-bold text-gray-900">机构工作台</h1>
-          <p className="text-xs text-gray-500">中国同辐股份有限公司 · 备案地：北京市</p>
+          <p className="text-xs text-gray-500">{orgName} · 备案地：广东省</p>
         </div>
       </div>
 

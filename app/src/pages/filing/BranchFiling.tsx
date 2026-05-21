@@ -1,87 +1,141 @@
-import { useState } from 'react'
-import { Search, Plus, Edit3, Trash2, Save, Send, Building2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { CheckCircle, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useBackendListState } from '@/hooks/useBackendListState'
+import { useBackendResourceList } from '@/hooks/useBackendListState'
 
-const filings = [
-  { id: '1', org: '阳江核电', parent: '集团', date: '2026-01-10', scope: '核反应堆运行值班员（三/四级）', status: 'approved', reviewer: '王督导' },
-  { id: '2', org: '台山核电', parent: '集团', date: '2026-02-15', scope: '电气试验员（三/四级）、焊接工（五级）', status: 'reviewing', reviewer: '李督导' },
-  { id: '3', org: '中广核工程', parent: '集团', date: '2026-03-01', scope: '机械设备检修工（三/四级）', status: 'submitted', reviewer: '--' },
-  { id: '4', org: '中广核研究院', parent: '集团', date: '2026-04-01', scope: '仪控设备检修工（三/四级）', status: 'draft', reviewer: '--' },
+interface FilingAudit {
+  id: string
+  org: string
+  orgType: string
+  filingType: string
+  filingPlace: string
+  submitTime: string
+  status: 'reviewing' | 'approved' | 'returned'
+  siteCount: number
+  projectCount: number
+  staffCount: number
+  supervisorCount: number
+  assessorCount: number
+  examRoomCount: number
+}
+
+const initialRows: FilingAudit[] = [
+  { id: 'fa1', org: '中广测试有限公司', orgType: '全国性用人单位分支机构', filingType: '初次备案', filingPlace: '天津市', submitTime: '2026-04-17', status: 'reviewing', siteCount: 1, projectCount: 3, staffCount: 0, supervisorCount: 0, assessorCount: 0, examRoomCount: 0 },
+  { id: 'fa2', org: '福建宁德核电有限公司', orgType: '全国性用人单位分支机构', filingType: '变更备案', filingPlace: '福建省', submitTime: '2026-03-11', status: 'approved', siteCount: 1, projectCount: 5, staffCount: 12, supervisorCount: 3, assessorCount: 8, examRoomCount: 2 },
+  { id: 'fa3', org: '防城港核电', orgType: '全国性用人单位分支机构', filingType: '初次备案', filingPlace: '广西壮族自治区', submitTime: '2026-02-26', status: 'approved', siteCount: 1, projectCount: 6, staffCount: 9, supervisorCount: 3, assessorCount: 10, examRoomCount: 3 },
 ]
 
 export default function BranchFiling() {
-  const [items, setItems] = useBackendListState(filings)
-  const [search, setSearch] = useState('')
-  const [showAdd, setShowAdd] = useState(false)
-  const [showEdit, setShowEdit] = useState<any>(null)
-  const [showDelete, setShowDelete] = useState<string | null>(null)
-  const [form, setForm] = useState({ org: '', parent: '集团', date: '', scope: '', status: 'draft', reviewer: '' })
+  const backendRows = useBackendResourceList<FilingAudit>('/filing/branch', initialRows)
+  const rows = useMemo(() => appendBackendItems(initialRows, backendRows), [backendRows])
+  const [status, setStatus] = useState<FilingAudit['status']>('reviewing')
+  const [detail, setDetail] = useState<FilingAudit | null>(null)
 
-  const filtered = items.filter(i => !search || i.org.includes(search) || i.scope.includes(search))
-  const openAdd = () => { setForm({ org: '', parent: '集团', date: '', scope: '', status: 'draft', reviewer: '' }); setShowAdd(true) }
-  const openEdit = (i: any) => { setForm(i); setShowEdit(i) }
-  const handleSave = () => {
-    if (!form.org) return
-    if (showEdit) { setItems(prev => prev.map(i => i.id === showEdit.id ? { ...form, id: showEdit.id } : i)); setShowEdit(null) }
-    else { setItems(prev => [{ ...form, id: Date.now().toString() }, ...prev]); setShowAdd(false) }
+  const visibleRows = useMemo(() => rows.filter(row => row.status === status), [rows, status])
+  const counts = {
+    reviewing: rows.filter(row => row.status === 'reviewing').length,
+    approved: rows.filter(row => row.status === 'approved').length,
+    returned: rows.filter(row => row.status === 'returned').length,
   }
-  const handleDelete = (id: string) => { setItems(prev => prev.filter(i => i.id !== id)); setShowDelete(null) }
-  const submitF = (id: string) => { setItems(prev => prev.map(i => i.id === id ? { ...i, status: 'submitted' } : i)) }
-  const reviewF = (id: string) => { setItems(prev => prev.map(i => i.id === id ? { ...i, status: 'reviewing' } : i)) }
-  const approveF = (id: string) => { setItems(prev => prev.map(i => i.id === id ? { ...i, status: 'approved', reviewer: '王督导' } : i)) }
-  const rejectF = (id: string) => { setItems(prev => prev.map(i => i.id === id ? { ...i, status: 'rejected', reviewer: '王督导' } : i)) }
-
-  const statusCls: Record<string, string> = { draft: 'bg-gray-100 text-gray-500', submitted: 'bg-blue-50 text-blue-700', reviewing: 'bg-amber-50 text-amber-700', approved: 'bg-green-50 text-green-700', rejected: 'bg-red-50 text-red-700' }
 
   return (
-    <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2"><Building2 className="w-6 h-6 text-[#1A56DB]" />分支机构备案</h1>
-      <div className="flex items-center justify-between mb-3">
-        <div className="relative"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="搜索机构/工种..." className="h-9 pl-9 pr-4 border border-gray-200 rounded-md text-sm w-64" /></div>
-        <Button onClick={openAdd} className="h-9 px-4 bg-[#1A56DB] text-white rounded-md text-sm flex items-center gap-1.5 hover:bg-[#1748B5]"><Plus className="w-4 h-4" /> 新增备案</Button>
+    <div className="space-y-4">
+      <h1 className="text-xl font-bold text-gray-900">集团审核</h1>
+
+      <div className="flex gap-2">
+        <Tab active={status === 'reviewing'} onClick={() => setStatus('reviewing')}>正在审核({counts.reviewing}个)</Tab>
+        <Tab active={status === 'approved'} onClick={() => setStatus('approved')}>审核通过({counts.approved}个)</Tab>
+        <Tab active={status === 'returned'} onClick={() => setStatus('returned')}>退回({counts.returned}个)</Tab>
       </div>
 
-      {/* 流程 */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-        <div className="flex items-center justify-between text-xs">
-          {['分支机构提交', '集团初审', '专家评审', '备案完成'].map((s, i) => (
-            <div key={s} className="flex items-center gap-2 flex-1">
-              <div className="flex items-center gap-1"><div className="w-6 h-6 rounded-full bg-blue-50 text-[#1A56DB] flex items-center justify-center text-xs font-medium">{i+1}</div><span className="text-gray-600">{s}</span></div>
-              {i < 3 && <div className="flex-1 h-px bg-gray-200 mx-2" />}
+      <section className="space-y-4">
+        {visibleRows.map(item => (
+          <article key={item.id} className="rounded-lg border border-gray-200 bg-white p-4">
+            <div className="mb-4 flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-4 text-sm text-gray-600">
+                <span className="inline-flex items-center gap-1"><MapPin className="h-4 w-4 text-[#1A56DB]" />备案地：{item.filingPlace}</span>
+                <span>提交时间：{item.submitTime}</span>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setDetail(item)}>查看详情</Button>
+                {item.status === 'reviewing' && <Button size="sm" className="bg-[#1A56DB] hover:bg-[#1748B5]">审核</Button>}
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-[#F9FAFB] text-gray-600 font-medium"><tr><th className="px-4 py-3 text-left">机构</th><th className="px-4 py-3 text-left">备案日期</th><th className="px-4 py-3 text-left">认定范围</th><th className="px-4 py-3 text-left">审核人</th><th className="px-4 py-3 text-left">状态</th><th className="px-4 py-3 text-left">操作</th></tr></thead>
-          <tbody className="divide-y divide-gray-100">
-            {filtered.map(i => (
-              <tr key={i.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium text-gray-900">{i.org}</td>
-                <td className="px-4 py-3 text-gray-600">{i.date}</td>
-                <td className="px-4 py-3 text-gray-600 max-w-xs truncate">{i.scope}</td>
-                <td className="px-4 py-3 text-gray-600">{i.reviewer}</td>
-                <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs ${statusCls[i.status]}`}>{i.status==='draft'?'草稿':i.status==='submitted'?'已提交':i.status==='reviewing'?'审核中':i.status==='approved'?'已通过':'已驳回'}</span></td>
-                <td className="px-4 py-3"><div className="flex items-center gap-2 flex-wrap">{i.status==='draft'&&<button onClick={()=>submitF(i.id)} className="text-xs text-[#1A56DB] hover:underline flex items-center gap-0.5"><Send className="w-3 h-3"/>提交</button>}{i.status==='submitted'&&<button onClick={()=>reviewF(i.id)} className="text-xs text-amber-600 hover:underline">初审</button>}{i.status==='reviewing'&&<><button onClick={()=>approveF(i.id)} className="text-xs text-green-600 hover:underline">通过</button><button onClick={()=>rejectF(i.id)} className="text-xs text-red-600 hover:underline">驳回</button></>}<button onClick={()=>openEdit(i)} className="text-gray-500 hover:text-amber-600"><Edit3 className="w-3.5 h-3.5"/></button><button onClick={()=>setShowDelete(i.id)} className="text-gray-500 hover:text-red-600"><Trash2 className="w-3.5 h-3.5"/></button></div></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            <div className="grid gap-4 lg:grid-cols-[1fr_2fr]">
+              <div className="space-y-2 text-sm">
+                <Info label="备案类型" value={item.filingType} />
+                <Info label="申请机构" value={item.org} />
+                <Info label="机构类型" value={item.orgType} />
+              </div>
+              <div className="grid grid-cols-6 gap-3">
+                <Stat label="站点" value={item.siteCount} />
+                <Stat label="职业等级" value={item.projectCount} />
+                <Stat label="工作人员" value={item.staffCount} />
+                <Stat label="督导人员" value={item.supervisorCount} />
+                <Stat label="考评人员" value={item.assessorCount} />
+                <Stat label="考点" value={item.examRoomCount} />
+              </div>
+            </div>
+          </article>
+        ))}
+        {visibleRows.length === 0 && (
+          <div className="rounded-lg border border-gray-200 bg-white py-16 text-center text-sm text-gray-400">暂无数据</div>
+        )}
+      </section>
 
-      <Dialog open={showAdd} onOpenChange={setShowAdd}><DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>新增分支机构备案</DialogTitle></DialogHeader>
-        <div className="space-y-3">
-          <div><label className="text-sm font-medium text-gray-700">机构名称</label><input value={form.org} onChange={e=>setForm({...form,org:e.target.value})} className="w-full mt-1 h-9 px-3 border border-gray-200 rounded-md text-sm" placeholder="输入机构名称"/></div>
-          <div><label className="text-sm font-medium text-gray-700">认定范围</label><input value={form.scope} onChange={e=>setForm({...form,scope:e.target.value})} className="w-full mt-1 h-9 px-3 border border-gray-200 rounded-md text-sm" placeholder="如：核反应堆运行值班员（三/四级）"/></div>
-          <div><label className="text-sm font-medium text-gray-700">备案日期</label><input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} className="w-full mt-1 h-9 px-3 border border-gray-200 rounded-md text-sm"/></div>
-        </div>
-        <div className="flex justify-end gap-2 mt-4"><Button variant="outline" onClick={()=>setShowAdd(false)}>取消</Button><Button onClick={handleSave} className="bg-[#1A56DB] hover:bg-[#1748B5]"><Save className="w-4 h-4 mr-1"/>保存</Button></div>
-      </DialogContent></Dialog>
-      <Dialog open={!!showDelete} onOpenChange={()=>setShowDelete(null)}><DialogContent className="sm:max-w-sm"><DialogHeader><DialogTitle>确认删除</DialogTitle></DialogHeader><p className="text-sm text-gray-500">确定要删除此备案记录吗？</p><div className="flex justify-end gap-2 mt-4"><Button variant="outline" onClick={()=>setShowDelete(null)}>取消</Button><Button variant="destructive" onClick={()=>showDelete&&handleDelete(showDelete)}>删除</Button></div></DialogContent></Dialog>
+      <Dialog open={!!detail} onOpenChange={() => setDetail(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader><DialogTitle>集团审核详情</DialogTitle></DialogHeader>
+          {detail && (
+            <div className="space-y-4">
+              <div className="rounded-lg bg-gray-50 p-4 text-sm">
+                <div className="font-semibold text-gray-900">{detail.org}</div>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-gray-600">
+                  <span>备案类型：{detail.filingType}</span>
+                  <span>备案地：{detail.filingPlace}</span>
+                  <span>提交时间：{detail.submitTime}</span>
+                  <span>机构类型：{detail.orgType}</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <Stat label="站点" value={detail.siteCount} />
+                <Stat label="职业等级" value={detail.projectCount} />
+                <Stat label="工作人员" value={detail.staffCount} />
+                <Stat label="督导人员" value={detail.supervisorCount} />
+                <Stat label="考评人员" value={detail.assessorCount} />
+                <Stat label="考点" value={detail.examRoomCount} />
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
+}
+
+function Tab({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return <button onClick={onClick} className={`h-9 rounded-md px-4 text-sm ${active ? 'bg-[#1A56DB] text-white' : 'bg-white text-gray-600 border border-gray-200'}`}>{children}</button>
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return <div><span className="text-gray-500">{label}：</span><span className="font-medium text-gray-900">{value}</span></div>
+}
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-3 text-center">
+      <CheckCircle className="mx-auto mb-1 h-4 w-4 text-[#1A56DB]" />
+      <div className="text-lg font-bold text-gray-900">{value}</div>
+      <div className="text-xs text-gray-500">{label}</div>
+    </div>
+  )
+}
+
+function appendBackendItems(base: FilingAudit[], incoming: FilingAudit[]) {
+  const knownIds = new Set(base.map(item => item.id))
+  const knownOrgs = new Set(base.map(item => `${item.org}-${item.submitTime}`))
+  const extras = incoming.filter(item => item.id && item.org && !knownIds.has(item.id) && !knownOrgs.has(`${item.org}-${item.submitTime}`))
+  return [...base, ...extras]
 }

@@ -1,6 +1,7 @@
 (ns zhaoyul.exam-system-backend.domain.seed
   (:require
    [cheshire.core :as json]
+   [clojure.string :as str]
    [zhaoyul.exam-system-backend.domain.auth :as auth]
    [zhaoyul.exam-system-backend.domain.resources :as resources]
    [zhaoyul.exam-system-backend.infra.db :as db]
@@ -403,6 +404,7 @@
   (doseq [[resource items] resource-fixtures
           item items]
     (ensure-resource! ds resource item))
+  (domain-seed! ds)
   {:status :seeded})
 
 (defmethod ig/init-key ::seed [_ {:keys [datasource]}]

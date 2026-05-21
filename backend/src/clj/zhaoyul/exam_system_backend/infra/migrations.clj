@@ -7,7 +7,8 @@
    [integrant.core :as ig]))
 
 (def migrations
-  ["001-init.up.sql"])
+  ["001-init.up.sql"
+   "002-domain-core.up.sql"])
 
 (defn- split-statements [sql]
   (->> (str/split sql #"(?m)^\s*--;;\s*$")

@@ -11,7 +11,8 @@
    [zhaoyul.exam-system-backend.web.controllers.resources :as resource-controller]
    [zhaoyul.exam-system-backend.web.middleware-auth :as auth-middleware]
    [zhaoyul.exam-system-backend.web.middleware.exception :as exception]
-   [zhaoyul.exam-system-backend.web.middleware.formats :as formats]))
+   [zhaoyul.exam-system-backend.web.middleware.formats :as formats]
+   [zhaoyul.exam-system-backend.web.routes.certification-biz :as cert-biz-routes]))
 
 (defn route-data [{:keys [auth cors]}]
   {:muuntaja formats/instance
@@ -296,6 +297,7 @@
          {:post {:summary "执行单条业务动作"
                  :handler (resource-controller/action-resource-item ctx)}}]]]
       (business-routes ctx)
+      (cert-biz-routes/certification-biz-routes ctx)
       (extra-business-routes ctx)
       (resource-routes ctx)))))
 

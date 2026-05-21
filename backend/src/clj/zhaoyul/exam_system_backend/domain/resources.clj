@@ -95,7 +95,12 @@
             :updatedAt (:updated_at row)
             :orgId (:org_id row)})))
 
-(defn list-items [ds resource {:keys [q status org-id limit offset]}]
+(defn list-items [ds resource params]
+  (let [q (get params "q")
+        status (get params "status")
+        org-id (get params "org-id")
+        limit (get params "limit")
+        offset (get params "offset")
   (let [resource (canonical-resource resource)
         q (some-> q str/trim)
         status (some-> status str/trim)

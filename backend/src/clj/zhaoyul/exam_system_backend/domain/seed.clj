@@ -14,6 +14,12 @@
     :display-name "集团管理员"
     :role "group_admin"
     :org-id "org-cgn"}
+   {:id "u-group-admin-original"
+    :username "cgnzx001cs"
+    :password "cs@13311331"
+    :display-name "集团管理员"
+    :role "group_admin"
+    :org-id "org-cgn"}
    {:id "u-branch-admin"
     :username "Csyxgs001"
     :password "cs@13311331"

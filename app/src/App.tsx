@@ -188,6 +188,8 @@ export default function App() {
           <Route path="/system/personnel" element={<PersonnelPage />} />
           <Route path="/system/filing-group" element={<FilingGroupPage />} />
           <Route path="/system/filing-branch" element={<FilingBranchPage />} />
+          <Route path="/system/filing-branch/apply" element={<FilingBranchPage />} />
+          <Route path="/system/filing-branch/modify" element={<FilingBranchPage />} />
           <Route path="/filing/group" element={<GroupFiling />} />
           <Route path="/standard/evaluation-scope" element={<EvaluationScope />} />
           {/* Standard */}

@@ -3,6 +3,7 @@ import { FileText, MapPin, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useBackendResourceList } from '@/hooks/useBackendListState'
+import { useApp } from '@/context/AppContext'
 
 interface FilingOrg {
   id: string
@@ -24,7 +25,7 @@ interface FilingOrg {
 }
 
 const initialOrgs: FilingOrg[] = [
-  { id: 'fo1', name: '中广测试有限公司', orgType: '全国性用人单位分支机构', creditCode: '123456789QWE123', contact: '张三', phone: '13412341234', address: '', filingPlaces: ['北京市', '广东省'], siteCount: 1, rejectCount: 0, materialCount: 0, projectCount: 0, staffCount: 0, supervisorCount: 0, assessorCount: 0, examRoomCount: 0 },
+  { id: 'fo1', name: '中广测试有限公司', orgType: '全国性用人单位分支机构', creditCode: '123456789QWE123', contact: '张三', phone: '13412341234', address: '广东省深圳市大亚湾核电基地培训中心', filingPlaces: ['北京市', '广东省', '天津市'], siteCount: 1, rejectCount: 0, materialCount: 0, projectCount: 6, staffCount: 2, supervisorCount: 4, assessorCount: 6, examRoomCount: 1 },
   { id: 'fo2', name: '福建宁德核电有限公司', orgType: '全国性用人单位分支机构', creditCode: '91350900111111111X', contact: '李四', phone: '13512341234', address: '福建省宁德市', filingPlaces: ['福建省'], siteCount: 1, rejectCount: 0, materialCount: 6, projectCount: 5, staffCount: 12, supervisorCount: 3, assessorCount: 8, examRoomCount: 2 },
   { id: 'fo3', name: '防城港核电', orgType: '全国性用人单位分支机构', creditCode: '91450600111111111X', contact: '王五', phone: '13612341234', address: '广西防城港', filingPlaces: ['广西壮族自治区'], siteCount: 1, rejectCount: 0, materialCount: 6, projectCount: 6, staffCount: 9, supervisorCount: 3, assessorCount: 10, examRoomCount: 3 },
 ]
@@ -32,8 +33,10 @@ const initialOrgs: FilingOrg[] = [
 const tabs = ['备案材料', '站点信息', '认定项目', '工作人员', '督导人员', '考评人员', '考点信息']
 
 export default function GroupFiling() {
+  const { user } = useApp()
+  const isBranch = user?.role === 'branch_admin'
   const backendOrgs = useBackendResourceList<FilingOrg>('/filing/group', initialOrgs)
-  const orgs = useMemo(() => appendBackendItems(initialOrgs, backendOrgs), [backendOrgs])
+  const orgs = useMemo(() => isBranch ? [initialOrgs[0]] : appendBackendItems(initialOrgs, backendOrgs), [backendOrgs, isBranch])
   const [search, setSearch] = useState('')
   const [selectedId, setSelectedId] = useState('fo1')
   const [activeTab, setActiveTab] = useState('备案材料')

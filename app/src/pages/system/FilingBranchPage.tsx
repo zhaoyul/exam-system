@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Plus, Upload, FileCheck, ChevronRight, X, Trash2, Edit3, Save } from 'lucide-react'
 import { useBackendListState } from '@/hooks/useBackendListState'
 
@@ -23,6 +24,10 @@ const applyList = [
   { id: '2', batch: 'BA-2026-002', type: '增量备案', date: '2026-04-20', status: 'pending' },
   { id: '3', batch: 'BA-2026-003', type: '备案修改', date: '2026-05-10', status: 'processing' },
 ]
+const modifyList = [
+  { id: 'm1', info: '基本信息', remark: '联系人手机号变更', field: '联系人手机号', changeTime: '2026-04-21 10:30', reportTime: '2026-04-21 15:20', status: '待上报' },
+  { id: 'm2', info: '认定项目', remark: '新增企业人力资源管理师三级', field: '职业等级', changeTime: '2026-04-18 09:10', reportTime: '2026-04-19 11:08', status: '已上报' },
+]
 const sites = [
   { id: '1', name: '大亚湾基地', address: '深圳市大鹏新区', rooms: 5 },
   { id: '2', name: '阳江分站点', address: '阳江市江城区', rooms: 3 },
@@ -34,14 +39,21 @@ const projects = [
 type TabKey = typeof tabs[number]
 
 export default function FilingBranchPage() {
+  const location = useLocation()
   const [activeTab, setActiveTab] = useState<TabKey>('基本信息')
-  const [subNav, setSubNav] = useState<'info' | 'apply'>('info')
+  const [subNav, setSubNav] = useState<'info' | 'apply' | 'modify'>(() => {
+    if (location.pathname.endsWith('/apply')) return 'apply'
+    if (location.pathname.endsWith('/modify')) return 'modify'
+    return 'info'
+  })
   const [staff, setStaff] = useBackendListState(staffMock)
   const [rooms, setRooms] = useBackendListState(examSites)
   const [docsList, setDocsList] = useBackendListState(docs)
   const [sitesList, setSitesList] = useBackendListState(sites)
   const [projectList, setProjectList] = useBackendListState(projects)
   const [applyData, setApplyData] = useBackendListState(applyList)
+  const [modifyData] = useBackendListState(modifyList)
+  const [modifyType, setModifyType] = useState('全部')
   const [showAddStaff, setShowAddStaff] = useState(false)
   const [showAddRoom, setShowAddRoom] = useState(false)
   const [showAddDoc, setShowAddDoc] = useState(false)
@@ -70,6 +82,13 @@ export default function FilingBranchPage() {
   const delDoc = (id: string) => setDocsList(p => p.filter(d => d.id !== id))
   const delSite = (id: string) => setSitesList(p => p.filter(s => s.id !== id))
   const delProject = (id: string) => setProjectList(p => p.filter(pr => pr.id !== id))
+  const filteredModifyData = modifyData.filter(item => modifyType === '全部' || item.info === modifyType)
+
+  useEffect(() => {
+    if (location.pathname.endsWith('/apply')) setSubNav('apply')
+    else if (location.pathname.endsWith('/modify')) setSubNav('modify')
+    else setSubNav('info')
+  }, [location.pathname])
 
   const renderStaffTable = (_title: string) => (
     <div>
@@ -96,6 +115,7 @@ export default function FilingBranchPage() {
       <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit mb-4">
         <button onClick={() => setSubNav('info')} className={`px-4 py-1.5 rounded-md text-sm font-medium ${subNav === 'info' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}>备案信息</button>
         <button onClick={() => setSubNav('apply')} className={`px-4 py-1.5 rounded-md text-sm font-medium ${subNav === 'apply' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}>备案申报</button>
+        <button onClick={() => setSubNav('modify')} className={`px-4 py-1.5 rounded-md text-sm font-medium ${subNav === 'modify' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}>备案修改</button>
       </div>
       {subNav === 'info' && (<div>
         <div className="flex gap-1 border-b border-gray-200 mb-4 overflow-x-auto">{tabs.map(tab => (<button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === tab ? 'border-[#1A56DB] text-[#1A56DB]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>{tab}</button>))}</div>
@@ -116,8 +136,38 @@ export default function FilingBranchPage() {
       </div>)}
 
       {subNav === 'apply' && (<div>
+        <div className="mb-3 flex flex-wrap gap-2">
+          {['待申报(0个)', '正在审核(1个)', '审核通过(3个)', '退回(0个)', '拒绝(0个)'].map(item => <button key={item} className="h-8 rounded-md bg-gray-100 px-3 text-xs text-gray-600 hover:bg-gray-200">{item}</button>)}
+        </div>
         <div className="flex justify-end mb-3"><button onClick={() => setShowAddApply(true)} className="h-9 px-4 bg-[#1A56DB] text-white rounded-md text-sm flex items-center gap-1.5 hover:bg-[#1748B5]"><Plus className="w-4 h-4" /> 新增备案申请</button></div>
+        <div className="mb-3 flex justify-end"><button className="h-9 px-4 border border-gray-200 rounded-md text-sm hover:bg-gray-50">新增地市备案</button></div>
         <div className="bg-white rounded-lg border border-gray-200 overflow-auto"><table className="w-full text-sm"><thead className="bg-[#F9FAFB] text-gray-600 font-medium"><tr><th className="px-4 py-3 text-left">批次号</th><th className="px-4 py-3 text-left">备案类型</th><th className="px-4 py-3 text-left">申报时间</th><th className="px-4 py-3 text-left">状态</th><th className="px-4 py-3 text-left">操作</th></tr></thead><tbody className="divide-y divide-gray-100">{applyData.map(a => (<tr key={a.id} className="hover:bg-gray-50"><td className="px-4 py-3 font-mono text-gray-900">{a.batch}</td><td className="px-4 py-3 text-gray-600">{a.type}</td><td className="px-4 py-3 text-gray-600">{a.date}</td><td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${a.status === 'approved' ? 'bg-green-50 text-green-700' : a.status === 'pending' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'}`}>{a.status === 'approved' ? '已通过' : a.status === 'pending' ? '待审核' : '处理中'}</span></td><td className="px-4 py-3"><button className="text-[#1A56DB] hover:underline text-xs flex items-center gap-0.5">查看 <ChevronRight className="w-3 h-3" /></button></td></tr>))}</tbody></table></div>
+      </div>)}
+
+      {subNav === 'modify' && (<div>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
+            {['全部', '基本信息', '站点信息', '认定项目', '工作人员', '督导人员', '考评人员', '考点信息'].map(item => (
+              <button key={item} onClick={() => setModifyType(item)} className={`h-8 rounded-md px-3 text-xs ${modifyType === item ? 'bg-[#1A56DB] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{item === '全部' ? '全 部' : item}</button>
+            ))}
+          </div>
+          <button className="h-9 px-4 bg-[#1A56DB] text-white rounded-md text-sm hover:bg-[#1748B5]">上 报</button>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 overflow-auto">
+          <table className="w-full min-w-[980px] text-sm">
+            <thead className="bg-[#F9FAFB] text-gray-600 font-medium">
+              <tr><th className="px-4 py-3 text-left">序号</th><th className="px-4 py-3 text-left">备案信息</th><th className="px-4 py-3 text-left">备注</th><th className="px-4 py-3 text-left">变更字段</th><th className="px-4 py-3 text-left">变更时间</th><th className="px-4 py-3 text-left">上报时间</th><th className="px-4 py-3 text-left">状态</th><th className="px-4 py-3 text-left">操作</th></tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredModifyData.map((item, index) => (
+                <tr key={item.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-gray-600">{index + 1}</td><td className="px-4 py-3 font-medium text-gray-900">{item.info}</td><td className="px-4 py-3 text-gray-600">{item.remark}</td><td className="px-4 py-3 text-gray-600">{item.field}</td><td className="px-4 py-3 text-gray-600">{item.changeTime}</td><td className="px-4 py-3 text-gray-600">{item.reportTime}</td><td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs ${item.status === '已上报' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>{item.status}</span></td><td className="px-4 py-3"><button className="text-xs text-[#1A56DB] hover:underline">查看</button></td>
+                </tr>
+              ))}
+              {filteredModifyData.length === 0 && <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-gray-400">暂无数据</td></tr>}
+            </tbody>
+          </table>
+        </div>
       </div>)}
 
       {/* Modals */}

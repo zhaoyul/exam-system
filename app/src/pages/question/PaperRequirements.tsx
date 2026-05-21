@@ -1,12 +1,12 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { Edit3, FileText, Plus, Shuffle } from 'lucide-react'
+import { Edit3, FileText, Plus, Search, Shuffle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { useBackendListState } from '@/hooks/useBackendListState'
 
-type ReqStatus = '未配卷' | '已配卷'
+type ReqStatus = '未抽卷' | '已抽卷'
 
 interface PaperRequirement {
   id: string
@@ -20,17 +20,22 @@ interface PaperRequirement {
 }
 
 const initialReqs: PaperRequirement[] = [
-  { id: 'rq1', item: '电工三级理论考试A卷需求', examType: '正式考试', remark: '集团统考', examTime: '2026-06-12 09:00', applicants: 42, paperNo: 'L-20260612-A', status: '已配卷' },
-  { id: 'rq2', item: '电工四级理论补考卷需求', examType: '补考', remark: '分支机构补考', examTime: '2026-06-20 14:00', applicants: 18, paperNo: '', status: '未配卷' },
+  { id: 'rq1', item: 'test', examType: '手动建立', remark: 'test', examTime: '2026-04-30 09:58:14', applicants: 0, paperNo: '', status: '未抽卷' },
+  { id: 'rq2', item: '电工三级理论试卷需求', examType: '手动建立', remark: '正式考试', examTime: '2026-05-18 15:30:00', applicants: 42, paperNo: 'L-20260518-A', status: '已抽卷' },
 ]
 
 export default function PaperRequirements() {
   const [reqs, setReqs] = useBackendListState<PaperRequirement>(initialReqs)
-  const [status, setStatus] = useState<ReqStatus>('已配卷')
+  const [status, setStatus] = useState<'全部' | ReqStatus>('全部')
+  const [search, setSearch] = useState('')
   const [dialog, setDialog] = useState<'add' | 'item' | 'paper' | null>(null)
   const [active, setActive] = useState<PaperRequirement | null>(null)
 
-  const filtered = useMemo(() => reqs.filter(req => req.status === status), [reqs, status])
+  const filtered = useMemo(() => reqs.filter(req => {
+    const byStatus = status === '全部' || req.status === status
+    const bySearch = !search || req.item.includes(search) || req.remark.includes(search)
+    return byStatus && bySearch
+  }), [reqs, search, status])
 
   const saveReq = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -43,7 +48,7 @@ export default function PaperRequirements() {
       examTime: String(fd.get('examTime') || ''),
       applicants: Number(fd.get('applicants') || 0),
       paperNo: String(fd.get('paperNo') || ''),
-      status: String(fd.get('status') || '未配卷') as ReqStatus,
+      status: String(fd.get('status') || '未抽卷') as ReqStatus,
     }
     if (!next.item) {
       toast.error('请填写试卷需求项')
@@ -57,36 +62,47 @@ export default function PaperRequirements() {
 
   const assignPaper = () => {
     if (!active) return
-    setReqs(prev => prev.map(req => req.id === active.id ? { ...req, status: '已配卷', paperNo: req.paperNo || `L-${Date.now()}` } : req))
+    setReqs(prev => prev.map(req => req.id === active.id ? { ...req, status: '已抽卷', paperNo: req.paperNo || `L-${Date.now()}` } : req))
     setDialog(null)
     toast.success('试卷已配置')
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-xl font-bold text-gray-900">试卷需求</h1>
-        <Button className="h-8 bg-[#1A56DB] px-3 text-xs hover:bg-[#1748B5]" onClick={() => { setActive(null); setDialog('add') }}><Plus className="mr-1.5 h-3.5 w-3.5" />添加</Button>
-      </div>
+      <h1 className="text-xl font-bold text-gray-900">试卷需求</h1>
 
       <section className="rounded-lg border border-gray-200 bg-white">
-        <div className="flex items-center gap-0 border-b border-gray-100 px-4 py-3">
-          {(['已配卷', '未配卷'] as const).map(item => (
-            <button key={item} onClick={() => setStatus(item)} className={`h-8 px-4 text-sm ${status === item ? 'border-b-2 border-[#1A56DB] font-medium text-[#1A56DB]' : 'text-gray-600 hover:text-[#1A56DB]'}`}>{item}</button>
-          ))}
+        <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 p-3">
+          <span className="text-sm font-medium text-gray-700">需求名称</span>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input value={search} onChange={event => setSearch(event.target.value)} className="h-9 w-72 rounded-md border border-gray-200 pl-9 pr-3 text-sm focus:border-[#1A56DB] focus:outline-none" />
+          </div>
+          <Button className="h-9 bg-[#1A56DB] px-5 hover:bg-[#1748B5]">搜 索</Button>
+          <div className="flex gap-2">
+            {(['全部', '已抽卷', '未抽卷'] as const).map(item => (
+              <button key={item} onClick={() => setStatus(item)} className={`h-8 rounded-md px-3 text-xs ${status === item ? 'bg-[#1A56DB] text-white' : 'bg-gray-100 text-gray-600'}`}>{item === '全部' ? '全 部' : item}</button>
+            ))}
+          </div>
+          <div className="ml-auto flex gap-2">
+            <Button className="h-8 bg-[#1A56DB] px-3 text-xs hover:bg-[#1748B5]" onClick={() => { setActive(null); setDialog('add') }}><Plus className="mr-1.5 h-3.5 w-3.5" />添 加</Button>
+            <Button variant="outline" className="h-8 px-3 text-xs" onClick={() => toast.success('批量自动抽卷完成')}>批量自动抽卷</Button>
+            <Button variant="outline" className="h-8 px-3 text-xs" onClick={() => toast.success('批量推送完成')}>批量推送</Button>
+          </div>
         </div>
         <div className="overflow-auto">
-          <table className="w-full min-w-[980px] text-sm">
+          <table className="w-full min-w-[1100px] text-sm">
             <thead className="bg-[#F9FAFB] text-gray-600">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">序号</th>
-                <th className="px-4 py-3 text-left font-medium">试卷需求项</th>
-                <th className="px-4 py-3 text-left font-medium">考试类型</th>
-                <th className="px-4 py-3 text-left font-medium">备注</th>
-                <th className="px-4 py-3 text-left font-medium">考试时间</th>
-                <th className="px-4 py-3 text-left font-medium">报名人数</th>
-                <th className="px-4 py-3 text-left font-medium">试卷编号</th>
                 <th className="px-4 py-3 text-left font-medium">状态</th>
+                <th className="px-4 py-3 text-left font-medium">试卷需求</th>
+                <th className="px-4 py-3 text-left font-medium">备注</th>
+                <th className="px-4 py-3 text-left font-medium">创建时间</th>
+                <th className="px-4 py-3 text-left font-medium">推送时间</th>
+                <th className="px-4 py-3 text-left font-medium">推送人</th>
+                <th className="px-4 py-3 text-left font-medium">类型</th>
+                <th className="px-4 py-3 text-left font-medium">试卷用途</th>
                 <th className="px-4 py-3 text-left font-medium">操作</th>
               </tr>
             </thead>
@@ -94,13 +110,14 @@ export default function PaperRequirements() {
               {filtered.map((req, index) => (
                 <tr key={req.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-600">{index + 1}</td>
+                  <td className="px-4 py-3"><Badge className={req.status === '已抽卷' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}>{req.status}</Badge></td>
                   <td className="px-4 py-3 font-medium text-gray-900"><FileText className="mr-1.5 inline h-4 w-4 text-[#1A56DB]" />{req.item}</td>
-                  <td className="px-4 py-3 text-gray-600">{req.examType}</td>
                   <td className="px-4 py-3 text-gray-600">{req.remark}</td>
                   <td className="px-4 py-3 text-gray-600">{req.examTime}</td>
-                  <td className="px-4 py-3 text-gray-600">{req.applicants}</td>
-                  <td className="px-4 py-3 text-gray-600">{req.paperNo || '-'}</td>
-                  <td className="px-4 py-3"><Badge className={req.status === '已配卷' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}>{req.status}</Badge></td>
+                  <td className="px-4 py-3 text-gray-600">{req.paperNo ? req.examTime : ''}</td>
+                  <td className="px-4 py-3 text-gray-600">{req.paperNo ? 'Csyxgs001' : ''}</td>
+                  <td className="px-4 py-3 text-gray-600">{req.examType}</td>
+                  <td className="px-4 py-3 text-gray-600">{req.applicants > 0 ? '认定考试' : 'test'}</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2 text-xs">
                       <button onClick={() => { setActive(req); setDialog('add') }} className="text-gray-600 hover:text-[#1A56DB]"><Edit3 className="mr-0.5 inline h-3.5 w-3.5" />编辑</button>
@@ -112,7 +129,7 @@ export default function PaperRequirements() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-sm text-gray-400">暂无数据</td>
+                  <td colSpan={10} className="px-4 py-12 text-center text-sm text-gray-400">暂无数据</td>
                 </tr>
               )}
             </tbody>
@@ -127,7 +144,7 @@ export default function PaperRequirements() {
             <Field label="试卷需求项" name="item" defaultValue={active?.item} />
             <div className="grid grid-cols-2 gap-3">
               <SelectField label="考试类型" name="examType" defaultValue={active?.examType || '正式考试'} options={['正式考试', '补考', '模拟考试']} />
-              <SelectField label="状态" name="status" defaultValue={active?.status || '未配卷'} options={['已配卷', '未配卷']} />
+              <SelectField label="状态" name="status" defaultValue={active?.status || '未抽卷'} options={['已抽卷', '未抽卷']} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Field label="考试时间" name="examTime" defaultValue={active?.examTime} />

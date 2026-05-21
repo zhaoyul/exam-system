@@ -3,17 +3,20 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight, FileSpreadsheet, FolderOpen, Layers, PieChart, Wrench, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { skillQuestionTypes, skillSubjects } from '@/pages/question/skillData'
+import { branchSkillSubjects, skillQuestionTypes, skillSubjects } from '@/pages/question/skillData'
 import { useBackendListState } from '@/hooks/useBackendListState'
+import { useApp } from '@/context/AppContext'
 
 export default function SkillQBWorkbench() {
   const navigate = useNavigate()
-  const [backendSkillSubjects] = useBackendListState(skillSubjects)
+  const { user } = useApp()
+  const isBranch = user?.role === 'branch_admin'
+  const [backendSkillSubjects] = useBackendListState(isBranch ? branchSkillSubjects : skillSubjects)
   const totals = useMemo(() => ({
     categories: new Set(backendSkillSubjects.map(item => item.category)).size,
     subjects: backendSkillSubjects.length,
     questions: backendSkillSubjects.reduce((sum, item) => sum + item.questions, 0),
-    papers: backendSkillSubjects.reduce((sum, item) => sum + item.papers, 0),
+    papers: isBranch ? 2 : backendSkillSubjects.reduce((sum, item) => sum + item.papers, 0),
     modules: backendSkillSubjects.reduce((sum, item) => sum + item.modules, 0),
   }), [backendSkillSubjects])
 
@@ -21,12 +24,16 @@ export default function SkillQBWorkbench() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">科目分类</h1>
-          <p className="mt-1 text-sm text-gray-500">查看技能题库分类、技能科目、技能模块、试题和试卷资源情况</p>
+          <h1 className="text-xl font-bold text-gray-900">{isBranch ? '技能题库工作台' : '科目分类'}</h1>
+          <p className="mt-1 text-sm text-gray-500">{isBranch ? '查看本机构可用技能科目、试卷需求和试卷动态' : '查看技能题库分类、技能科目、技能模块、试题和试卷资源情况'}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => navigate('/question/skill-subjects')}>技能科目 <ArrowRight className="ml-1 h-4 w-4" /></Button>
-          <Button onClick={() => navigate('/question/skill')} className="bg-[#1A56DB] hover:bg-[#1748B5]">进入技能试题</Button>
+          {isBranch ? (
+            <Button onClick={() => navigate('/question/skill-require')} className="bg-[#1A56DB] hover:bg-[#1748B5]">试卷需求</Button>
+          ) : (
+            <Button onClick={() => navigate('/question/skill')} className="bg-[#1A56DB] hover:bg-[#1748B5]">进入技能试题</Button>
+          )}
         </div>
       </div>
 
@@ -61,30 +68,54 @@ export default function SkillQBWorkbench() {
         <section className="rounded-lg border border-gray-200 bg-white p-4">
           <div className="mb-4 flex items-center gap-2 font-semibold text-gray-900"><Zap className="h-4 w-4 text-[#1A56DB]" />试题类型</div>
           <div className="space-y-3">
-            {skillQuestionTypes.map((type, index) => (
+            {skillQuestionTypes.map((type, index) => {
+              const count = isBranch ? 0 : [42, 18, 12, 10][index]
+              const width = isBranch ? 0 : [100, 43, 28, 24][index]
+              return (
               <div key={type}>
-                <div className="mb-1 flex items-center justify-between text-sm"><span>{type}</span><span className="font-medium">{[42, 18, 12, 10][index]}</span></div>
-                <div className="h-2 overflow-hidden rounded-full bg-gray-100"><div className="h-full rounded-full bg-[#1A56DB]" style={{ width: `${[100, 43, 28, 24][index]}%` }} /></div>
+                <div className="mb-1 flex items-center justify-between text-sm"><span>{type}</span><span className="font-medium">{count}</span></div>
+                <div className="h-2 overflow-hidden rounded-full bg-gray-100"><div className="h-full rounded-full bg-[#1A56DB]" style={{ width: `${width}%` }} /></div>
               </div>
-            ))}
+              )
+            })}
           </div>
         </section>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
-        {[
-          { label: '技能模块', path: '/question/skill-modules', icon: Layers, desc: '维护模块和细目表' },
-          { label: '组卷规则', path: '/question/skill-rules', icon: FileSpreadsheet, desc: '单科目/跨科目规则' },
-          { label: '试卷需求', path: '/question/skill-require', icon: Wrench, desc: '需求项与抽卷' },
-          { label: '卷库管理', path: '/question/paper-library', icon: FolderOpen, desc: '固定卷、授权、推送' },
-        ].map(item => (
-          <button key={item.path} onClick={() => navigate(item.path)} className="rounded-lg border border-gray-200 bg-white p-4 text-left hover:border-[#1A56DB] hover:bg-blue-50">
-            <item.icon className="mb-3 h-5 w-5 text-[#1A56DB]" />
-            <div className="font-medium text-gray-900">{item.label}</div>
-            <div className="mt-1 text-xs text-gray-500">{item.desc}</div>
-          </button>
-        ))}
-      </div>
+      {!isBranch && (
+        <div className="grid grid-cols-4 gap-3">
+          {[
+            { label: '技能模块', path: '/question/skill-modules', icon: Layers, desc: '维护模块和细目表' },
+            { label: '组卷规则', path: '/question/skill-rules', icon: FileSpreadsheet, desc: '单科目/跨科目规则' },
+            { label: '试卷需求', path: '/question/skill-require', icon: Wrench, desc: '需求项与抽卷' },
+            { label: '卷库管理', path: '/question/paper-library', icon: FolderOpen, desc: '固定卷、授权、推送' },
+          ].map(item => (
+            <button key={item.path} onClick={() => navigate(item.path)} className="rounded-lg border border-gray-200 bg-white p-4 text-left hover:border-[#1A56DB] hover:bg-blue-50">
+              <item.icon className="mb-3 h-5 w-5 text-[#1A56DB]" />
+              <div className="font-medium text-gray-900">{item.label}</div>
+              <div className="mt-1 text-xs text-gray-500">{item.desc}</div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {isBranch && (
+        <section className="rounded-lg border border-gray-200 bg-white p-4">
+          <div className="mb-3 font-semibold text-gray-900">试卷动态</div>
+          <div className="divide-y divide-gray-100 text-sm">
+            {[
+              { name: '电工实操技能试卷需求', status: '未抽卷', time: '2026-05-20 09:30' },
+              { name: '电工综合技能试卷需求', status: '已抽卷', time: '2026-05-17 16:10' },
+            ].map(item => (
+              <button key={item.name} onClick={() => navigate('/question/skill-require')} className="grid w-full grid-cols-[1fr_100px_160px] gap-3 px-2 py-3 text-left hover:bg-gray-50">
+                <span className="font-medium text-gray-900">{item.name}</span>
+                <span className={item.status === '已抽卷' ? 'text-green-700' : 'text-amber-700'}>{item.status}</span>
+                <span className="text-gray-500">{item.time}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   )
 }

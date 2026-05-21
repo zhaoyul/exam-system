@@ -3,11 +3,14 @@ import { Archive, Download, Edit3, FileSpreadsheet, MoreHorizontal, PackageOpen,
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
-import { orgOptions, theorySubjects, type SubjectStatus, type TheorySubject } from './theoryData'
+import { branchTheorySubjects, orgOptions, theorySubjects, type SubjectStatus, type TheorySubject } from './theoryData'
 import { useBackendListState } from '@/hooks/useBackendListState'
+import { useApp } from '@/context/AppContext'
 
 export default function SubjectManage() {
-  const [subjects, setSubjects] = useBackendListState<TheorySubject>(theorySubjects)
+  const { user } = useApp()
+  const isBranch = user?.role === 'branch_admin'
+  const [subjects, setSubjects] = useBackendListState<TheorySubject>(isBranch ? branchTheorySubjects : theorySubjects)
   const [status, setStatus] = useState<SubjectStatus>('有效')
   const [search, setSearch] = useState('')
   const [activeSort, setActiveSort] = useState('职业技能等级')
@@ -37,7 +40,7 @@ export default function SubjectManage() {
       papers: editing?.papers || 0,
       resources: editing?.resources || 0,
       authorizedOrgs: editing?.authorizedOrgs || [],
-      maintainOrgs: editing?.maintainOrgs || ['中广测试有限公司'],
+      maintainOrgs: editing?.maintainOrgs || [isBranch ? '中广测试有限公司' : '集团题库中心'],
       typeCounts: editing?.typeCounts || { 单选题: 0, 多选题: 0, 判断题: 0 },
     }
     if (!next.code || !next.name) {
@@ -73,6 +76,7 @@ export default function SubjectManage() {
   }
 
   const ownerText = (subject: TheorySubject) => {
+    if (isBranch) return '本机构'
     if (subject.maintainOrgs.some(org => org.includes('中广测试'))) return '本机构'
     return subject.maintainOrgs.some(org => org.includes('集团')) ? '集团' : '本机构'
   }

@@ -4,14 +4,14 @@ import { useBackendListState } from '@/hooks/useBackendListState'
 import { useApp } from '@/context/AppContext'
 
 const flowSteps = [
-  { id: 1, label: '制定计划', count: 1, status: 'completed', path: '/cert/exec/plans' },
+  { id: 1, label: '制定计划', count: 3, status: 'completed', path: '/cert/exec/plans' },
   { id: 2, label: '考试报名', count: 2, status: 'active', path: '/cert/exec/registration' },
-  { id: 3, label: '考场编排', count: 1, status: 'active', path: '/cert/exec/arrangement' },
-  { id: 4, label: '考务安排', count: 0, status: 'pending', path: '/cert/exec/session' },
-  { id: 5, label: '成绩管理', count: 0, status: 'pending', path: '/cert/exec/score' },
-  { id: 6, label: '成绩公示', count: 0, status: 'pending', path: '/cert/exec/publicity' },
-  { id: 7, label: '证书管理', count: 0, status: 'pending', path: '/cert/exec/cert' },
-  { id: 8, label: '证书打印', count: 0, status: 'pending', path: '/cert/exec/print' },
+  { id: 3, label: '考场编排', count: 2, status: 'active', path: '/cert/exec/arrangement' },
+  { id: 4, label: '考务安排', count: 2, status: 'active', path: '/cert/exec/session' },
+  { id: 5, label: '成绩管理', count: 2, status: 'active', path: '/cert/exec/score' },
+  { id: 6, label: '成绩公示', count: 2, status: 'active', path: '/cert/exec/publicity' },
+  { id: 7, label: '证书管理', count: 1, status: 'completed', path: '/cert/exec/cert' },
+  { id: 8, label: '证书打印', count: 1, status: 'completed', path: '/cert/exec/print' },
 ]
 
 const urgentTasks = [
@@ -42,20 +42,20 @@ export default function BranchPortal() {
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="text-2xl font-bold text-[#1A56DB]">56</div>
-          <div className="text-sm text-gray-500 mt-1">本月报名考生</div>
+          <div className="text-2xl font-bold text-[#1A56DB]">3</div>
+          <div className="text-sm text-gray-500 mt-1">制定计划</div>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="text-2xl font-bold text-amber-600">3</div>
-          <div className="text-sm text-gray-500 mt-1">待编排考场</div>
+          <div className="text-2xl font-bold text-amber-600">2</div>
+          <div className="text-sm text-gray-500 mt-1">考试报名</div>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="text-2xl font-bold text-emerald-600">45</div>
-          <div className="text-sm text-gray-500 mt-1">待录入成绩</div>
+          <div className="text-2xl font-bold text-emerald-600">2</div>
+          <div className="text-sm text-gray-500 mt-1">考场编排</div>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="text-2xl font-bold text-purple-600">38</div>
-          <div className="text-sm text-gray-500 mt-1">已发证人数</div>
+          <div className="text-2xl font-bold text-purple-600">1</div>
+          <div className="text-sm text-gray-500 mt-1">证书打印</div>
         </div>
       </div>
 

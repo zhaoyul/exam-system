@@ -51,6 +51,8 @@ export const skillSubjects: SkillSubject[] = [
   { id: 'ss4', code: 'SK-004', name: '电气设备继电保护校验', category: '电气维修', level: '四级', version: '2024版', status: '无效', modules: 6, questions: 24, papers: 3, resources: 12, authorizedOrgs: [], maintainOrgs: ['集团题库中心'] },
 ]
 
+export const branchSkillSubjects: SkillSubject[] = []
+
 export const skillModules: SkillModule[] = [
   { id: 'sm1', subjectId: 'ss1', code: 'SM-001', name: '控制棒手动操作', valid: true, scene: '实操考试', score: 20, time: 30, questionCount: 8, description: '手动提升/插入控制棒的操作流程' },
   { id: 'sm11', subjectId: 'ss1', code: 'SM-001-01', name: '操作前检查', parentId: 'sm1', valid: true, scene: '实操考试', score: 5, time: 8, questionCount: 2, description: '确认工况、许可和安全联锁' },

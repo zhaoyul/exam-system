@@ -103,6 +103,24 @@ export const theorySubjects: TheorySubject[] = [
   },
 ]
 
+export const branchTheorySubjects: TheorySubject[] = [
+  {
+    id: 'branch-theory-1',
+    code: '6-31-01-03',
+    name: '电工',
+    category: '职业技能等级',
+    level: '三级',
+    version: 'V1',
+    status: '有效',
+    questions: 5,
+    papers: 2,
+    resources: 0,
+    authorizedOrgs: ['中广测试有限公司'],
+    maintainOrgs: ['中广测试有限公司'],
+    typeCounts: { 单选题: 5, 多选题: 0, 判断题: 0, 填空题: 0, 简答题: 0 },
+  },
+]
+
 export const knowledgeNodes: KnowledgeNode[] = [
   { id: 'k1', code: 'KN-001', name: '核反应堆物理', valid: true, scene: '理论考试', questionCount: 45 },
   { id: 'k11', code: 'KN-001-01', name: '中子物理学', parentId: 'k1', valid: true, scene: '理论考试', questionCount: 15 },

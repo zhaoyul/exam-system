@@ -4,11 +4,14 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { orgOptions } from './theoryData'
-import { skillSubjects, type SkillStatus, type SkillSubject } from './skillData'
+import { branchSkillSubjects, skillSubjects, type SkillStatus, type SkillSubject } from './skillData'
 import { useBackendListState } from '@/hooks/useBackendListState'
+import { useApp } from '@/context/AppContext'
 
 export default function SkillSubjectManage() {
-  const [subjects, setSubjects] = useBackendListState<SkillSubject>(skillSubjects)
+  const { user } = useApp()
+  const isBranch = user?.role === 'branch_admin'
+  const [subjects, setSubjects] = useBackendListState<SkillSubject>(isBranch ? branchSkillSubjects : skillSubjects)
   const [status, setStatus] = useState<'有效' | '无效'>('有效')
   const [search, setSearch] = useState('')
   const [activeSort, setActiveSort] = useState('技能题库')
@@ -38,7 +41,7 @@ export default function SkillSubjectManage() {
       papers: editing?.papers || 0,
       resources: editing?.resources || 0,
       authorizedOrgs: editing?.authorizedOrgs || [],
-      maintainOrgs: editing?.maintainOrgs || ['中国工业集团有限公司'],
+      maintainOrgs: editing?.maintainOrgs || [isBranch ? '中广测试有限公司' : '集团题库中心'],
     }
     if (!next.code || !next.name) {
       toast.error('请填写编码和科目名称')
@@ -119,6 +122,11 @@ export default function SkillSubjectManage() {
                     </td>
                   </tr>
                 ))}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-12 text-center text-sm text-gray-400">暂无数据</td>
+                  </tr>
+                )}
               </tbody>
             </table>
             <div className="border-t border-gray-100 px-4 py-3 text-sm text-gray-500">共计{filtered.length}条数据,当前第1页　1　20 条/页</div>

@@ -1,0 +1,138 @@
+(ns zhaoyul.exam-system-backend.domain.filing
+  "备案管理 — 集团备案/分支备案/省级备案"
+  (:require
+   [zhaoyul.exam-system-backend.infra.db :as db]))
+
+;; ─── row → camelCase ───
+
+(defn- row->filing [row]
+  (when row
+    (-> row
+        (assoc :filingType (:filing_type row)
+               :applyOrg (:apply_org row)
+               :submitDate (:submit_date row)
+               :createdAt (:created_at row)
+               :updatedAt (:updated_at row))
+        (dissoc :filing_type :apply_org :submit_date :created_at :updated_at))))
+
+(defn- row->site [row]
+  (when row
+    (-> row
+        (assoc :filingId (:filing_id row)
+               :siteType (:site_type row)
+               :createdAt (:created_at row)
+               :updatedAt (:updated_at row))
+        (dissoc :filing_id :site_type :created_at :updated_at))))
+
+;; ─── 备案申请 CRUD ───
+
+(defn list-filings [ds {:keys [q filing-type province status org-id]}]
+  (let [q (some-> q str)
+        filters (cond-> ["1 = 1"]
+                  (seq q) (conj "(name LIKE ? OR code LIKE ?)")
+                  (seq filing-type) (conj "filing_type = ?")
+                  (seq province) (conj "province = ?")
+                  (seq status) (conj "status = ?")
+                  (seq org-id) (conj "org_id = ?"))
+        args (cond-> []
+               (seq q) (into [(str "%" q "%") (str "%" q "%")])
+               (seq filing-type) (conj filing-type)
+               (seq province) (conj province)
+               (seq status) (conj status)
+               (seq org-id) (conj org-id))
+        sql (str "SELECT * FROM cgn_filing_application WHERE " (clojure.string/join " AND " filters) " ORDER BY updated_at DESC")]
+    {:items (mapv row->filing (db/query ds (into [sql] args)))}))
+
+(defn get-filing [ds id]
+  (row->filing (db/execute-one! ds ["SELECT * FROM cgn_filing_application WHERE id = ?" id])))
+
+(defn create-filing! [ds body]
+  (let [id (or (:id body) (db/uuid))]
+    (db/execute!
+     ds
+     ["INSERT INTO cgn_filing_application (id, org_id, code, name, filing_type, province, apply_org, submit_date, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      id (or (:orgId body) "") (:code body) (:name body)
+      (:filingType body) (:province body) (:applyOrg body)
+      (:submitDate body) (or (:status body) "pending")])
+    (get-filing ds id)))
+
+(defn update-filing! [ds id body]
+  (let [current (db/execute-one! ds ["SELECT * FROM cgn_filing_application WHERE id = ?" id])]
+    (when current
+      (db/execute!
+       ds
+       ["UPDATE cgn_filing_application
+         SET code = ?, name = ?, filing_type = ?, province = ?, apply_org = ?,
+             submit_date = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?"
+        (or (:code body) (:code current))
+        (or (:name body) (:name current))
+        (or (:filingType body) (:filing_type current))
+        (or (:province body) (:province current))
+        (or (:applyOrg body) (:apply_org current))
+        (or (:submitDate body) (:submit_date current))
+        (or (:status body) (:status current))
+        id])
+      (get-filing ds id))))
+
+(defn delete-filing! [ds id]
+  (when (db/execute-one! ds ["SELECT * FROM cgn_filing_application WHERE id = ?" id])
+    (db/execute! ds ["DELETE FROM cgn_filing_application WHERE id = ?" id])
+    true))
+
+;; ─── 备案考点 CRUD ───
+
+(defn list-sites [ds {:keys [q filing-id status org-id]}]
+  (let [q (some-> q str)
+        filters (cond-> ["1 = 1"]
+                  (seq q) (conj "(name LIKE ?)")
+                  (seq filing-id) (conj "filing_id = ?")
+                  (seq status) (conj "status = ?")
+                  (seq org-id) (conj "org_id = ?"))
+        args (cond-> []
+               (seq q) (conj (str "%" q "%"))
+               (seq filing-id) (conj filing-id)
+               (seq status) (conj status)
+               (seq org-id) (conj org-id))
+        sql (str "SELECT * FROM cgn_filing_site WHERE " (clojure.string/join " AND " filters) " ORDER BY updated_at DESC")]
+    {:items (mapv row->site (db/query ds (into [sql] args)))}))
+
+(defn get-site [ds id]
+  (row->site (db/execute-one! ds ["SELECT * FROM cgn_filing_site WHERE id = ?" id])))
+
+(defn create-site! [ds body]
+  (let [id (or (:id body) (db/uuid))]
+    (db/execute!
+     ds
+     ["INSERT INTO cgn_filing_site (id, org_id, code, filing_id, name, site_type, address, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+      id (or (:orgId body) "") (:code body) (:filingId body)
+      (:name body) (:siteType body) (:address body) (or (:status body) "active")])
+    (get-site ds id)))
+
+(defn update-site! [ds id body]
+  (let [current (db/execute-one! ds ["SELECT * FROM cgn_filing_site WHERE id = ?" id])]
+    (when current
+      (db/execute!
+       ds
+       ["UPDATE cgn_filing_site
+         SET code = ?, filing_id = ?, name = ?, site_type = ?, address = ?,
+             status = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?"
+        (or (:code body) (:code current))
+        (or (:filingId body) (:filing_id current))
+        (or (:name body) (:name current))
+        (or (:siteType body) (:site_type current))
+        (or (:address body) (:address current))
+        (or (:status body) (:status current))
+        id])
+      (get-site ds id))))
+
+(defn delete-site! [ds id]
+  (when (db/execute-one! ds ["SELECT * FROM cgn_filing_site WHERE id = ?" id])
+    (db/execute! ds ["DELETE FROM cgn_filing_site WHERE id = ?" id])
+    true))
+
+;; ─── 省级备案 (存储在 resource_item 中，resource = filing-province) ───
+;; 复用 resources 域

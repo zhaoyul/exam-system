@@ -46,11 +46,20 @@ export default function MessageCenter() {
     soundAlert: false,
     emailForward: true,
   })
+  const normalizedMsgs = msgs.map(message => ({
+    ...message,
+    type: typeMeta[message.type] ? message.type : 'system',
+    content: message.content || message.title || '',
+    sender: message.sender || '系统',
+    date: message.date || '',
+    read: Boolean(message.read),
+    important: Boolean(message.important),
+  }))
 
-  const unreadCount = msgs.filter(m => !m.read).length
-  const importantCount = msgs.filter(m => m.important && !m.read).length
+  const unreadCount = normalizedMsgs.filter(m => !m.read).length
+  const importantCount = normalizedMsgs.filter(m => m.important && !m.read).length
 
-  const filtered = msgs.filter(m => {
+  const filtered = normalizedMsgs.filter(m => {
     const f = filter === '全部' || m.type === filter
     const t = tab === 'inbox'
     return f && t
@@ -72,10 +81,10 @@ export default function MessageCenter() {
 
       {/* 统计 */}
       <div className="grid grid-cols-4 gap-3 mb-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-3 text-center"><div className="text-xl font-bold text-[#1A56DB]">{msgs.length}</div><div className="text-xs text-gray-500">全部消息</div></div>
+        <div className="bg-white rounded-lg border border-gray-200 p-3 text-center"><div className="text-xl font-bold text-[#1A56DB]">{normalizedMsgs.length}</div><div className="text-xs text-gray-500">全部消息</div></div>
         <div className="bg-white rounded-lg border border-gray-200 p-3 text-center"><div className="text-xl font-bold text-amber-600">{unreadCount}</div><div className="text-xs text-gray-500">未读</div></div>
         <div className="bg-white rounded-lg border border-gray-200 p-3 text-center"><div className="text-xl font-bold text-red-600">{importantCount}</div><div className="text-xs text-gray-500">重要未读</div></div>
-        <div className="bg-white rounded-lg border border-gray-200 p-3 text-center"><div className="text-xl font-bold text-green-600">{msgs.filter(m => m.read).length}</div><div className="text-xs text-gray-500">已读</div></div>
+        <div className="bg-white rounded-lg border border-gray-200 p-3 text-center"><div className="text-xl font-bold text-green-600">{normalizedMsgs.filter(m => m.read).length}</div><div className="text-xs text-gray-500">已读</div></div>
       </div>
 
       {/* 标签 */}

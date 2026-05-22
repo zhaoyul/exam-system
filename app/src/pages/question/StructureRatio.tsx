@@ -23,6 +23,7 @@ export default function StructureRatio() {
   const [search, setSearch] = useState('')
   const [activeSort, setActiveSort] = useState('职业技能等级')
   const [dialog, setDialog] = useState(false)
+  const [editing, setEditing] = useState<RatioRule | null>(null)
   const selectedSubject = theorySubjects.find(subject => subject.id === selectedSubjectId)
 
   const filteredSubjects = useMemo(() => theorySubjects.filter(subject => {
@@ -33,7 +34,7 @@ export default function StructureRatio() {
     event.preventDefault()
     const fd = new FormData(event.currentTarget)
     const next: RatioRule = {
-      id: String(Date.now()),
+      id: editing?.id || String(Date.now()),
       name: String(fd.get('name') || ''),
       standard: String(fd.get('standard') || '职业技能等级'),
       description: String(fd.get('description') || ''),
@@ -42,9 +43,10 @@ export default function StructureRatio() {
       toast.error('请填写名称')
       return
     }
-    setRules(prev => [next, ...prev])
+    setRules(prev => editing ? prev.map(rule => rule.id === editing.id ? next : rule) : [next, ...prev])
     setDialog(false)
-    toast.success('结构比重已添加')
+    setEditing(null)
+    toast.success(editing ? '结构比重已更新' : '结构比重已添加')
   }
 
   return (
@@ -55,7 +57,7 @@ export default function StructureRatio() {
 
       <section className="rounded-lg border border-gray-200 bg-white p-4">
         <div className="mb-3 text-sm text-gray-600">{selectedSubject ? `当前操作科目：${selectedSubject.name}` : '请选择操作科目...'}</div>
-        <Button className="h-8 bg-[#1A56DB] px-3 text-xs hover:bg-[#1748B5]" onClick={() => setDialog(true)}><Plus className="mr-1.5 h-3.5 w-3.5" />添加</Button>
+        <Button className="h-8 bg-[#1A56DB] px-3 text-xs hover:bg-[#1748B5]" onClick={() => { setEditing(null); setDialog(true) }}><Plus className="mr-1.5 h-3.5 w-3.5" />添加</Button>
       </section>
 
       <section className="overflow-auto rounded-lg border border-gray-200 bg-white">
@@ -76,7 +78,7 @@ export default function StructureRatio() {
                 <td className="px-4 py-3 font-medium text-gray-900">{rule.name}</td>
                 <td className="px-4 py-3 text-gray-600">{rule.standard}</td>
                 <td className="px-4 py-3 text-gray-600">{rule.description}</td>
-                <td className="px-4 py-3"><button onClick={() => toast.success('结构比重已打开')} className="text-xs text-[#1A56DB] hover:underline">编辑</button></td>
+                <td className="px-4 py-3"><button onClick={() => { setEditing(rule); setDialog(true) }} className="text-xs text-[#1A56DB] hover:underline">编辑</button></td>
               </tr>
             ))}
             {rules.length === 0 && (
@@ -133,13 +135,13 @@ export default function StructureRatio() {
         </div>
       </section>
 
-      <Dialog open={dialog} onOpenChange={setDialog}>
+      <Dialog open={dialog} onOpenChange={open => { setDialog(open); if (!open) setEditing(null) }}>
         <DialogContent>
-          <DialogHeader><DialogTitle>添加结构比重</DialogTitle></DialogHeader>
-          <form onSubmit={saveRule} className="space-y-3 text-sm">
-            <Field label="名称" name="name" />
-            <Field label="标准" name="standard" defaultValue="职业技能等级" />
-            <label className="block"><span className="font-medium text-gray-700">描述</span><textarea name="description" className="mt-1 h-20 w-full rounded-md border border-gray-200 px-3 py-2" /></label>
+          <DialogHeader><DialogTitle>{editing ? '编辑结构比重' : '添加结构比重'}</DialogTitle></DialogHeader>
+          <form key={editing?.id || 'new'} onSubmit={saveRule} className="space-y-3 text-sm">
+            <Field label="名称" name="name" defaultValue={editing?.name} />
+            <Field label="标准" name="standard" defaultValue={editing?.standard || '职业技能等级'} />
+            <label className="block"><span className="font-medium text-gray-700">描述</span><textarea name="description" defaultValue={editing?.description} className="mt-1 h-20 w-full rounded-md border border-gray-200 px-3 py-2" /></label>
             <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setDialog(false)}>取消</Button><Button type="submit">保存</Button></div>
           </form>
         </DialogContent>

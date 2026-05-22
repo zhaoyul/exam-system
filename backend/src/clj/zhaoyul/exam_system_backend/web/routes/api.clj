@@ -316,7 +316,7 @@
     (resource-endpoint ctx "/paper-rules" "theory-paper-rules" "题库兼容路径" "理论组卷规则")
     (resource-endpoint ctx "/paper-require" "theory-paper-requirements" "题库兼容路径" "理论试卷需求")
     (resource-endpoint ctx "/paper-library" "paper-library" "题库兼容路径" "卷库")
-    (resource-endpoint ctx "/skill-subject-sort" "subject-categories" "题库兼容路径" "技能科目分类")
+    (resource-endpoint ctx "/skill-subject-sort" "skill-subject-categories" "题库兼容路径" "技能科目分类")
     (resource-endpoint ctx "/skill-subjects" "skill-subjects" "题库兼容路径" "技能科目")
     (resource-endpoint ctx "/skill-modules" "skill-modules" "题库兼容路径" "技能模块")
     (resource-endpoint ctx "/skill" "skill-questions" "题库兼容路径" "技能试题")
@@ -388,6 +388,7 @@
       {:get {:summary "人员统计" :handler (partial supervision/get-personnel-statistics ctx)}}]]]
    ["/traceability"
     {:swagger {:tags ["溯源中心"]}}
+    (resource-endpoint ctx "/cert-records" "trace-cert-records" "溯源中心" "证书溯源记录")
     ["/cases"
      [""
       {:get {:summary "溯源案例列表" :handler (partial traceability/list-cases ctx)}

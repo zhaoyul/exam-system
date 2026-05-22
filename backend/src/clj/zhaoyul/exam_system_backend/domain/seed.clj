@@ -145,11 +145,20 @@
    "special-applications"
    [{:id "special-001" :name "理论考试延期申请" :status "待审核" :planId "plan-2026-001" :reason "考场调整"}]
    "subject-categories"
-   [{:id "subject-category-001" :name "核电运行类" :status "active" :sort 1}]
+   [{:id "root" :name "理论题库" :status "active" :sort 1}
+    {:id "level" :name "职业技能等级" :status "active" :parentId "root" :sort 2}
+    {:id "electrician" :name "电工" :status "active" :parentId "level" :sort 3}
+    {:id "subject-category-001" :name "核电运行类" :status "active" :parentId "root" :sort 4}]
+   "skill-subject-categories"
+   [{:id "skill-root" :name "技能题库" :status "active" :sort 1}
+    {:id "skill-child" :name "测试下级科目" :status "active" :parentId "skill-root" :sort 2}]
    "theory-subjects"
    [{:id "theory-subject-001" :code "4-07-03-04" :name "核反应堆运行值班员" :status "active" :level "三级" :questionCount 520}]
    "knowledge-structures"
-   [{:id "knowledge-001" :name "核安全基础" :status "active" :subjectId "theory-subject-001" :questionCount 120}]
+   [{:id "knowledge-001" :code "KN-001" :name "核反应堆物理" :status "active" :subjectId "theory-subject-001" :valid true :scene "理论考试" :questionCount 45}
+    {:id "knowledge-001-01" :code "KN-001-01" :name "中子物理学" :status "active" :parentId "knowledge-001" :subjectId "theory-subject-001" :valid true :scene "理论考试" :questionCount 15}
+    {:id "knowledge-001-02" :code "KN-001-02" :name "反应性控制" :status "active" :parentId "knowledge-001" :subjectId "theory-subject-001" :valid true :scene "理论考试" :questionCount 18}
+    {:id "knowledge-002" :code "KN-002" :name "热工水力学" :status "active" :subjectId "theory-subject-001" :valid true :scene "理论考试" :questionCount 38}]
    "theory-questions"
    [{:id "theory-question-001" :name "核反应堆运行值班员的主要职责是什么？" :content "核反应堆运行值班员的主要职责是什么？" :options ["A. 负责核反应堆的日常运行监控和操作" "B. 负责核电站的安保工作" "C. 负责核电站的行政管理工作" "D. 负责核电站的设备采购"] :status "valid" :type "单选" :difficulty "medium"}
     {:id "theory-question-002" :name "核安全文化的核心理念包括哪些？" :content "核安全文化的核心理念包括哪些？" :options ["A. 安全第一、预防为主" "B. 效率优先、兼顾安全" "C. 成本控制、安全次要" "D. 技术领先、安全随缘"] :status "valid" :type "单选" :difficulty "medium"}
@@ -190,6 +199,10 @@
    [{:id "expert-stat-001" :name "专家人员统计" :status "active" :expertCount 18 :activeCount 15}]
    "trace-cases"
    [{:id "trace-001" :code "Y0041GD0000012603001" :name "2026年第一批技能认定" :status "进行中" :currentStage "score" :candidateCount 45}]
+   "trace-cert-records"
+   [{:id "trace-cert-001" :name "报名学员" :idType "居民身份证" :idNo "37*****21" :certNo "Y000544031005263000001" :issuer "中国工业集团有限公司" :generatedAt "2026-04-17 10:01" :occupation "企业人力资源管理师" :level "三级/高级工" :province "广东省" :orgId "org-csyxgs"}
+    {:id "trace-cert-002" :name "报名学员2" :idType "居民身份证" :idNo "37*****16" :certNo "Y000544031005263000002" :issuer "中国工业集团有限公司" :generatedAt "2026-04-17 10:01" :occupation "企业人力资源管理师" :level "三级/高级工" :province "广东省" :orgId "org-csyxgs"}
+    {:id "trace-cert-003" :name "水电费" :idType "居民身份证" :idNo "22*****13" :certNo "Y000545000001263000001" :issuer "中国工业集团有限公司" :generatedAt "2026-04-10 16:22" :occupation "电机检修工" :level "三级/高级工" :province "广西壮族自治区" :orgId "org-csyxgs"}]
    "trace-alerts"
    [{:id "trace-alert-001" :name "成绩审核超期预警" :traceNo "TR-2026-0002" :candidateName "李四" :org "阳江核电" :stage "成绩管理" :level "中" :problem "成绩复核超过批复设置时限" :status "处理中" :traceId "trace-001"}]
    "finance-charges"
@@ -227,7 +240,7 @@
    "archives"
    [{:id "archive-001" :name "2026年第一批认定档案" :status "archived" :planId "plan-2026-001" :fileCount 18}]
    "messages"
-   [{:id "message-001" :name "新认定计划待审批" :status "unread" :title "新认定计划待审批" :type "warning"}]
+   [{:id "message-001" :name "新认定计划待审批" :status "unread" :title "新认定计划待审批" :content "阳江核电提交了新的认定计划，请及时处理。" :type "approval" :sender "考务系统" :date "2026-05-15 09:00" :read false :important true}]
    "personal-registrations"
    [{:id "personal-registration-001" :name "陈小明个人报名" :status "submitted" :candidateId "candidate-001"}]
    "personal-scores"
@@ -321,15 +334,41 @@
    {:id "expert-003" :org_id "org-cgn" :code "EXP20260003" :name "王督导" :phone "13800138103" :unit_name "华南理工大学" :skill_type "质量督导" :skill_project "核安全" :status "active"}
    {:id "expert-004" :org_id "org-cgn" :code "EXP20260004" :name "赵博士" :phone "13800138104" :unit_name "中广核工程公司" :skill_type "题库编制" :skill_project "核电焊工" :status "active"}])
 
+(def domain-expert-employments
+  [{:id "expert-employ-001" :org_id "org-cgn" :code "EMP20260001" :expert_id "expert-001" :plan_id "recog-plan-001" :start_date "2026-01-01" :end_date "2026-12-31" :employ_type "题库编制" :status "active"}
+   {:id "expert-employ-002" :org_id "org-cgn" :code "EMP20260002" :expert_id "expert-003" :plan_id "recog-plan-001" :start_date "2026-03-01" :end_date "2026-12-31" :employ_type "质量督导" :status "active"}])
+
+(def domain-train-plans
+  [{:id "train-plan-001" :org_id "org-cgn" :code "TRN20260001" :name "督导人员培训第一期" :train_type "supervisor" :hours 16 :start_date "2026-06-01" :end_date "2026-06-03" :status "报名中"}
+   {:id "train-plan-002" :org_id "org-cgn" :code "TRN20260002" :name "考评员培训第一期" :train_type "evaluator" :hours 24 :start_date "2026-06-10" :end_date "2026-06-12" :status "进行中"}])
+
+(def domain-dispatches
+  [{:id "dispatch-001" :org_id "org-cgn" :code "DSP20260001" :plan_id "recog-plan-001" :expert_id "expert-003" :dispatch_type "现场督导" :dispatch_date "2026-06-20" :status "已派遣"}
+   {:id "dispatch-002" :org_id "org-cgn" :code "DSP20260002" :plan_id "recog-plan-002" :expert_id "expert-002" :dispatch_type "考评派遣" :dispatch_date "2026-07-20" :status "待派遣"}])
+
+(def domain-qa-forms
+  [{:id "qa-form-001" :org_id "org-cgn" :code "FORM20260001" :name "现场督导记录表" :form_type "督导" :content_json "{\"items\":[\"考场秩序\",\"身份核验\",\"材料归档\"]}" :status "active"}
+   {:id "qa-form-002" :org_id "org-cgn" :code "FORM20260002" :name "考评质量评价表" :form_type "考评" :content_json "{\"items\":[\"评分一致性\",\"过程记录\"]}" :status "active"}])
+
 (def domain-filing-applications
-  [{:id "filing-001" :org_id "org-cgn" :code "FIL20260001" :name "中广核集团职业技能等级认定备案申请" :filing_type "集团备案" :province "广东" :apply_org "中广核集团" :submit_date "2026-04-15" :status "approved"}
-   {:id "filing-002" :org_id "org-csyxgs" :code "FIL20260002" :name "测试有限公司职业技能等级认定考点备案" :filing_type "分支备案" :province "广东" :apply_org "测试有限公司" :submit_date "2026-04-20" :status "approved"}
-   {:id "filing-003" :org_id "org-yangjiang" :code "FIL20260003" :name "阳江核电职业技能等级认定考点备案" :filing_type "分支备案" :province "广东" :apply_org "阳江核电有限公司" :submit_date "2026-05-10" :status "pending"}])
+  [{:id "filing-001" :org_id "org-cgn" :code "FIL20260001" :name "中广核集团职业技能等级认定备案申请" :filing_type "group" :province "广东" :apply_org "中广核集团" :submit_date "2026-04-15" :status "approved"}
+   {:id "filing-002" :org_id "org-csyxgs" :code "FIL20260002" :name "测试有限公司职业技能等级认定考点备案" :filing_type "branch" :province "广东" :apply_org "测试有限公司" :submit_date "2026-04-20" :status "approved"}
+   {:id "filing-003" :org_id "org-yangjiang" :code "FIL20260003" :name "阳江核电职业技能等级认定考点备案" :filing_type "branch" :province "广东" :apply_org "阳江核电有限公司" :submit_date "2026-05-10" :status "pending"}])
 
 (def domain-eval-scopes
   [{:id "eval-scope-001" :org_id "org-cgn" :code "EVS20260001" :name "核反应堆运行值班员三级评价范围" :occupation "核反应堆运行值班员" :level "三级" :scope_type "技能等级认定" :status "active"}
    {:id "eval-scope-002" :org_id "org-cgn" :code "EVS20260002" :name "电气试验员四级评价范围" :occupation "电气试验员" :level "四级" :scope_type "技能等级认定" :status "active"}
    {:id "eval-scope-003" :org_id "org-cgn" :code "EVS20260003" :name "核安全工程师三级评价范围" :occupation "核安全工程师" :level "三级" :scope_type "技能等级认定" :status "active"}])
+
+(def domain-doc-files
+  [{:id "doc-file-001" :org_id "org-cgn" :code "DOC20260001" :name "认定工作通知.pdf" :file_type "pdf" :file_size 204800 :file_path "/files/notice.pdf" :owner "集团中心" :status "active"}
+   {:id "doc-file-002" :org_id "org-csyxgs" :code "DOC20260002" :name "备案材料回执.pdf" :file_type "pdf" :file_size 102400 :file_path "/files/receipt.pdf" :owner "测试有限公司" :status "active"}])
+
+(def domain-doc-distributions
+  [{:id "doc-dist-001" :org_id "org-cgn" :code "DIST20260001" :name "2026年认定工作通知分发" :doc_file_id "doc-file-001" :sender "集团中心" :recipient_count 7 :status "sent"}])
+
+(def domain-doc-receives
+  [{:id "doc-receive-001" :org_id "org-csyxgs" :code "RCV20260001" :distribution_id "doc-dist-001" :name "2026年认定工作通知接收" :sender_org "集团中心" :receive_date "2026-05-20" :status "received"}])
 
 ;; Domain table seed helpers
 
@@ -340,7 +379,7 @@
           placeholders (str/join ", " (repeat (count cols) "?"))
           values (mapv #(get row %) cols)
           sql (str "INSERT OR IGNORE INTO " (name table) " (" col-names ") VALUES (" placeholders ")")]
-      (db/execute! ds [sql values]))
+      (db/execute! ds (into [sql] values)))
     (catch Exception e
       (println "[seed] Failed to seed" (name table) "row" (:id row) ":" (.getMessage e)))))
 
@@ -367,10 +406,24 @@
     (ensure-domain-row! ds 'cgn_qb_question "id" row))
   (doseq [row domain-experts]
     (ensure-domain-row! ds 'cgn_qa_expert "id" row))
+  (doseq [row domain-expert-employments]
+    (ensure-domain-row! ds 'cgn_qa_expert_employ "id" row))
+  (doseq [row domain-train-plans]
+    (ensure-domain-row! ds 'cgn_qa_train_plan "id" row))
+  (doseq [row domain-dispatches]
+    (ensure-domain-row! ds 'cgn_qa_dispatch "id" row))
+  (doseq [row domain-qa-forms]
+    (ensure-domain-row! ds 'cgn_qa_form "id" row))
   (doseq [row domain-filing-applications]
     (ensure-domain-row! ds 'cgn_filing_application "id" row))
   (doseq [row domain-eval-scopes]
     (ensure-domain-row! ds 'cgn_eval_scope "id" row))
+  (doseq [row domain-doc-files]
+    (ensure-domain-row! ds 'cgn_doc_file "id" row))
+  (doseq [row domain-doc-distributions]
+    (ensure-domain-row! ds 'cgn_doc_distribution "id" row))
+  (doseq [row domain-doc-receives]
+    (ensure-domain-row! ds 'cgn_doc_receive "id" row))
   {:status :domain-seeded})
 
 (defn- ensure-user! [ds {:keys [id username password display_name role org_id phone]}]
@@ -406,7 +459,7 @@
   (doseq [[resource items] resource-fixtures
           item items]
     (ensure-resource! ds resource item))
-  ;; domain-seed! skipped -- TODO: fix NOT NULL constraint on sys_org.org_id
+  (domain-seed! ds)
   {:status :seeded})
 
 (defmethod ig/init-key ::seed [_ {:keys [datasource]}]

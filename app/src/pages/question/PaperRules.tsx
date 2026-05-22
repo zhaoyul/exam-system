@@ -25,6 +25,7 @@ export default function PaperRules() {
   const [search, setSearch] = useState('')
   const [activeSort, setActiveSort] = useState('职业技能等级')
   const [dialog, setDialog] = useState(false)
+  const [editing, setEditing] = useState<PaperRule | null>(null)
   const selectedSubject = theorySubjects.find(subject => subject.id === selectedSubjectId)
 
   const filteredSubjects = useMemo(() => theorySubjects.filter(subject => {
@@ -35,7 +36,7 @@ export default function PaperRules() {
     event.preventDefault()
     const fd = new FormData(event.currentTarget)
     const next: PaperRule = {
-      id: String(Date.now()),
+      id: editing?.id || String(Date.now()),
       name: String(fd.get('name') || ''),
       duration: Number(fd.get('duration') || 120),
       composeType: String(fd.get('composeType') || '题库组卷'),
@@ -46,9 +47,10 @@ export default function PaperRules() {
       toast.error('请填写规则名称')
       return
     }
-    setRules(prev => [next, ...prev])
+    setRules(prev => editing ? prev.map(rule => rule.id === editing.id ? next : rule) : [next, ...prev])
     setDialog(false)
-    toast.success('组卷规则已添加')
+    setEditing(null)
+    toast.success(editing ? '组卷规则已更新' : '组卷规则已添加')
   }
 
   return (
@@ -57,7 +59,7 @@ export default function PaperRules() {
 
       <section className="rounded-lg border border-gray-200 bg-white p-4">
         <div className="mb-3 text-sm text-gray-600">{selectedSubject ? `当前操作科目：${selectedSubject.name}` : '请选择操作科目...'}</div>
-        <Button className="h-8 bg-[#1A56DB] px-3 text-xs hover:bg-[#1748B5]" onClick={() => setDialog(true)}><Plus className="mr-1.5 h-3.5 w-3.5" />添 加</Button>
+        <Button className="h-8 bg-[#1A56DB] px-3 text-xs hover:bg-[#1748B5]" onClick={() => { setEditing(null); setDialog(true) }}><Plus className="mr-1.5 h-3.5 w-3.5" />添 加</Button>
       </section>
 
       <section className="overflow-auto rounded-lg border border-gray-200 bg-white">
@@ -84,7 +86,7 @@ export default function PaperRules() {
                 <td className="px-4 py-3 text-gray-600">{rule.description}</td>
                 <td className="px-4 py-3">
                   <div className="flex gap-2 text-xs">
-                    <button className="text-[#1A56DB] hover:underline" onClick={() => toast.success('组卷规则已打开')}>编辑</button>
+                    <button className="text-[#1A56DB] hover:underline" onClick={() => { setEditing(rule); setDialog(true) }}>编辑</button>
                     <button className="text-red-600 hover:underline" onClick={() => setRules(prev => prev.filter(item => item.id !== rule.id))}>删除</button>
                   </div>
                 </td>
@@ -144,15 +146,15 @@ export default function PaperRules() {
         </div>
       </section>
 
-      <Dialog open={dialog} onOpenChange={setDialog}>
+      <Dialog open={dialog} onOpenChange={open => { setDialog(open); if (!open) setEditing(null) }}>
         <DialogContent>
-          <DialogHeader><DialogTitle>添加组卷规则</DialogTitle></DialogHeader>
-          <form onSubmit={saveRule} className="space-y-3 text-sm">
-            <Field label="规则名称" name="name" />
-            <Field label="测试时长（分钟）" name="duration" defaultValue="120" type="number" />
-            <SelectField label="组卷类型" name="composeType" defaultValue="题库组卷" options={['题库组卷', '非题库组卷']} />
-            <Field label="标准规则" name="standardRule" defaultValue="职业技能等级" />
-            <label className="block"><span className="font-medium text-gray-700">描述</span><textarea name="description" className="mt-1 h-20 w-full rounded-md border border-gray-200 px-3 py-2" /></label>
+          <DialogHeader><DialogTitle>{editing ? '编辑组卷规则' : '添加组卷规则'}</DialogTitle></DialogHeader>
+          <form key={editing?.id || 'new'} onSubmit={saveRule} className="space-y-3 text-sm">
+            <Field label="规则名称" name="name" defaultValue={editing?.name} />
+            <Field label="测试时长（分钟）" name="duration" defaultValue={String(editing?.duration || 120)} type="number" />
+            <SelectField label="组卷类型" name="composeType" defaultValue={editing?.composeType || '题库组卷'} options={['题库组卷', '非题库组卷']} />
+            <Field label="标准规则" name="standardRule" defaultValue={editing?.standardRule || '职业技能等级'} />
+            <label className="block"><span className="font-medium text-gray-700">描述</span><textarea name="description" defaultValue={editing?.description} className="mt-1 h-20 w-full rounded-md border border-gray-200 px-3 py-2" /></label>
             <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setDialog(false)}>取消</Button><Button type="submit">保存</Button></div>
           </form>
         </DialogContent>

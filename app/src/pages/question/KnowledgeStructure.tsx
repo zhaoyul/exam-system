@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Download, Edit3, FileUp, MoveUp, Plus, Search, Settings, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -21,8 +21,19 @@ export default function KnowledgeStructure() {
   const [virtualStructure, setVirtualStructure] = useState<YesNo>('否')
   const [scene, setScene] = useState<SceneFilter>('资源')
   const [activeSort, setActiveSort] = useState('职业技能等级')
-  const [dialog, setDialog] = useState<'add' | 'import' | 'scene' | null>(null)
+  const [activeNodeId, setActiveNodeId] = useState(knowledgeNodes[0]?.id || '')
+  const [dialog, setDialog] = useState<'add' | 'import' | 'scene' | 'move' | null>(null)
   const [editing, setEditing] = useState<KnowledgeNode | null>(null)
+  const normalizedNodes = useMemo(() => nodes.map(node => node.parentId === node.id ? { ...node, parentId: undefined } : node), [nodes])
+  const sortedNodes = useMemo(() => [...normalizedNodes].sort((a, b) => String(a.code || '').localeCompare(String(b.code || ''), 'zh-CN')), [normalizedNodes])
+  const activeNode = normalizedNodes.find(node => node.id === activeNodeId) || normalizedNodes[0]
+
+  useEffect(() => {
+    if (!normalizedNodes.length) return
+    if (!normalizedNodes.some(node => node.id === activeNodeId)) {
+      setActiveNodeId(normalizedNodes[0].id)
+    }
+  }, [activeNodeId, normalizedNodes])
 
   const filteredSubjects = useMemo(() => theorySubjects.filter(subject => {
     return !search || subject.name.includes(search) || subject.code.includes(search)
@@ -47,25 +58,75 @@ export default function KnowledgeStructure() {
       return
     }
     setNodes(prev => editing ? prev.map(item => item.id === editing.id ? next : item) : [...prev, next])
+    setActiveNodeId(next.id)
     setDialog(null)
     setEditing(null)
     toast.success(editing ? '知识结构已更新' : '知识结构已添加')
   }
 
   const removeSelected = () => {
-    if (!selectedSubjectId) {
-      toast.info('请先选择操作科目')
+    if (!activeNode) {
+      toast.info('请先选择知识结构')
       return
     }
+    setNodes(prev => prev.filter(node => node.id !== activeNode.id && node.parentId !== activeNode.id))
+    setActiveNodeId(activeNode.parentId || normalizedNodes.find(node => node.id !== activeNode.id)?.id || '')
     toast.success('知识结构已删除')
   }
 
   const setSelectedValid = () => {
-    if (!selectedSubjectId) {
-      toast.info('请先选择操作科目')
+    if (!activeNode) {
+      toast.info('请先选择知识结构')
       return
     }
+    setNodes(prev => prev.map(node => node.id === activeNode.id ? { ...node, valid: !node.valid } : node))
     toast.success('有效性已更新')
+  }
+
+  const isDescendant = (nodeId: string, parentId?: string): boolean => {
+    if (!parentId) return false
+    if (nodeId === parentId) return true
+    const parent = normalizedNodes.find(node => node.id === parentId)
+    return isDescendant(nodeId, parent?.parentId)
+  }
+
+  const moveNode = (parentId?: string) => {
+    if (!activeNode) {
+      toast.info('请先选择知识结构')
+      return
+    }
+    if (parentId === activeNode.id || isDescendant(activeNode.id, parentId)) {
+      toast.error('不能移动到自身或下级结构中')
+      return
+    }
+    setNodes(prev => prev.map(node => node.id === activeNode.id ? { ...node, parentId } : node))
+    toast.success('结构已移动')
+  }
+
+  const applyScene = () => {
+    if (!activeNode) {
+      toast.info('请先选择知识结构')
+      return
+    }
+    setNodes(prev => prev.map(node => node.id === activeNode.id ? { ...node, scene } : node))
+    setDialog(null)
+    toast.success('应用场景已设置')
+  }
+
+  const renderNode = (node: KnowledgeNode, depth = 0) => {
+    const children = sortedNodes.filter(item => item.parentId === node.id)
+    return (
+      <div key={node.id}>
+        <button
+          onClick={() => { setActiveNodeId(node.id); setStructureName(node.name); setActiveSort(node.name) }}
+          className={`block w-full rounded-md px-3 py-2 text-left text-sm ${activeNode?.id === node.id ? 'bg-[#E8EFFF] text-[#1A56DB]' : 'text-gray-700 hover:bg-gray-50'}`}
+          style={{ paddingLeft: 12 + depth * 18 }}
+        >
+          {node.name}
+        </button>
+        {children.map(child => renderNode(child, depth + 1))}
+      </div>
+    )
   }
 
   return (
@@ -78,8 +139,8 @@ export default function KnowledgeStructure() {
         <div className="mb-3 text-sm text-gray-600">{selectedSubject ? `当前操作科目：${selectedSubject.name}` : '请选择操作科目...'}</div>
         <div className="flex flex-wrap items-center gap-2">
           <Button className="h-8 bg-[#1A56DB] px-3 text-xs hover:bg-[#1748B5]" onClick={() => { setEditing(null); setDialog('add') }}><Plus className="mr-1.5 h-3.5 w-3.5" />添加</Button>
-          <Button variant="outline" className="h-8 px-3 text-xs" onClick={() => { setEditing(nodes[0] || null); setDialog('add') }}><Edit3 className="mr-1.5 h-3.5 w-3.5" />编辑</Button>
-          <Button variant="outline" className="h-8 px-3 text-xs" onClick={() => toast.success('结构已移动')}><MoveUp className="mr-1.5 h-3.5 w-3.5" />移动</Button>
+          <Button variant="outline" className="h-8 px-3 text-xs" onClick={() => { setEditing(activeNode || null); setDialog('add') }}><Edit3 className="mr-1.5 h-3.5 w-3.5" />编辑</Button>
+          <Button variant="outline" className="h-8 px-3 text-xs" onClick={() => setDialog('move')}><MoveUp className="mr-1.5 h-3.5 w-3.5" />移动</Button>
           <Button variant="outline" className="h-8 px-3 text-xs" onClick={removeSelected}><Trash2 className="mr-1.5 h-3.5 w-3.5" />删除</Button>
           <Button variant="outline" className="h-8 px-3 text-xs" onClick={setSelectedValid}>有效性</Button>
           <Button variant="outline" className="h-8 px-3 text-xs" onClick={() => setDialog('scene')}><Settings className="mr-1.5 h-3.5 w-3.5" />应用场景设置</Button>
@@ -109,11 +170,13 @@ export default function KnowledgeStructure() {
       <section className="grid grid-cols-[220px_1fr] gap-4">
         <aside className="rounded-lg border border-gray-200 bg-white p-3">
           <TreeButton label="理论题库" active={activeSort === '理论题库'} onClick={() => setActiveSort('理论题库')} level={0} />
-          <TreeButton label="职业技能等级" active={activeSort === '职业技能等级'} onClick={() => setActiveSort('职业技能等级')} level={1} />
-          <TreeButton label="电工" active={activeSort === '电工'} onClick={() => setActiveSort('电工')} level={2} />
+          {sortedNodes.filter(node => !node.parentId).map(node => renderNode(node, 1))}
         </aside>
 
         <div className="rounded-lg border border-gray-200 bg-white">
+          <div className="border-b border-gray-100 px-4 py-3 text-sm text-gray-600">
+            当前知识结构：{activeNode ? `${activeNode.code || activeNode.id} / ${activeNode.name} / ${activeNode.valid ? '有效' : '无效'} / ${activeNode.scene || '未设置'}` : '暂无'}
+          </div>
           <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 p-3">
             <span className="text-sm font-medium text-gray-700">科目名称</span>
             <div className="relative">
@@ -159,7 +222,7 @@ export default function KnowledgeStructure() {
           <form onSubmit={saveNode} className="grid grid-cols-2 gap-3 text-sm">
             <Field label="结构编码" name="code" defaultValue={editing?.code} />
             <Field label="结构名称" name="name" defaultValue={editing?.name || structureName} />
-            <label className="block"><span className="font-medium text-gray-700">上级结构</span><select name="parentId" defaultValue={editing?.parentId || ''} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-2"><option value="">无</option>{nodes.map(node => <option key={node.id} value={node.id}>{node.name}</option>)}</select></label>
+            <label className="block"><span className="font-medium text-gray-700">上级结构</span><select name="parentId" defaultValue={editing?.parentId || ''} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-2"><option value="">无</option>{sortedNodes.filter(node => node.id !== editing?.id && !isDescendant(editing?.id || '', node.id)).map(node => <option key={node.id} value={node.id}>{node.name}</option>)}</select></label>
             <label className="block"><span className="font-medium text-gray-700">应用场景</span><select name="scene" defaultValue={editing?.scene || scene} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-2"><option>资源</option><option>试题</option></select></label>
             <label className="block"><span className="font-medium text-gray-700">有效性</span><select name="valid" defaultValue={String(editing?.valid ?? true)} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-2"><option value="true">有效</option><option value="false">无效</option></select></label>
             <div className="col-span-2 flex justify-end gap-2 border-t border-gray-100 pt-3"><Button type="button" variant="outline" onClick={() => setDialog(null)}>取消</Button><Button type="submit">保存</Button></div>
@@ -180,8 +243,19 @@ export default function KnowledgeStructure() {
           <DialogHeader><DialogTitle>应用场景设置</DialogTitle></DialogHeader>
           <div className="space-y-3 text-sm">
             <RadioGroup label="应用场景" value={scene} options={['资源', '试题']} onChange={value => setScene(value as SceneFilter)} />
-            <div className="flex justify-end"><Button onClick={() => { setDialog(null); toast.success('应用场景已设置') }}>保存</Button></div>
+            <div className="flex justify-end"><Button onClick={applyScene}>保存</Button></div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={dialog === 'move'} onOpenChange={() => setDialog(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>移动知识结构</DialogTitle></DialogHeader>
+          <MoveForm
+            active={activeNode}
+            nodes={sortedNodes.filter(node => node.id !== activeNode?.id && !isDescendant(activeNode?.id || '', node.id))}
+            onSubmit={parentId => { moveNode(parentId); setDialog(null) }}
+          />
         </DialogContent>
       </Dialog>
     </div>
@@ -214,4 +288,24 @@ function RadioGroup({ label, value, options, onChange }: { label: string; value:
 
 function Field({ label, name, defaultValue }: { label: string; name: string; defaultValue?: string }) {
   return <label className="block"><span className="font-medium text-gray-700">{label}</span><input name={name} defaultValue={defaultValue} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3" /></label>
+}
+
+function MoveForm({ active, nodes, onSubmit }: { active?: KnowledgeNode; nodes: KnowledgeNode[]; onSubmit: (parentId?: string) => void }) {
+  const [parentId, setParentId] = useState(active?.parentId || '')
+  if (!active) return <div className="text-sm text-gray-500">请先选择知识结构</div>
+  return (
+    <div className="space-y-3 text-sm">
+      <div className="rounded-md bg-gray-50 px-3 py-2 text-gray-600">当前结构：{active.name}</div>
+      <label className="block">
+        <span className="font-medium text-gray-700">目标上级结构</span>
+        <select value={parentId} onChange={event => setParentId(event.target.value)} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-2">
+          <option value="">无</option>
+          {nodes.map(node => <option key={node.id} value={node.id}>{node.name}</option>)}
+        </select>
+      </label>
+      <div className="flex justify-end">
+        <Button onClick={() => onSubmit(parentId || undefined)}>保存移动</Button>
+      </div>
+    </div>
+  )
 }

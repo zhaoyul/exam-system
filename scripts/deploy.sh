@@ -83,22 +83,21 @@ upload() {
 switch_version() {
   info "===== 步骤 3/4：切换版本 ====="
 
-  ssh -o ConnectTimeout=5 "$SSH_HOST" bash -s -- "$DEPLOY_DIR" "$JAR_NAME" <<'SSH_CMDS'
-    set -e
-    DEPLOY_DIR="$1"
-    JAR_NAME="$2"
-    RELEASES_DIR="$DEPLOY_DIR/releases"
+  ssh -o ConnectTimeout=5 "$SSH_HOST" bash -s -- "$DEPLOY_DIR" "$JAR_NAME" <<'SSH_SWITCH'
+DEPLOY_DIR="$1"
+JAR_NAME="$2"
+RELEASES_DIR="$DEPLOY_DIR/releases"
 
-    if [ ! -f "$RELEASES_DIR/$JAR_NAME" ]; then
-      echo "[ERROR] 远程 JAR 文件不存在: $RELEASES_DIR/$JAR_NAME"
-      exit 1
-    fi
+if [ ! -f "$RELEASES_DIR/$JAR_NAME" ]; then
+  echo "[ERROR] 远程 JAR 文件不存在: $RELEASES_DIR/$JAR_NAME"
+  exit 1
+fi
 
-    # 更新软链接（原子操作：创建临时链接再 mv 覆盖）
-    ln -sf "releases/$JAR_NAME" "$DEPLOY_DIR/app.jar.tmp"
-    mv -f "$DEPLOY_DIR/app.jar.tmp" "$DEPLOY_DIR/app.jar"
-    echo "[INFO] 软链接已更新: app.jar -> releases/$JAR_NAME"
-SSH_CMDS
+# 原子操作：创建临时链接再 mv 覆盖
+ln -sf "releases/$JAR_NAME" "$DEPLOY_DIR/app.jar.tmp"
+mv -f "$DEPLOY_DIR/app.jar.tmp" "$DEPLOY_DIR/app.jar"
+echo "[INFO] 软链接已更新: app.jar -> releases/$JAR_NAME"
+SSH_SWITCH
 
   info "版本切换完成"
 }
@@ -109,37 +108,44 @@ SSH_CMDS
 restart() {
   info "===== 步骤 4/4：重启服务 ====="
 
-  ssh -o ConnectTimeout=5 "$SSH_HOST" bash -s -- "$REMOTE_JAVA" <<'SSH_CMDS'
-    set -e
-    REMOTE_JAVA="$1"
+  ssh -o ConnectTimeout=5 "$SSH_HOST" bash -s -- "$REMOTE_JAVA" <<'SSH_RESTART'
+REMOTE_JAVA="$1"
 
-    echo "[INFO] 重启 exam-system.service ..."
-    systemctl restart exam-system.service
+echo "[INFO] 重启 exam-system.service ..."
+systemctl restart exam-system.service
 
-    # 等待启动
-    for i in $(seq 1 12); do
-      sleep 2
-      STATUS="$(systemctl is-active exam-system.service 2>/dev/null || echo 'inactive')"
-      if [ "$STATUS" = "active" ]; then
-        echo "[INFO] 服务启动成功（第 ${i} 次检查）"
-        break
-      fi
-      if [ "$i" -eq 12 ]; then
-        echo "[ERROR] 服务启动超时"
-        systemctl status exam-system.service --no-pager | tail -10
-        exit 1
-      fi
-    done
+# 等待启动
+for i in $(seq 1 12); do
+  sleep 2
+  STATUS="$(systemctl is-active exam-system.service 2>/dev/null || echo 'inactive')"
+  if [ "$STATUS" = "active" ]; then
+    echo "[INFO] 服务启动成功（第 ${i} 次检查）"
+    break
+  fi
+  if [ "$i" -eq 12 ]; then
+    echo "[ERROR] 服务启动超时"
+    systemctl status exam-system.service --no-pager | tail -10
+    exit 1
+  fi
+done
 
-    # 验证 API
-    sleep 2
-    HEALTH=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:29527/ 2>/dev/null || echo '000')
-    if [ "$HEALTH" = "200" ]; then
-      echo "[INFO] 前端页面响应 200 OK"
-    else
-      echo "[WARN] 前端页面响应码: $HEALTH"
-    fi
-SSH_CMDS
+# 验证前端
+sleep 2
+HEALTH=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:29527/ 2>/dev/null || echo '000')
+if [ "$HEALTH" = "200" ]; then
+  echo "[INFO] 前端页面 200 OK"
+else
+  echo "[WARN] 前端页面响应码: $HEALTH"
+fi
+
+# 验证 API
+API_CHECK=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:29527/api/question/subject-sort 2>/dev/null || echo '000')
+if [ "$API_CHECK" = "200" ]; then
+  echo "[INFO] API 接口 200 OK"
+else
+  echo "[WARN] API 接口响应码: $API_CHECK"
+fi
+SSH_RESTART
 
   info "重启完成"
 }
@@ -150,32 +156,38 @@ SSH_CMDS
 rollback() {
   info "===== 回滚到上一版本 ====="
 
-  PREV_JAR=$(ssh -o ConnectTimeout=5 "$SSH_HOST" "
-    ls -t $RELEASES_DIR/*.jar 2>/dev/null | sed -n '2p'
-  ")
+  local prev_jar
+  prev_jar=$(ssh -o ConnectTimeout=5 "$SSH_HOST" "ls -t $RELEASES_DIR/*.jar 2>/dev/null | sed -n '2p'")
 
-  if [ -z "$PREV_JAR" ]; then
+  if [ -z "$prev_jar" ]; then
     error "没有可回滚的版本"
     exit 1
   fi
 
-  PREV_NAME=$(basename "$PREV_JAR")
-  info "回滚至: $PREV_NAME"
+  local prev_name
+  prev_name=$(basename "$prev_jar")
+  info "回滚至: $prev_name"
 
-  ssh -o ConnectTimeout=5 "$SSH_HOST" "
-    ln -sf releases/$PREV_NAME $DEPLOY_DIR/app.jar.tmp && mv -f $DEPLOY_DIR/app.jar.tmp $DEPLOY_DIR/app.jar
-    systemctl restart exam-system.service
-  "
+  ssh -o ConnectTimeout=5 "$SSH_HOST" bash -s -- "$DEPLOY_DIR" "$prev_name" <<'SSH_ROLLBACK'
+DEPLOY_DIR="$1"
+PREV_NAME="$2"
+ln -sf "releases/$PREV_NAME" "$DEPLOY_DIR/app.jar.tmp"
+mv -f "$DEPLOY_DIR/app.jar.tmp" "$DEPLOY_DIR/app.jar"
+systemctl restart exam-system.service
+echo "[INFO] 已回滚至: $PREV_NAME"
+SSH_ROLLBACK
+
   info "回滚完成"
 }
 
 list_versions() {
   info "===== 服务器上的版本列表 ====="
-  ssh -o ConnectTimeout=5 "$SSH_HOST" "
-    echo '当前: \$(readlink $DEPLOY_DIR/app.jar)'
-    echo '---'
-    ls -lh $RELEASES_DIR/*.jar | awk '{print \$NF, \"(\" \$5 \")\"}"
-  "
+  ssh -o ConnectTimeout=5 "$SSH_HOST" bash -s -- "$DEPLOY_DIR" <<'SSH_LIST'
+DEPLOY_DIR="$1"
+echo "当前: $(readlink "$DEPLOY_DIR/app.jar")"
+echo "---"
+ls -lh "$DEPLOY_DIR"/releases/*.jar 2>/dev/null | awk '{print $NF, "(" $5 ")"}'
+SSH_LIST
 }
 
 # ============================================================
@@ -186,8 +198,8 @@ usage() {
 用法: $0 <command>
 
 命令:
-  deploy    完整部署：构建 → 上传 → 切换版本 → 重启
-  build     仅构建 uberjar（含前端）
+  deploy    完整部署：构建 -> 上传 -> 切换版本 -> 重启
+  build     仅构建 uberjar（含前端 SPA）
   upload    仅上传 JAR 至服务器
   switch    仅切换软链接到最新版本
   restart   仅重启服务

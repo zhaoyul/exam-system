@@ -8,7 +8,8 @@
 
 (def migrations
   ["001-init.up.sql"
-   "002-domain-core.up.sql"])
+   "002-domain-core.up.sql"
+   "003-v2.0-core.up.sql"])
 
 (defn- split-statements [sql]
   (->> (str/split sql #"(?m)^\s*--;;\s*$")

@@ -61,8 +61,8 @@ import ExamRegistration from '@/pages/certification/ExamRegistration'
 import ExamArrangement from '@/pages/certification/ExamArrangement'
 import ExamSessionArrange from '@/pages/certification/ExamSessionArrange'
 import CertDeclaration from '@/pages/certification/CertDeclaration'
+import PaperDemand from '@/pages/certification/PaperDemand'
 import EvaluatorStaff from '@/pages/certification/EvaluatorStaff'
-import StaffManage from '@/pages/certification/StaffManage'
 import MarkingLeadPage from '@/pages/certification/MarkingLeadPage'
 import EnrollModifyPage from '@/pages/certification/EnrollModifyPage'
 import FinanceWorkbench from '@/pages/finance/FinanceWorkbench'
@@ -239,6 +239,7 @@ export default function App() {
           <Route path="/cert/marking-lead" element={<MarkingLeadPage />} />
           <Route path="/cert/enroll-modify" element={<EnrollModifyPage />} />
           <Route path="/cert/declaration" element={<CertDeclaration />} />
+          <Route path="/cert/paper-demand" element={<PaperDemand />} />
           {/* Finance System */}
           <Route path="/finance/workbench" element={<FinanceWorkbench />} />
           <Route path="/finance/charge" element={<FeeChargePage />} />

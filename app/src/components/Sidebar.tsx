@@ -40,6 +40,7 @@ const groupModuleGroups = [
       { label: '证书上报', path: '/cert/cert-report', icon: Upload },
       { label: '预警违规', path: '/cert/violations', icon: AlertTriangle },
       { label: '特办申请', path: '/cert/special', icon: Receipt },
+      { label: '试卷需求', path: '/cert/paper-demand', icon: FileText },
     ],
   },
   {

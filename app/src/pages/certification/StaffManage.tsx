@@ -98,7 +98,7 @@ const emptyForm = {
 
 // ─── Component ───
 
-export default function StaffManage({ staffType: filterType, title, initialData, showSiteFilter = false }: StaffManageProps) {
+export default function StaffManage({ staffType: filterType, title, initialData, showSiteFilter: _showSiteFilter = false }: StaffManageProps) {
   const [staff, setStaff] = useBackendListState<StaffMember>(initialData || getDefaultMock(filterType))
   const [search, setSearch] = useState('')
   const [adding, setAdding] = useState(false)
@@ -106,7 +106,7 @@ export default function StaffManage({ staffType: filterType, title, initialData,
   const [showDelete, setShowDelete] = useState<string | number | null>(null)
   const [resetTarget, setResetTarget] = useState<StaffMember | null>(null)
   const [form, setForm] = useState({ ...emptyForm, staffType: filterType || 'exam_staff' as StaffType })
-  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [_photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoValid, setPhotoValid] = useState(true)
 
   const displayTitle = title || (filterType ? STAFF_TYPE_LABELS[filterType] : '人员管理')

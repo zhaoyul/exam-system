@@ -17,7 +17,6 @@ interface RequireRoleProps {
  */
 export function RequireRole({ roles, redirectOnDeny = true, children }: RequireRoleProps) {
   const { isLoggedIn, user } = useApp()
-  const location = useLocation()
 
   if (!isLoggedIn) {
     return <Navigate to="/login" replace />

@@ -1,213 +1,559 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import {
-  MapPin, Users, Plus, Clock, CheckCircle,
-  Trash2, Eye, Printer, Ticket, FileSpreadsheet, LayoutGrid
+  MapPin, Users, Plus, Clock, CheckCircle, Trash2, Eye,
+  Printer, Ticket, FileSpreadsheet, LayoutGrid, ArrowRight,
+  ArrowLeft, Calendar, Shuffle, RefreshCw,
 } from 'lucide-react'
-import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
+import { apiRequest } from '@/lib/api'
 
+// ==================== Types ====================
 interface ExamRoom {
-  id: number
+  id: string
   name: string
   totalSeats: number
   remainingSeats: number
   candidates: number
+  assignedCandidateIds?: string[]
 }
 
 interface ExamSite {
-  id: number
+  id: string
   name: string
+  address?: string
+  roomType?: string
+  seatCount?: number
   rooms: ExamRoom[]
 }
 
 interface ExamSession {
-  id: number
+  id: string
   timeRange: string
+  date?: string
+  startTime?: string
+  endTime?: string
+  sessionType?: string
+  cycleDay?: number
+  cycleTotal?: number
+  capacity?: number
+  candidateCount?: number
+  status?: string
 }
 
-interface CandidateAssign {
-  id: number
+interface CandidateItem {
+  id: string
   name: string
-  idCard: string
-  profession: string
-  level: string
-  sessionId: number
+  idCard?: string
+  profession?: string
+  occupation?: string
+  level?: string
+  org?: string
+  isAssigned?: boolean
 }
 
-const mockSessions: ExamSession[] = [
-  { id: 1, timeRange: '2022-03-31 08:00~10:00' },
-  { id: 2, timeRange: '2022-03-31 09:00~11:00' },
+interface ArrangementPlan {
+  id: string
+  code?: string
+  name?: string
+  planName?: string
+  site?: string
+  month?: string
+  count?: number
+  candidateCount?: number
+  status?: string
+  arrangementStatus?: string
+  theoryDone?: boolean
+  skillDone?: boolean
+  sites?: ExamSite[]
+  arrangeMode?: string
+}
+
+interface ArrangementDetail {
+  plan: ArrangementPlan
+  sessions: ExamSession[]
+  candidates: CandidateItem[]
+}
+
+// ==================== Constants ====================
+const ALL_SITES: { id: string; name: string; address?: string }[] = [
+  { id: 'site-001', name: '大亚湾基地考点', address: '大亚湾基地培训中心' },
+  { id: 'site-002', name: '阳江培训中心', address: '阳江核电培训中心' },
+  { id: 'site-003', name: '测试有限公司考点', address: '深圳市' },
 ]
 
-const mockCandidates: CandidateAssign[] = [
-  { id: 1, name: '张三', idCard: '440301199001011234', profession: '核反应堆操作员', level: '三级', sessionId: 1 },
-  { id: 2, name: '李四', idCard: '440301199205063456', profession: '电气维修工', level: '四级', sessionId: 1 },
-  { id: 3, name: '王五', idCard: '440301198803127890', profession: '仪表维修工', level: '三级', sessionId: 2 },
-  { id: 4, name: '赵六', idCard: '440301199511224567', profession: '汽轮机操作员', level: '四级', sessionId: 2 },
-  { id: 5, name: '孙七', idCard: '440301199307088901', profession: '化学分析员', level: '三级', sessionId: 1 },
-]
+// ==================== API Helpers ====================
+async function fetchPlanDetail(planId: string): Promise<ArrangementDetail> {
+  const res = await apiRequest<ArrangementDetail>(`/exam-arrangement/plans/${planId}`)
+  if (!res || !res.plan) throw new Error('Plan not found')
+  return res
+}
 
-const mockSites: ExamSite[] = [
-  {
-    id: 1, name: '职业技能培训中心',
-    rooms: [
-      { id: 101, name: '101教室考场', totalSeats: 1000, remainingSeats: 1000, candidates: 0 },
-      { id: 102, name: '102教室考场', totalSeats: 1000, remainingSeats: 1000, candidates: 0 },
-    ]
-  },
-]
+async function fetchPlans(): Promise<ArrangementPlan[]> {
+  const res = await apiRequest<{ items: ArrangementPlan[] }>('/exam-arrangement/plans')
+  if (Array.isArray(res)) return res as ArrangementPlan[]
+  return res?.items || []
+}
 
-const allSites: ExamSite[] = [
-  { id: 1, name: '职业技能培训中心', rooms: [] },
-  { id: 2, name: '大亚湾培训中心', rooms: [] },
-  { id: 3, name: '阳江培训中心', rooms: [] },
-]
+async function fetchSessions(planId: string, type?: string): Promise<ExamSession[]> {
+  const params = type ? `?type=${type}` : ''
+  const res = await apiRequest<{ sessions: ExamSession[] }>(`/exam-arrangement/sessions${params}`)
+  return res?.sessions || []
+}
 
+async function fetchCandidates(planId: string): Promise<{ candidates: CandidateItem[]; assignedCount: number; totalCount: number }> {
+  const res = await apiRequest<{ candidates: CandidateItem[]; assignedCount: number; totalCount: number }>(
+    `/exam-arrangement/plans/${planId}/sites/site-001/rooms/room-001/candidates`,
+  )
+  return res || { candidates: [], assignedCount: 0, totalCount: 0 }
+}
+
+// ==================== Component ====================
 export default function ExamArrangement() {
-  const [activeTab, setActiveTab] = useState<'theory' | 'skill'>('theory')
+  // View state
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
   const [workTab, setWorkTab] = useState<'待办' | '已办'>('待办')
-  const [selectedPlan, setSelectedPlan] = useState<number | null>(null)
-  const [selectedSite, setSelectedSite] = useState<number>(1)
-  const [sites, setSites] = useBackendListState<ExamSite>(mockSites)
-  const arrangementPlans = useBackendResourceList('/certification/exam-arrangement', [
-    { id: 1, code: '20260324001', name: '大亚湾核电2026年第1批认定', site: '职业技能培训中心', month: '2026年04月', status: '待编排', count: 45 },
-    { id: 2, code: '20260324002', name: '阳江核电2026年第1批认定', site: '阳江培训中心', month: '2026年05月', status: '已编排', count: 32 },
-  ])
-  const availableSites = useBackendResourceList('/certification/execution/exam-rooms', allSites)
-  const backendCandidates = useBackendResourceList('/candidates/manage', mockCandidates)
-  const backendSessions = useBackendResourceList('/certification/exam-session', mockSessions)
-  const [sessions, setSessions] = useState<ExamSession[]>(mockSessions)
-  const [, setArranged] = useState(false)
+  const [activeStep, setActiveStep] = useState<'theory' | 'skill'>('theory')
+
+  // Plan list
+  const [plans, setPlans] = useState<ArrangementPlan[]>([])
+  const [plansLoading, setPlansLoading] = useState(false)
+
+  // Detail state
+  const [planDetail, setPlanDetail] = useState<ArrangementDetail | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [sessions, setSessions] = useState<ExamSession[]>([])
+  const [sites, setSites] = useState<ExamSite[]>([])
+  const [candidates, setCandidates] = useState<CandidateItem[]>([])
+  const [selectedSiteId, setSelectedSiteId] = useState<string>('')
+  const [arrangeMode, setArrangeMode] = useState<'普通' | '打乱'>('普通')
+
+  // Dialogs
   const [showAddSite, setShowAddSite] = useState(false)
   const [showAddRoom, setShowAddRoom] = useState(false)
   const [showAssignCandidates, setShowAssignCandidates] = useState(false)
   const [showAssignedDetail, setShowAssignedDetail] = useState(false)
-  const [siteSearch, setSiteSearch] = useState('')
+  const [showAddSession, setShowAddSession] = useState(false)
+  const [showCycleDays, setShowCycleDays] = useState(false)
+  const [showShuffleResult, setShowShuffleResult] = useState(false)
+
+  // Form state
   const [selectedRoomForAction, setSelectedRoomForAction] = useState<ExamRoom | null>(null)
-  const [selectedSession, setSelectedSession] = useState<number | 'all'>('all')
-  const [selectedCandidateIds, setSelectedCandidateIds] = useState<number[]>([])
-  const [arrangeMode, setArrangeMode] = useState<'普通' | '打乱'>('普通')
-  const [skillOccupation, setSkillOccupation] = useState('核反应堆操作员 / 三级')
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState<string[]>([])
+  const [siteSearch, setSiteSearch] = useState('')
+  const [newRoomName, setNewRoomName] = useState('')
+  const [newRoomSeats, setNewRoomSeats] = useState('50')
+
+  // Session form
+  const [sessionDate, setSessionDate] = useState('')
+  const [sessionStart, setSessionStart] = useState('')
+  const [sessionEnd, setSessionEnd] = useState('')
+  const [sessionType, setSessionType] = useState<'theory' | 'skill'>('theory')
+
+  // Cycle days form
+  const [cycleStartDate, setCycleStartDate] = useState('')
+  const [cycleStartTime, setCycleStartTime] = useState('')
+  const [cycleEndTime, setCycleEndTime] = useState('')
   const [cycleDays, setCycleDays] = useState('1')
+  const [cycleCapacity, setCycleCapacity] = useState('50')
 
-  const handleAutoArrange = () => {
-    setArranged(true)
-    setSites(prev => prev.map(s => ({
-      ...s,
-      rooms: s.rooms.map(r => ({
-        ...r,
-        candidates: Math.floor(Math.random() * 20) + 5,
-        remainingSeats: r.totalSeats - Math.floor(Math.random() * 20) - 5
-      }))
-    })))
-    toast.success('考场编排完成：座位和准考证已自动生成')
-  }
+  // Skill occupation
+  const [skillOccupation, setSkillOccupation] = useState('')
 
-  const handleAddSession = () => {
+  // Shuffle result
+  const [shuffleGroups, setShuffleGroups] = useState<{ org: string; candidateIds: string[]; count: number }[]>([])
+
+  // ==================== Load Plans ====================
+  const loadPlans = useCallback(async () => {
+    setPlansLoading(true)
+    try {
+      const data = await fetchPlans()
+      if (data.length === 0) {
+        // Fallback: use resource endpoint
+        const fallback = await apiRequest<{ items: ArrangementPlan[] }>('/resources/exam-arrangement?limit=200')
+        setPlans(fallback?.items || mockPlans)
+      } else {
+        setPlans(data)
+      }
+    } catch {
+      setPlans(mockPlans)
+    } finally {
+      setPlansLoading(false)
+    }
+  }, [])
+
+  // ==================== Load Detail ====================
+  const loadDetail = useCallback(async (planId: string) => {
+    setDetailLoading(true)
+    try {
+      const detail = await fetchPlanDetail(planId)
+      setPlanDetail(detail)
+      setSessions(detail.sessions || [])
+      const p = detail.plan
+      setSites(p?.sites || [])
+      setArrangeMode((p?.arrangeMode as '普通' | '打乱') || '普通')
+      if ((p?.sites?.length ?? 0) > 0) {
+        setSelectedSiteId(p.sites![0].id)
+      }
+      // Load candidates
+      try {
+        const candData = await fetchCandidates(planId)
+        setCandidates(candData.candidates || mockCandidates)
+      } catch {
+        setCandidates(mockCandidates)
+      }
+      // Determine active step
+      if (p?.skillDone) setActiveStep('skill')
+      else if (p?.theoryDone) setActiveStep('skill')
+      else setActiveStep('theory')
+    } catch {
+      // Fallback for demo
+      setPlanDetail({
+        plan: mockPlans.find(p => p.id === planId) || mockPlans[0],
+        sessions: mockSessions,
+        candidates: mockCandidates,
+      })
+      setSessions(mockSessions)
+      setCandidates(mockCandidates)
+    } finally {
+      setDetailLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { loadPlans() }, [loadPlans])
+
+  // ==================== Session Management ====================
+  const handleAddSession = async () => {
+    if (!sessionDate || !sessionStart || !sessionEnd) {
+      toast.error('请填写完整场次信息')
+      return
+    }
+    const timeRange = `${sessionDate} ${sessionStart}~${sessionEnd}`
     const newSession: ExamSession = {
-      id: Date.now(),
-      timeRange: `2022-03-31 ${10 + sessions.length}:00~${12 + sessions.length}:00`
+      id: `local-${Date.now()}`,
+      timeRange,
+      date: sessionDate,
+      startTime: sessionStart,
+      endTime: sessionEnd,
+      sessionType: activeStep === 'theory' ? 'theory' : 'skill',
     }
     setSessions(prev => [...prev, newSession])
-    toast.success('新增场次')
+    setShowAddSession(false)
+    setSessionDate('')
+    setSessionStart('')
+    setSessionEnd('')
+    toast.success('已添加场次')
+    // API sync
+    try {
+      await apiRequest(`/exam-arrangement/sessions`, {
+        method: 'POST',
+        body: JSON.stringify({
+          planId: selectedPlanId,
+          sessionType: activeStep === 'theory' ? 'theory' : 'skill',
+          date: sessionDate,
+          startTime: sessionStart,
+          endTime: sessionEnd,
+        }),
+      })
+    } catch { /* local state is fine */ }
   }
 
-  const handleRemoveSession = (id: number) => {
+  const handleRemoveSession = (id: string) => {
     setSessions(prev => prev.filter(s => s.id !== id))
+    try {
+      apiRequest(`/exam-arrangement/sessions/${id}`, { method: 'DELETE' })
+    } catch { /* ok */ }
   }
 
-  const handleAddSite = (site: ExamSite) => {
+  // ==================== Cycle Days ====================
+  const handleGenerateCycleSessions = async () => {
+    if (!cycleStartDate || !cycleStartTime || !cycleEndTime) {
+      toast.error('请填写完整的周期信息')
+      return
+    }
+    const n = parseInt(cycleDays) || 1
+    const generated: ExamSession[] = []
+    for (let i = 0; i < n; i++) {
+      // Simple day offset (production would use date-fns addDays)
+      const d = new Date(cycleStartDate)
+      d.setDate(d.getDate() + i)
+      const dateStr = d.toISOString().slice(0, 10)
+      generated.push({
+        id: `cycle-${Date.now()}-${i}`,
+        timeRange: `${dateStr} ${cycleStartTime}~${cycleEndTime}`,
+        date: dateStr,
+        startTime: cycleStartTime,
+        endTime: cycleEndTime,
+        sessionType: 'skill',
+        capacity: parseInt(cycleCapacity) || 50,
+        cycleDay: i + 1,
+        cycleTotal: n,
+      })
+    }
+    setSessions(prev => [...prev, ...generated])
+    setShowCycleDays(false)
+    toast.success(`已生成 ${n} 个批次场次`)
+    // API sync
+    try {
+      await apiRequest(`/exam-arrangement/plans/${selectedPlanId}/cycle-sessions`, {
+        method: 'POST',
+        body: JSON.stringify({
+          startDate: cycleStartDate,
+          startTime: cycleStartTime,
+          endTime: cycleEndTime,
+          capacity: parseInt(cycleCapacity) || 50,
+          cycleDays: n,
+          occupation: skillOccupation,
+        }),
+      })
+    } catch { /* ok */ }
+  }
+
+  // ==================== Site Management ====================
+  const handleAddSite = async (site: { id: string; name: string }) => {
     if (sites.find(s => s.id === site.id)) {
       toast.error('该考点已添加')
       return
     }
-    setSites(prev => [...prev, { ...site, rooms: [] }])
+    const newSite: ExamSite = { id: site.id, name: site.name, rooms: [] }
+    setSites(prev => [...prev, newSite])
+    setSelectedSiteId(site.id)
     setShowAddSite(false)
     toast.success(`已添加考点：${site.name}`)
+    try {
+      await apiRequest(`/exam-arrangement/plans/${selectedPlanId}/sites`, {
+        method: 'POST',
+        body: JSON.stringify({ siteId: site.id }),
+      })
+    } catch { /* ok */ }
   }
 
+  const handleRemoveSite = (siteId: string) => {
+    setSites(prev => prev.filter(s => s.id !== siteId))
+    if (selectedSiteId === siteId) setSelectedSiteId(sites[0]?.id || '')
+    try {
+      apiRequest(`/exam-arrangement/plans/${selectedPlanId}/sites/${siteId}`, { method: 'DELETE' })
+    } catch { /* ok */ }
+  }
+
+  // ==================== Room Management ====================
   const handleAddRoom = () => {
-    if (!newRoomName.trim()) {
-      toast.error('请输入考场名称')
-      return
-    }
+    if (!newRoomName.trim()) { toast.error('请输入考场名称'); return }
+    const seats = parseInt(newRoomSeats) || 50
     const newRoom: ExamRoom = {
-      id: Date.now(),
+      id: `room-${Date.now()}`,
       name: newRoomName.trim(),
-      totalSeats: parseInt(newRoomSeats) || 50,
-      remainingSeats: parseInt(newRoomSeats) || 50,
-      candidates: 0
+      totalSeats: seats,
+      remainingSeats: seats,
+      candidates: 0,
     }
     setSites(prev => prev.map(s =>
-      s.id === selectedSite ? { ...s, rooms: [...s.rooms, newRoom] } : s
+      s.id === selectedSiteId ? { ...s, rooms: [...s.rooms, newRoom] } : s,
     ))
     setShowAddRoom(false)
     setNewRoomName('')
     setNewRoomSeats('50')
     toast.success('考场已添加')
+    try {
+      apiRequest(`/exam-arrangement/plans/${selectedPlanId}/sites/${selectedSiteId}/rooms`, {
+        method: 'POST',
+        body: JSON.stringify({ name: newRoom.name, seatCount: seats }),
+      })
+    } catch { /* ok */ }
   }
 
-  const [newRoomName, setNewRoomName] = useState('')
-  const [newRoomSeats, setNewRoomSeats] = useState('50')
+  const handleRemoveRoom = (roomId: string) => {
+    setSites(prev => prev.map(s => ({
+      ...s,
+      rooms: s.rooms.filter(r => r.id !== roomId),
+    })))
+  }
 
-  useEffect(() => {
-    setSessions(backendSessions)
-  }, [backendSessions])
-
-  const handleAddCandidates = (room: ExamRoom) => {
-    const count = Math.max(1, selectedCandidateIds.length || 5)
+  const handleAddSeats = (room: ExamRoom) => {
+    const addN = 10
     setSites(prev => prev.map(s => ({
       ...s,
       rooms: s.rooms.map(r =>
-        r.id === room.id ? { ...r, candidates: r.candidates + count, remainingSeats: Math.max(0, r.remainingSeats - count) } : r
-      )
+        r.id === room.id
+          ? { ...r, totalSeats: r.totalSeats + addN, remainingSeats: r.remainingSeats + addN }
+          : r,
+      ),
     })))
-    toast.success(`已为 ${room.name} 追加${count}名考生`)
-    setSelectedCandidateIds([])
-    setShowAssignCandidates(false)
+    toast.success(`已为 ${room.name} 增加 ${addN} 个座位`)
   }
 
-  const handleCancelRoomAssign = (roomId: number) => {
-    setSites(prev => prev.map(site => ({
-      ...site,
-      rooms: site.rooms.map(room => room.id === roomId ? { ...room, remainingSeats: room.totalSeats, candidates: 0 } : room)
+  // ==================== Candidate Assignment ====================
+  const handleAssignCandidates = (room: ExamRoom | null) => {
+    const ids = selectedCandidateIds.length > 0
+      ? selectedCandidateIds
+      : candidates.filter(c => !c.isAssigned).slice(0, 5).map(c => c.id)
+    const count = ids.length
+
+    if (room) {
+      setSites(prev => prev.map(s => ({
+        ...s,
+        rooms: s.rooms.map(r =>
+          r.id === room.id
+            ? {
+                ...r,
+                candidates: r.candidates + count,
+                remainingSeats: Math.max(0, r.remainingSeats - count),
+                assignedCandidateIds: [...(r.assignedCandidateIds || []), ...ids],
+              }
+            : r,
+        ),
+      })))
+      toast.success(`已为 ${room.name} 分配 ${count} 名考生`)
+    } else {
+      toast.success(`已为技能考核分配 ${count} 名考生`)
+    }
+
+    setCandidates(prev => prev.map(c =>
+      ids.includes(c.id) ? { ...c, isAssigned: true } : c,
+    ))
+    setSelectedCandidateIds([])
+    setShowAssignCandidates(false)
+
+    // API
+    if (room) {
+      try {
+        apiRequest(
+          `/exam-arrangement/plans/${selectedPlanId}/sites/${selectedSiteId}/rooms/${room.id}/candidates`,
+          { method: 'POST', body: JSON.stringify({ candidateIds: ids }) },
+        )
+      } catch { /* ok */ }
+    }
+  }
+
+  const handleCancelRoomAssign = (room: ExamRoom) => {
+    const assignedIds = room.assignedCandidateIds || []
+    setSites(prev => prev.map(s => ({
+      ...s,
+      rooms: s.rooms.map(r =>
+        r.id === room.id
+          ? { ...r, remainingSeats: r.totalSeats, candidates: 0, assignedCandidateIds: [] }
+          : r,
+      ),
     })))
+    setCandidates(prev => prev.map(c =>
+      assignedIds.includes(c.id) ? { ...c, isAssigned: false } : c,
+    ))
     toast.success('已取消该考场分配')
   }
 
   const handleCancelAllAssign = () => {
-    setSites(prev => prev.map(site => ({
-      ...site,
-      rooms: site.rooms.map(room => ({ ...room, remainingSeats: room.totalSeats, candidates: 0 }))
+    setSites(prev => prev.map(s => ({
+      ...s,
+      rooms: s.rooms.map(r => ({ ...r, remainingSeats: r.totalSeats, candidates: 0, assignedCandidateIds: [] })),
     })))
+    setCandidates(prev => prev.map(c => ({ ...c, isAssigned: false })))
     toast.success('已取消全部考场分配')
+    try {
+      apiRequest(`/exam-arrangement/plans/${selectedPlanId}/cancel-all`, { method: 'POST' })
+    } catch { /* ok */ }
   }
 
-  const unassignedCount = 10 // 模拟剩余考生数
+  // ==================== Shuffle ====================
+  const handleShuffleArrange = async () => {
+    const byOrg = new Map<string, CandidateItem[]>()
+    candidates.forEach(c => {
+      const org = c.org || '未知单位'
+      if (!byOrg.has(org)) byOrg.set(org, [])
+      byOrg.get(org)!.push(c)
+    })
+    const groups: { org: string; candidateIds: string[]; count: number }[] = []
+    byOrg.forEach((cs, org) => {
+      // Shuffle within each org group
+      const shuffled = [...cs].sort(() => Math.random() - 0.5)
+      groups.push({ org, candidateIds: shuffled.map(c => c.id), count: cs.length })
+    })
+    setShuffleGroups(groups)
+    setShowShuffleResult(true)
+    setArrangeMode('打乱')
+    toast.success(`打乱编排完成：${groups.length} 个单位，共 ${candidates.length} 人`)
+    try {
+      await apiRequest(`/exam-arrangement/plans/${selectedPlanId}/shuffle`, { method: 'POST' })
+    } catch { /* ok */ }
+  }
 
-  const filteredSites = availableSites.filter(s => !siteSearch || s.name.includes(siteSearch))
-  const filteredCandidates = backendCandidates.filter(c => selectedSession === 'all' || c.sessionId === selectedSession)
+  // ==================== Flow State ====================
+  const handleTheoryDone = async () => {
+    if (sites.length === 0) { toast.error('请先添加至少一个考点'); return }
+    if (sessions.filter(s => s.sessionType === 'theory').length === 0) { toast.error('请先添加理论场次'); return }
+    const plan = planDetail?.plan
+    if (plan) {
+      plan.theoryDone = true
+      plan.arrangementStatus = '技能编排中'
+    }
+    setActiveStep('skill')
+    toast.success('理论编排已完成，进入技能编排')
+    try {
+      await apiRequest(`/exam-arrangement/plans/${selectedPlanId}/status`, {
+        method: 'POST', body: JSON.stringify({ action: 'theory-done' }),
+      })
+    } catch { /* ok */ }
+  }
 
-  return (
-    <div className="space-y-4">
-      {!selectedPlan ? (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">考场编排</h1>
-              <p className="text-sm text-gray-500 mt-1">按计划进行理论和技能考场、场次、考生分配编排</p>
-            </div>
-            <div className="flex rounded-md border border-gray-200 bg-gray-50 p-0.5">
-              {(['待办', '已办'] as const).map(tab => (
-                <button key={tab} onClick={() => setWorkTab(tab)} className={`px-4 py-1.5 text-xs rounded ${workTab === tab ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-white'}`}>{tab}</button>
-              ))}
-            </div>
+  const handleSkillDone = async () => {
+    const plan = planDetail?.plan
+    if (plan) {
+      plan.skillDone = true
+      plan.arrangementStatus = '已编排'
+    }
+    toast.success('技能编排已完成，编排工作结束')
+    try {
+      await apiRequest(`/exam-arrangement/plans/${selectedPlanId}/status`, {
+        method: 'POST', body: JSON.stringify({ action: 'skill-done' }),
+      })
+    } catch { /* ok */ }
+    setSelectedPlanId(null)
+    loadPlans()
+  }
+
+  const handleEndArrangement = () => {
+    if (activeStep === 'theory') handleTheoryDone()
+    else handleSkillDone()
+  }
+
+  // ==================== Computed ====================
+  const filteredPlans = plans.filter(p =>
+    workTab === '待办'
+      ? (!p.arrangementStatus || p.arrangementStatus === '待编排' || p.arrangementStatus === '理论编排中' || p.arrangementStatus === '技能编排中')
+      : (p.arrangementStatus === '已编排' || p.arrangementStatus === '已完成'),
+  )
+
+  const filteredCandidates = candidates.filter(c => !c.isAssigned)
+  const unassignedCount = filteredCandidates.length
+  const currentSite = sites.find(s => s.id === selectedSiteId)
+
+  const canProceed = activeStep === 'theory'
+    ? sites.length > 0 && sessions.filter(s => s.sessionType === 'theory' || !s.sessionType).length > 0
+    : sessions.filter(s => s.sessionType === 'skill').length > 0
+
+  // ==================== Render: Plan List ====================
+  if (!selectedPlanId) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">考场编排</h1>
+            <p className="text-sm text-gray-500 mt-1">按计划进行理论和技能考场、场次、考生分配编排</p>
           </div>
+          <div className="flex rounded-md border border-gray-200 bg-gray-50 p-0.5">
+            {(['待办', '已办'] as const).map(tab => (
+              <button key={tab} onClick={() => setWorkTab(tab)}
+                className={`px-4 py-1.5 text-xs rounded ${workTab === tab ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-white'}`}
+              >{tab}</button>
+            ))}
+          </div>
+        </div>
+        {plansLoading ? (
+          <div className="text-center py-12 text-gray-400">加载中...</div>
+        ) : (
           <div className="bg-white rounded-lg border border-gray-200">
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
@@ -218,244 +564,312 @@ export default function ExamArrangement() {
                   <th className="px-4 py-3 text-left font-medium text-gray-600">认定站点</th>
                   <th className="px-4 py-3 text-left font-medium text-gray-600">考试月份</th>
                   <th className="px-4 py-3 text-right font-medium text-gray-600">报名人数</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">状态</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">编排状态</th>
                   <th className="px-4 py-3 text-left font-medium text-gray-600">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {arrangementPlans.filter(p => workTab === '待办' ? p.status === '待编排' : p.status === '已编排').map((plan, idx) => (
+                {filteredPlans.map((plan, idx) => (
                   <tr key={plan.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">{idx + 1}</td>
-                    <td className="px-4 py-3 text-xs font-mono text-gray-500">{plan.code}</td>
-                    <td className="px-4 py-3 font-medium">{plan.name}</td>
-                    <td className="px-4 py-3 text-xs text-gray-600">{plan.site}</td>
-                    <td className="px-4 py-3 text-xs text-gray-600">{plan.month}</td>
-                    <td className="px-4 py-3 text-right">{plan.count}</td>
-                    <td className="px-4 py-3"><span className={`inline-flex px-2 py-0.5 rounded-full text-xs ${plan.status === '待编排' ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700'}`}>{plan.status}</span></td>
+                    <td className="px-4 py-3 text-xs font-mono text-gray-500">{plan.code || `-`}</td>
+                    <td className="px-4 py-3 font-medium">{plan.name || plan.planName || '未命名'}</td>
+                    <td className="px-4 py-3 text-xs text-gray-600">{plan.site || '-'}</td>
+                    <td className="px-4 py-3 text-xs text-gray-600">{plan.month || '-'}</td>
+                    <td className="px-4 py-3 text-right">{plan.count ?? plan.candidateCount ?? 0}</td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs ${
+                        (plan.arrangementStatus || plan.status) === '已编排' || (plan.arrangementStatus || plan.status) === '已完成'
+                          ? 'bg-green-50 text-green-700'
+                          : 'bg-amber-50 text-amber-700'
+                      }`}>
+                        {plan.arrangementStatus || plan.status || '待编排'}
+                      </span>
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1">
-                        <Button size="sm" className="h-8 text-xs" onClick={() => setSelectedPlan(plan.id)}>分配编排</Button>
-                        <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => toast.success('更多：准考证、考场安排表、编排报表')}>更多</Button>
+                        <Button size="sm" className="h-8 text-xs" onClick={() => { setSelectedPlanId(plan.id); loadDetail(plan.id) }}>
+                          分配编排
+                        </Button>
+                        <Button variant="outline" size="sm" className="h-8 text-xs"
+                          onClick={() => toast.success('更多：准考证、考场安排表、编排报表')}>
+                          更多
+                        </Button>
                       </div>
                     </td>
                   </tr>
                 ))}
+                {filteredPlans.length === 0 && (
+                  <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">暂无数据</td></tr>
+                )}
               </tbody>
             </table>
           </div>
-        </div>
-      ) : (
-      <>
-      {/* Tab: Theory / Skill */}
+        )}
+      </div>
+    )
+  }
+
+  // ==================== Render: Arrangement Detail ====================
+  if (detailLoading) {
+    return <div className="text-center py-12 text-gray-400">加载编排详情...</div>
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Header + Step Navigation */}
       <div className="flex items-center justify-between">
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
-          <button
-            className={`flex items-center gap-2 px-4 py-2 text-sm rounded-md transition-all ${activeTab === 'theory' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            onClick={() => setActiveTab('theory')}
-          >
-            <span className={`w-5 h-5 rounded-full text-[10px] flex items-center justify-center ${activeTab === 'theory' ? 'bg-blue-600 text-white' : 'bg-gray-300 text-white'}`}>1</span>
-            理论编排
-          </button>
-          <button
-            className={`flex items-center gap-2 px-4 py-2 text-sm rounded-md transition-all ${activeTab === 'skill' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            onClick={() => setActiveTab('skill')}
-          >
-            <span className={`w-5 h-5 rounded-full text-[10px] flex items-center justify-center ${activeTab === 'skill' ? 'bg-blue-600 text-white' : 'bg-gray-300 text-white'}`}>2</span>
-            技能编排
-          </button>
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="sm" className="text-xs" onClick={() => { setSelectedPlanId(null); setPlanDetail(null) }}>
+            <ArrowLeft className="w-3.5 h-3.5 mr-1" />返回计划列表
+          </Button>
+          <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+            <button
+              className={`flex items-center gap-2 px-4 py-2 text-sm rounded-md transition-all ${
+                activeStep === 'theory' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'
+              }`}
+              onClick={() => activeStep === 'skill' && planDetail?.plan?.theoryDone && setActiveStep('theory')}
+            >
+              <span className={`w-5 h-5 rounded-full text-[10px] flex items-center justify-center ${
+                activeStep === 'theory' ? 'bg-blue-600 text-white' : planDetail?.plan?.theoryDone ? 'bg-green-500 text-white' : 'bg-gray-300 text-white'
+              }`}>
+                {planDetail?.plan?.theoryDone ? '✓' : '1'}
+              </span>
+              理论编排
+            </button>
+            <button
+              className={`flex items-center gap-2 px-4 py-2 text-sm rounded-md transition-all ${
+                activeStep === 'skill' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'
+              }`}
+              onClick={() => planDetail?.plan?.theoryDone && setActiveStep('skill')}
+            >
+              <span className={`w-5 h-5 rounded-full text-[10px] flex items-center justify-center ${
+                activeStep === 'skill' ? 'bg-blue-600 text-white' : planDetail?.plan?.skillDone ? 'bg-green-500 text-white' : 'bg-gray-300 text-white'
+              }`}>
+                {planDetail?.plan?.skillDone ? '✓' : '2'}
+              </span>
+              技能编排
+            </button>
+          </div>
+          <span className="text-sm text-gray-500 ml-2">
+            {planDetail?.plan?.name || planDetail?.plan?.planName || '未命名计划'}
+          </span>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="text-xs" onClick={() => setSelectedPlan(null)}>返回</Button>
           <Button variant="outline" size="sm" className="text-xs"><Printer className="w-3.5 h-3.5 mr-1" />考场安排表</Button>
-          <Button size="sm" className="text-xs" onClick={handleAutoArrange}><LayoutGrid className="w-3.5 h-3.5 mr-1" />编排</Button>
+          <Button size="sm" className="text-xs" onClick={handleEndArrangement} disabled={!canProceed}>
+            <CheckCircle className="w-3.5 h-3.5 mr-1" />
+            {activeStep === 'theory' ? '完成理论，进入技能' : '结束安排'}
+          </Button>
         </div>
       </div>
 
-      {/* Exam Sessions */}
+      {/* Sessions Section */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-medium text-gray-900">
-            {activeTab === 'theory' ? '笔试安排' : '实操安排'}
+            {activeStep === 'theory' ? '理论考试场次' : '技能考核场次'}
           </h3>
-          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => toast.success('编排已结束')}>
-            <CheckCircle className="w-3 h-3 mr-1" />结束安排
-          </Button>
+          <div className="flex items-center gap-2">
+            {activeStep === 'skill' && (
+              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setShowCycleDays(true)}>
+                <RefreshCw className="w-3 h-3 mr-1" />循环天数设置
+              </Button>
+            )}
+            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => {
+              setSessionType(activeStep)
+              setShowAddSession(true)
+            }}>
+              <Plus className="w-3.5 h-3.5 mr-1" />添加场次
+            </Button>
+          </div>
         </div>
 
-        {activeTab === 'skill' && (
-          <div className="mb-3 flex items-center gap-3 rounded-md border border-purple-100 bg-purple-50 p-3 text-xs">
-            <span className="text-gray-600">职业</span>
-            <select value={skillOccupation} onChange={e => setSkillOccupation(e.target.value)} className="h-8 rounded-md border border-gray-200 bg-white px-2">
-              <option>核反应堆操作员 / 三级</option>
-              <option>电气维修工 / 四级</option>
-              <option>汽轮机操作员 / 四级</option>
-            </select>
-            <span className="text-gray-600">循环天数</span>
-            <Input value={cycleDays} onChange={e => setCycleDays(e.target.value)} className="h-8 w-20 bg-white" />
-            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleAddSession}>增加场次</Button>
-            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => { setSelectedRoomForAction(null); setShowAssignCandidates(true) }}>安排考生</Button>
-          </div>
-        )}
-
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-1 text-blue-600 text-sm">
-            <Clock className="w-4 h-4" />
-            <span className="font-medium">添加场次</span>
-          </div>
-          {sessions.map(s => (
+          {sessions.filter(s => activeStep === 'theory' ? (s.sessionType === 'theory' || !s.sessionType) : s.sessionType === 'skill').map(s => (
             <div key={s.id} className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 rounded border border-blue-200">
+              <Clock className="w-3 h-3 text-blue-500" />
               <span className="text-xs text-blue-700">{s.timeRange}</span>
+              {s.cycleDay && <span className="text-[10px] text-blue-400">(第{s.cycleDay}/{s.cycleTotal}批)</span>}
               <button onClick={() => handleRemoveSession(s.id)} className="text-blue-400 hover:text-red-500 ml-1">
                 <Trash2 className="w-3 h-3" />
               </button>
             </div>
           ))}
-          <Button variant="ghost" size="sm" className="h-7 text-blue-600" onClick={handleAddSession}>
-            <Plus className="w-3.5 h-3.5" />
-          </Button>
+          {sessions.filter(s => activeStep === 'theory' ? (s.sessionType === 'theory' || !s.sessionType) : s.sessionType === 'skill').length === 0 && (
+            <span className="text-sm text-gray-400">暂无场次，请添加</span>
+          )}
           <div className="flex items-center gap-1 text-red-500 text-sm ml-auto">
             <Users className="w-4 h-4" />
             <span>剩余{unassignedCount}个考生未安排</span>
           </div>
-          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowAddSite(true)}>
-            <MapPin className="w-3 h-3 mr-1" />追加考点
-          </Button>
-          <Button variant="outline" size="sm" className="h-7 text-xs text-amber-600" onClick={handleCancelAllAssign}>
-            全部取消分配
-          </Button>
         </div>
-      </div>
-
-      <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 text-sm">
-        <span className="text-gray-600">按考试场次筛选考生</span>
-        <select
-          value={selectedSession}
-          onChange={e => setSelectedSession(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-          className="h-8 rounded-md border border-gray-200 px-2 text-xs focus:outline-none focus:border-[#1A56DB]"
-        >
-          <option value="all">全部场次</option>
-          {sessions.map(session => (
-            <option key={session.id} value={session.id}>{session.timeRange}</option>
-          ))}
-        </select>
-        <span className="text-xs text-gray-400">当前可分配 {filteredCandidates.length} 人</span>
       </div>
 
       {/* Sites & Rooms */}
-      <div className="grid grid-cols-12 gap-4">
-        {/* Sites */}
-        <div className="col-span-4 bg-white rounded-lg border border-gray-200 p-4">
-          <h4 className="text-sm font-medium text-blue-600 mb-3 pb-2 border-b border-blue-100">考点</h4>
-          <div className="space-y-3">
-            {sites.map(site => (
-              <div
-                key={site.id}
-                className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                  selectedSite === site.id ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
-                }`}
-                onClick={() => setSelectedSite(site.id)}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm">{site.name}</span>
-                  <button onClick={(e) => { e.stopPropagation(); setSites(prev => prev.filter(s => s.id !== site.id)) }}
-                    className="text-gray-400 hover:text-red-500">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  共{site.rooms.length}个考场, {site.rooms.filter(r => r.remainingSeats > 0).length}个可安排
-                </div>
-                <div className="mt-2 flex gap-2">
-                  <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => setShowAddRoom(true)}>
-                    <Plus className="w-2.5 h-2.5 mr-1" />增加考场
-                  </Button>
-                  <Button variant="outline" size="sm" className="h-7 text-[10px]">
-                    <Users className="w-2.5 h-2.5 mr-1" />安排考生
-                  </Button>
-                </div>
+      <div className={`grid gap-4 ${activeStep === 'theory' ? 'grid-cols-12' : 'grid-cols-1'}`}>
+        {/* Only show site management in theory step; skill inherits */}
+        {activeStep === 'theory' && (
+          <>
+            <div className="col-span-4 bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-blue-100">
+                <h4 className="text-sm font-medium text-blue-600">考点</h4>
+                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowAddSite(true)}>
+                  <MapPin className="w-3 h-3 mr-1" />追加考点
+                </Button>
               </div>
-            ))}
-            {sites.length === 0 && (
-              <div className="text-center py-8 text-gray-400 text-sm">
-                <MapPin className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                <p>请点击右上方追加考点添加数据</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Rooms */}
-        <div className="col-span-8 bg-white rounded-lg border border-gray-200 p-4">
-          <h4 className="text-sm font-medium text-blue-600 mb-3 pb-2 border-b border-blue-100">考场</h4>
-          <div className="space-y-3">
-            {sites.find(s => s.id === selectedSite)?.rooms.map(room => (
-              <div key={room.id} className="p-3 border border-gray-200 rounded-lg hover:border-blue-200 transition-all">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="font-medium text-sm">{room.name}</span>
-                    <span className="text-xs text-gray-500">
-                      剩余{room.remainingSeats}/共{room.totalSeats}个考位
-                    </span>
-                    <button onClick={() => {
-                      setSites(prev => prev.map(s => ({
-                        ...s,
-                        rooms: s.rooms.filter(r => r.id !== room.id)
-                      })))
-                    }} className="text-gray-400 hover:text-red-500">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+              <div className="space-y-3">
+                {sites.map(site => (
+                  <div key={site.id}
+                    className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                      selectedSiteId === site.id ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
+                    }`}
+                    onClick={() => setSelectedSiteId(site.id)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">{site.name}</span>
+                      <button onClick={(e) => { e.stopPropagation(); handleRemoveSite(site.id) }}
+                        className="text-gray-400 hover:text-red-500">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      共{site.rooms.length}个考场，{site.rooms.filter(r => r.remainingSeats > 0).length}个可安排
+                    </div>
+                    <div className="mt-2">
+                      <Button variant="outline" size="sm" className="h-7 text-[10px] w-full" onClick={(e) => { e.stopPropagation(); setShowAddRoom(true) }}>
+                        <Plus className="w-2.5 h-2.5 mr-1" />增加考场
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" className="h-7 text-xs text-blue-600"
-                      onClick={() => { setSelectedRoomForAction(room); setShowAssignCandidates(true) }}>
-                      <Users className="w-3 h-3 mr-1" />追加考生
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-7 text-xs text-blue-600" onClick={() => { setSelectedRoomForAction(room); setShowAssignedDetail(true) }}>
-                      <Eye className="w-3 h-3 mr-1" />查看分配
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-7 text-xs text-amber-600" onClick={() => handleCancelRoomAssign(room.id)}>
-                      取消分配
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-7 text-xs text-blue-600" onClick={() => {
-                      setSites(prev => prev.map(s => ({
-                        ...s,
-                        rooms: s.rooms.map(r =>
-                          r.id === room.id ? { ...r, totalSeats: r.totalSeats + 10, remainingSeats: r.remainingSeats + 10 } : r
-                        )
-                      })))
-                      toast.success('座位已增加')
-                    }}>
-                      <Plus className="w-3 h-3 mr-1" />增加座位
-                    </Button>
-                  </div>
-                </div>
-                {room.candidates > 0 && (
-                  <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
-                    <Users className="w-3 h-3" />
-                    <span>已安排 {room.candidates} 名考生</span>
+                ))}
+                {sites.length === 0 && (
+                  <div className="text-center py-8 text-gray-400 text-sm">
+                    <MapPin className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                    <p>请点击追加考点添加数据</p>
                   </div>
                 )}
               </div>
-            ))}
-            {(!sites.find(s => s.id === selectedSite)?.rooms.length) && (
+            </div>
+
+            <div className="col-span-8 bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-blue-100">
+                <h4 className="text-sm font-medium text-blue-600">考场</h4>
+                <div className="flex gap-1">
+                  <Button variant="outline" size="sm" className="h-7 text-xs text-amber-600" onClick={handleCancelAllAssign}>
+                    全部取消分配
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {currentSite?.rooms.map(room => (
+                  <div key={room.id} className="p-3 border border-gray-200 rounded-lg hover:border-blue-200 transition-all">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="font-medium text-sm">{room.name}</span>
+                        <span className="text-xs text-gray-500">
+                          剩余{room.remainingSeats}/共{room.totalSeats}个考位
+                        </span>
+                        <button onClick={() => handleRemoveRoom(room.id)} className="text-gray-400 hover:text-red-500">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" className="h-7 text-xs text-blue-600"
+                          onClick={() => { setSelectedRoomForAction(room); setShowAssignCandidates(true) }}>
+                          <Users className="w-3 h-3 mr-1" />安排考生
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs text-blue-600"
+                          onClick={() => { setSelectedRoomForAction(room); setShowAssignedDetail(true) }}>
+                          <Eye className="w-3 h-3 mr-1" />查看分配
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs text-amber-600"
+                          onClick={() => handleCancelRoomAssign(room)}>
+                          取消分配
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs text-blue-600"
+                          onClick={() => handleAddSeats(room)}>
+                          <Plus className="w-3 h-3 mr-1" />增加座位
+                        </Button>
+                      </div>
+                    </div>
+                    {room.candidates > 0 && (
+                      <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
+                        <Users className="w-3 h-3" />
+                        <span>已安排 {room.candidates} 名考生</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {(!currentSite?.rooms.length) && (
+                  <div className="text-center py-8 text-gray-400 text-sm">
+                    <p>请在左侧考点上点击增加考场添加数据</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Skill step: inherited sites view */}
+        {activeStep === 'skill' && (
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <h4 className="text-sm font-medium text-blue-600 mb-3 pb-2 border-b border-blue-100">技能考点（继承理论编排）</h4>
+            {sites.length > 0 ? (
+              <div className="space-y-3">
+                {sites.map(site => (
+                  <div key={site.id} className="p-3 border border-gray-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">{site.name}</span>
+                      <span className="text-xs text-gray-500">{site.rooms.length}个考场</span>
+                    </div>
+                    {site.rooms.map(room => (
+                      <div key={room.id} className="mt-2 ml-4 p-2 bg-gray-50 rounded flex items-center justify-between">
+                        <span className="text-sm">{room.name}</span>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 text-xs text-blue-600"
+                            onClick={() => { setSelectedRoomForAction(room); setShowAssignCandidates(true) }}>
+                            <Users className="w-3 h-3 mr-1" />安排考生
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 text-xs text-blue-600"
+                            onClick={() => { setSelectedRoomForAction(room); setShowAssignedDetail(true) }}>
+                            <Eye className="w-3 h-3 mr-1" />查看分配
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ) : (
               <div className="text-center py-8 text-gray-400 text-sm">
-                <p>请点击左侧考点上的增加考场添加数据</p>
+                <p>完成理论编排后，考点将自动继承到技能编排</p>
+                <Button variant="link" size="sm" className="text-xs mt-2" onClick={() => setActiveStep('theory')}>
+                  <ArrowLeft className="w-3 h-3 mr-1" />返回理论编排
+                </Button>
               </div>
             )}
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Actions */}
+      {/* Arrangement Mode + Actions */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <select value={arrangeMode} onChange={e => setArrangeMode(e.target.value as typeof arrangeMode)} className="h-8 rounded-md border border-gray-200 px-2 text-xs">
+          <select value={arrangeMode} onChange={e => setArrangeMode(e.target.value as typeof arrangeMode)}
+            className="h-8 rounded-md border border-gray-200 px-2 text-xs">
             <option>普通</option>
             <option>打乱</option>
           </select>
-          <Button variant="outline" size="sm" className="text-xs" onClick={() => { handleAutoArrange(); toast.success(`已按${arrangeMode}模式自动编排座次和准考证`) }}>
-            <LayoutGrid className="w-3.5 h-3.5 mr-1" />自动编排
-          </Button>
+          {arrangeMode === '普通' ? (
+            <Button variant="outline" size="sm" className="text-xs" onClick={handleShuffleArrange}>
+              <Shuffle className="w-3.5 h-3.5 mr-1" />切换打乱编排
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => { setArrangeMode('普通'); toast.success('已切换为普通编排') }}>
+              <LayoutGrid className="w-3.5 h-3.5 mr-1" />切换普通编排
+            </Button>
+          )}
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="text-xs" onClick={() => toast.success('编排报表已导出')}>
@@ -467,14 +881,89 @@ export default function ExamArrangement() {
         </div>
       </div>
 
+      {/* ==================== DIALOGS ==================== */}
+
+      {/* Add Session Dialog */}
+      <Dialog open={showAddSession} onOpenChange={setShowAddSession}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>添加{activeStep === 'theory' ? '理论' : '技能'}场次</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">日期</label>
+              <Input type="date" value={sessionDate} onChange={e => setSessionDate(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">开始时间</label>
+                <Input type="time" value={sessionStart} onChange={e => setSessionStart(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">结束时间</label>
+                <Input type="time" value={sessionEnd} onChange={e => setSessionEnd(e.target.value)} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddSession(false)}>取消</Button>
+            <Button onClick={handleAddSession} className="bg-[#1A56DB]">保存</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cycle Days Dialog */}
+      <Dialog open={showCycleDays} onOpenChange={setShowCycleDays}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>循环天数 - 自动生成多批次场次</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">职业</label>
+              <Input value={skillOccupation} onChange={e => setSkillOccupation(e.target.value)} placeholder="核反应堆运行值班员 / 三级" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">开始日期</label>
+                <Input type="date" value={cycleStartDate} onChange={e => setCycleStartDate(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">循环天数</label>
+                <Input type="number" min="1" max="30" value={cycleDays} onChange={e => setCycleDays(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">每批开始时间</label>
+                <Input type="time" value={cycleStartTime} onChange={e => setCycleStartTime(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">每批结束时间</label>
+                <Input type="time" value={cycleEndTime} onChange={e => setCycleEndTime(e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">每批容纳人数</label>
+              <Input type="number" value={cycleCapacity} onChange={e => setCycleCapacity(e.target.value)} />
+            </div>
+            <div className="text-xs text-gray-500 bg-blue-50 rounded p-2">
+              <Calendar className="w-3 h-3 inline mr-1" />
+              将自动生成 {parseInt(cycleDays) || 1} 个批次的考核场次
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCycleDays(false)}>取消</Button>
+            <Button onClick={handleGenerateCycleSessions} className="bg-[#1A56DB]">
+              <RefreshCw className="w-3.5 h-3.5 mr-1" />生成场次
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Add Site Dialog */}
       <Dialog open={showAddSite} onOpenChange={setShowAddSite}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>增加考点</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>追加考点</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="flex gap-2">
               <Input placeholder="考点名称" value={siteSearch} onChange={e => setSiteSearch(e.target.value)} className="flex-1" />
-              <Button variant="outline" size="sm" className="text-xs">搜索</Button>
             </div>
             <div className="border rounded-lg overflow-hidden">
               <table className="w-full text-sm">
@@ -486,14 +975,12 @@ export default function ExamArrangement() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {filteredSites.map((site, idx) => (
+                  {ALL_SITES.filter(s => !siteSearch || s.name.includes(siteSearch)).map((site, idx) => (
                     <tr key={site.id} className="hover:bg-gray-50">
                       <td className="px-3 py-2 text-gray-600">{idx + 1}</td>
                       <td className="px-3 py-2 text-gray-900">{site.name}</td>
                       <td className="px-3 py-2">
-                        <button onClick={() => handleAddSite(site)} className="text-blue-600 hover:underline text-xs">
-                          选择
-                        </button>
+                        <button onClick={() => handleAddSite(site)} className="text-blue-600 hover:underline text-xs">选择</button>
                       </td>
                     </tr>
                   ))}
@@ -531,43 +1018,50 @@ export default function ExamArrangement() {
       {/* Assign Candidates Dialog */}
       <Dialog open={showAssignCandidates} onOpenChange={setShowAssignCandidates}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>{selectedRoomForAction ? `追加考生到 ${selectedRoomForAction.name}` : '安排技能考生'}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>
+              {selectedRoomForAction ? `安排考生到 ${selectedRoomForAction.name}` : '安排技能考核考生'}
+            </DialogTitle>
+          </DialogHeader>
           <div className="text-sm text-gray-600">
-            {selectedRoomForAction ? `当前考位：剩余 ${selectedRoomForAction.remainingSeats} / 共 ${selectedRoomForAction.totalSeats}` : `当前职业：${skillOccupation}，循环天数：${cycleDays}`}
+            {selectedRoomForAction
+              ? `当前考位：剩余 ${selectedRoomForAction.remainingSeats} / 共 ${selectedRoomForAction.totalSeats}`
+              : `当前职业：${skillOccupation || '未设置'}`}
           </div>
           <div className="space-y-2">
             <div className="text-sm text-gray-500">选择考生（剩余{unassignedCount}人未安排）</div>
             <label className="flex items-center gap-2 text-xs text-gray-600">
-              <input
-                type="checkbox"
+              <input type="checkbox"
                 checked={filteredCandidates.length > 0 && selectedCandidateIds.length === filteredCandidates.length}
                 onChange={e => setSelectedCandidateIds(e.target.checked ? filteredCandidates.map(c => c.id) : [])}
-                className="rounded"
-              />
-              全选当前场次考生
+                className="rounded" />
+              全选未分配考生
             </label>
             <div className="border rounded p-2 space-y-1 max-h-40 overflow-y-auto">
               {filteredCandidates.map(candidate => (
                 <label key={candidate.id} className="flex items-center gap-2 text-sm p-1 hover:bg-gray-50 rounded cursor-pointer">
-                  <input
-                    type="checkbox"
+                  <input type="checkbox"
                     checked={selectedCandidateIds.includes(candidate.id)}
-                    onChange={() => setSelectedCandidateIds(prev => prev.includes(candidate.id) ? prev.filter(id => id !== candidate.id) : [...prev, candidate.id])}
-                    className="rounded"
-                  />
+                    onChange={() => setSelectedCandidateIds(prev =>
+                      prev.includes(candidate.id) ? prev.filter(id => id !== candidate.id) : [...prev, candidate.id]
+                    )}
+                    className="rounded" />
                   <span>{candidate.name}</span>
-                  <span className="text-xs text-gray-500">{candidate.profession}({candidate.level})</span>
+                  <span className="text-xs text-gray-500">
+                    {candidate.occupation || candidate.profession || ''}{(candidate.level ? `(${candidate.level})` : '')}
+                  </span>
+                  <span className="text-[10px] text-gray-400 ml-auto">{candidate.org || '-'}</span>
                 </label>
               ))}
+              {filteredCandidates.length === 0 && (
+                <div className="text-center py-4 text-gray-400 text-sm">所有考生已分配完毕</div>
+              )}
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAssignCandidates(false)}>取消</Button>
-            <Button onClick={() => {
-              if (selectedRoomForAction) handleAddCandidates(selectedRoomForAction)
-              else { setSelectedCandidateIds([]); setShowAssignCandidates(false); toast.success(`已为 ${skillOccupation} 安排 ${selectedCandidateIds.length || filteredCandidates.length} 名考生`) }
-            }} className="bg-[#1A56DB]">
-              分配考生
+            <Button variant="outline" onClick={() => { setShowAssignCandidates(false); setSelectedCandidateIds([]) }}>取消</Button>
+            <Button onClick={() => handleAssignCandidates(selectedRoomForAction)} className="bg-[#1A56DB]" disabled={!selectedRoomForAction && !arrangeMode}>
+              {arrangeMode === '打乱' && !selectedRoomForAction ? '请先选择考场' : '分配考生'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -585,41 +1079,97 @@ export default function ExamArrangement() {
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">姓名</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">证件号码</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">职业工种</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">技能等级</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">场次</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">等级</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">单位</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {mockCandidates.slice(0, selectedRoomForAction?.candidates || 0).map((candidate, index) => (
-                  <tr key={candidate.id}>
-                    <td className="px-3 py-2 text-xs text-gray-500">{index + 1}</td>
-                    <td className="px-3 py-2 font-medium">{candidate.name}</td>
-                    <td className="px-3 py-2 text-xs font-mono text-gray-500">{candidate.idCard}</td>
-                    <td className="px-3 py-2 text-xs">{candidate.profession}</td>
-                    <td className="px-3 py-2 text-xs">{candidate.level}</td>
-                    <td className="px-3 py-2 text-xs text-gray-500">{sessions.find(s => s.id === candidate.sessionId)?.timeRange}</td>
+                {candidates.filter(c => selectedRoomForAction?.assignedCandidateIds?.includes(c.id)).map((c, idx) => (
+                  <tr key={c.id}>
+                    <td className="px-3 py-2 text-xs text-gray-500">{idx + 1}</td>
+                    <td className="px-3 py-2 font-medium">{c.name}</td>
+                    <td className="px-3 py-2 text-xs font-mono text-gray-500">{c.idCard || '-'}</td>
+                    <td className="px-3 py-2 text-xs">{c.occupation || c.profession || '-'}</td>
+                    <td className="px-3 py-2 text-xs">{c.level || '-'}</td>
+                    <td className="px-3 py-2 text-xs text-gray-500">{c.org || '-'}</td>
                   </tr>
                 ))}
-                {!selectedRoomForAction?.candidates && (
-                  <tr>
-                    <td colSpan={6} className="px-3 py-8 text-center text-gray-400">暂无分配考生</td>
-                  </tr>
+                {(!selectedRoomForAction?.assignedCandidateIds?.length) && (
+                  <tr><td colSpan={6} className="px-3 py-8 text-center text-gray-400">暂无分配考生</td></tr>
                 )}
               </tbody>
             </table>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAssignedDetail(false)}>返回</Button>
-            {selectedRoomForAction && (
-              <Button variant="outline" className="text-amber-600" onClick={() => { handleCancelRoomAssign(selectedRoomForAction.id); setShowAssignedDetail(false) }}>
-                选中的取消分配
+            {selectedRoomForAction && (selectedRoomForAction.assignedCandidateIds?.length ?? 0) > 0 && (
+              <Button variant="outline" className="text-amber-600"
+                onClick={() => { handleCancelRoomAssign(selectedRoomForAction); setShowAssignedDetail(false) }}>
+                取消全部分配
               </Button>
             )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      </>
-      )}
+
+      {/* Shuffle Result Dialog */}
+      <Dialog open={showShuffleResult} onOpenChange={setShowShuffleResult}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>打乱编排结果（按工作单位）</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="text-sm text-gray-600">
+              共 {shuffleGroups.length} 个单位，{shuffleGroups.reduce((sum, g) => sum + g.count, 0)} 名考生已打乱
+            </div>
+            <div className="border rounded-lg overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">序号</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">工作单位</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-600">考生人数</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {shuffleGroups.map((g, idx) => (
+                    <tr key={g.org}>
+                      <td className="px-3 py-2 text-xs text-gray-500">{idx + 1}</td>
+                      <td className="px-3 py-2 text-xs">{g.org}</td>
+                      <td className="px-3 py-2 text-xs text-right">{g.count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowShuffleResult(false)}>关闭</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
+
+// ==================== Mock Data (Fallback) ====================
+const mockPlans: ArrangementPlan[] = [
+  { id: 'plan-2026-001', code: 'Y0041GD0000012603001', name: '大亚湾核电2026年第1批认定', site: '大亚湾基地考点', month: '2026年06月', status: '待编排', arrangementStatus: '待编排', count: 45 },
+  { id: 'plan-2026-002', code: 'Y0041GD0000022603002', name: '阳江核电2026年第1批认定', site: '阳江培训中心', month: '2026年07月', status: '已编排', arrangementStatus: '已编排', count: 32 },
+  { id: 'plan-2026-003', code: 'Y0041GD0000032603003', name: '核安全工程师三级认定', site: '测试有限公司考点', month: '2026年08月', status: '待编排', arrangementStatus: '待编排', count: 28 },
+]
+
+const mockSessions: ExamSession[] = [
+  { id: 's1', timeRange: '2026-06-20 08:00~10:00', sessionType: 'theory', date: '2026-06-20', startTime: '08:00', endTime: '10:00' },
+  { id: 's2', timeRange: '2026-06-20 10:00~12:00', sessionType: 'theory', date: '2026-06-20', startTime: '10:00', endTime: '12:00' },
+  { id: 's3', timeRange: '2026-06-21 09:00~12:00', sessionType: 'skill', date: '2026-06-21', startTime: '09:00', endTime: '12:00' },
+]
+
+const mockCandidates: CandidateItem[] = [
+  { id: 'c1', name: '陈小明', idCard: '440301199001011234', occupation: '核反应堆运行值班员', level: '三级', org: '大亚湾核电', isAssigned: false },
+  { id: 'c2', name: '赵小红', idCard: '440301199105152345', occupation: '核反应堆运行值班员', level: '三级', org: '大亚湾核电', isAssigned: false },
+  { id: 'c3', name: '刘建国', idCard: '441700198803203456', occupation: '电气试验员', level: '四级', org: '阳江核电', isAssigned: false },
+  { id: 'c4', name: '孙丽华', idCard: '441700199207014567', occupation: '电气试验员', level: '四级', org: '阳江核电', isAssigned: false },
+  { id: 'c5', name: '周文博', idCard: '440301198512055678', occupation: '核反应堆运行值班员', level: '三级', org: '测试有限公司', isAssigned: false },
+  { id: 'c6', name: '吴刚', idCard: '440301199306019012', occupation: '核安全工程师', level: '三级', org: '大亚湾核电', isAssigned: false },
+  { id: 'c7', name: '郑丽', idCard: '440301199408101234', occupation: '核电焊工', level: '四级', org: '测试有限公司', isAssigned: false },
+  { id: 'c8', name: '黄强', idCard: '441700199510112345', occupation: '电气试验员', level: '四级', org: '阳江核电', isAssigned: false },
+]

@@ -8,6 +8,7 @@
     ;; Edges
    [kit.edge.server.undertow]
    [zhaoyul.exam-system-backend.domain.seed]
+   [zhaoyul.exam-system-backend.domain.exam-arrangement :as exam-arr]
    [zhaoyul.exam-system-backend.infra.datasource]
    [zhaoyul.exam-system-backend.infra.migrations]
    [zhaoyul.exam-system-backend.web.handler]
@@ -36,7 +37,9 @@
                  (ig/init))]
     (reset! system sys)
     (try
-      (zhaoyul.exam-system-backend.domain.seed/seed!
+n      (zhaoyul.exam-system-backend.domain.seed/seed!
+        (get sys :zhaoyul.exam-system-backend.infra.datasource/datasource))
+      (exam-arr/ensure-tables!
         (get sys :zhaoyul.exam-system-backend.infra.datasource/datasource))
       (catch Exception _
         (println "[core] Seed failed, continuing...")))))

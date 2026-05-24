@@ -12,6 +12,7 @@
    [zhaoyul.exam-system-backend.web.controllers.files :as files-ctrl]
    [zhaoyul.exam-system-backend.web.controllers.filing :as filing]
    [zhaoyul.exam-system-backend.web.controllers.exam-registration :as exam-registration]
+   [zhaoyul.exam-system-backend.web.controllers.exam-arrangement :as exam-arrangement]
    [zhaoyul.exam-system-backend.web.controllers.numbering :as numbering]
    [zhaoyul.exam-system-backend.web.controllers.registration-orgs :as registration-orgs]
    [zhaoyul.exam-system-backend.web.controllers.scores :as score-controller]
@@ -365,6 +366,82 @@
      ["/:plan-id/photos"
       {:post {:summary "批量导入照片"
               :handler (partial exam-registration/import-photos ctx)}}]]
+    ;; ── Exam Arrangement ──
+    ["/exam-arrangement"
+     {:swagger {:tags ["考场编排"]}}
+     ;; Plan list
+     ["/plans"
+      {:get {:summary "编排计划列表"
+             :handler (partial exam-arrangement/list-plans ctx)}}]
+     ;; Plan detail
+     ["/plans/:plan-id"
+      {:get {:summary "编排计划详情"
+             :handler (partial exam-arrangement/get-plan ctx)}}
+      ;; Theory sessions
+      ["/theory/sessions"
+       {:get {:summary "理论场次列表"
+              :handler (partial exam-arrangement/list-theory-sessions ctx)}
+        :post {:summary "新增理论场次"
+               :handler (partial exam-arrangement/create-theory-session ctx)}}]
+      ["/theory/sessions/:session-id"
+       {:delete {:summary "删除理论场次"
+                 :handler (partial exam-arrangement/delete-theory-session ctx)}}]
+      ;; Theory sites
+      ["/theory/sites"
+       {:get {:summary "理论考点列表"
+              :handler (partial exam-arrangement/list-theory-sites ctx)}
+        :post {:summary "添加理论考点"
+               :handler (partial exam-arrangement/add-theory-site ctx)}}]
+      ["/theory/sites/:site-id"
+       {:delete {:summary "删除理论考点"
+                 :handler (partial exam-arrangement/remove-theory-site ctx)}}]
+      ;; Rooms
+      ["/theory/sites/:site-id/rooms"
+       {:post {:summary "添加考场"
+               :handler (partial exam-arrangement/add-room ctx)}}]
+      ["/rooms/:room-id/seats"
+       {:post {:summary "追加机位"
+               :handler (partial exam-arrangement/add-room-seats ctx)}}]
+      ["/rooms/:room-id"
+       {:delete {:summary "删除考场"
+                 :handler (partial exam-arrangement/delete-room ctx)}}]
+      ;; Candidates
+      ["/candidates/unassigned"
+       {:get {:summary "未分配考生列表"
+              :handler (partial exam-arrangement/list-unassigned ctx)}}]
+      ["/candidates/assigned"
+       {:get {:summary "已分配考生列表"
+              :handler (partial exam-arrangement/list-assigned ctx)}}]
+      ["/candidates/assign"
+       {:post {:summary "分配考生"
+               :handler (partial exam-arrangement/assign-candidates ctx)}}]
+      ["/candidates/:assignment-id"
+       {:delete {:summary "取消分配"
+                 :handler (partial exam-arrangement/cancel-assignment ctx)}}]
+      ["/candidates/cancel-all"
+       {:post {:summary "全部取消分配"
+               :handler (partial exam-arrangement/cancel-all-assignments ctx)}}]
+      ;; Skill
+      ["/skill/sessions"
+       {:get {:summary "技能场次列表"
+              :handler (partial exam-arrangement/list-skill-sessions ctx)}
+        :post {:summary "创建技能循环场次"
+               :handler (partial exam-arrangement/create-skill-cycle ctx)}}]
+      ["/skill/sites"
+       {:get {:summary "技能考点列表"
+              :handler (partial exam-arrangement/list-skill-sites ctx)}}]
+      ;; Auto arrange
+      ["/auto-arrange"
+       {:post {:summary "自动编排"
+               :handler (partial exam-arrangement/auto-arrange ctx)}}]
+      ;; Phase
+      ["/advance-to-skill"
+       {:post {:summary "进入技能编排"
+               :handler (partial exam-arrangement/advance-to-skill ctx)}}]
+      ["/complete"
+       {:post {:summary "结束安排"
+               :handler (partial exam-arrangement/complete-arrangement ctx)}}]]]
+    ;; Generic resource endpoints (backward compat)
     (resource-endpoint ctx "/exam-arrangement" "exam-arrangement" "等级认定" "考场编排")
     (resource-endpoint ctx "/exam-session" "exam-sessions" "等级认定" "考试场次")
     (resource-endpoint ctx "/score-publicity-manage" "score-publicity-batches" "等级认定" "成绩公示批次")

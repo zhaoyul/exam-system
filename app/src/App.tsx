@@ -152,7 +152,7 @@ import MarkingManage from '@/pages/grading/MarkingManage'
 
 // Cert Execution (机构端认定流程)
 import CertExecution from '@/pages/certification/CertExecution'
-import RegistrationOrgManage from '@/pages/certification/RegistrationOrgManage'
+import RegistrationOrgPage from '@/pages/certification/RegistrationOrgPage'
 import ExamStaffManage from '@/pages/certification/ExamStaffManage'
 
 // Workbenches
@@ -231,7 +231,7 @@ export default function App() {
           <Route path="/cert/exam-session" element={<ExamSessionArrange />} />
           <Route path="/cert/score-publicity-manage" element={<ScorePublicityManage />} />
           <Route path="/cert/supervisors" element={<SupervisorManage />} />
-          <Route path="/cert/registration-orgs" element={<RegistrationOrgManage />} />
+          <Route path="/cert/registration-orgs" element={<RegistrationOrgPage />} />
           <Route path="/cert/exam-staff" element={<ExamStaffManage />} />
           <Route path="/cert/evaluator-staff" element={<EvaluatorStaff />} />
           <Route path="/cert/marking-lead" element={<MarkingLeadPage />} />

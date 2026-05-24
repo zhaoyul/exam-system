@@ -10,7 +10,10 @@
   ["001-init.up.sql"
    "002-domain-core.up.sql"
    "003-v2.0-core.up.sql"
+<<<<<<< Updated upstream
    "004-numbering.up.sql"
+=======
+>>>>>>> Stashed changes
    "004-scores.up.sql"])
 
 (defn- split-statements [sql]

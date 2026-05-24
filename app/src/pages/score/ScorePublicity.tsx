@@ -67,7 +67,6 @@ export default function ScorePublicity() {
   const [showAuditLogs, setShowAuditLogs] = useState(false)
   const [loadingAudit, setLoadingAudit] = useState(false)
   const [publicityStatuses, setPublicityStatuses] = useState<Record<string, PublicityStatusInfo>>({})
-  const [loadingPublicity, setLoadingPublicity] = useState(false)
 
   // ─── Fetch publicity status per plan ───
 
@@ -75,7 +74,6 @@ export default function ScorePublicity() {
 
   useEffect(() => {
     if (planIds.length === 0) return
-    setLoadingPublicity(true)
     Promise.all(
       planIds.map(async (planId) => {
         try {
@@ -89,8 +87,7 @@ export default function ScorePublicity() {
       const map: Record<string, PublicityStatusInfo> = {}
       results.forEach(({ planId, status }) => { map[planId] = status })
       setPublicityStatuses(map)
-      setLoadingPublicity(false)
-    }).catch(() => setLoadingPublicity(false))
+    }).catch(() => {})
   }, [planIds])
 
   const getPubStatus = (planId?: string): PublicityStatusInfo => {
@@ -147,11 +144,6 @@ export default function ScorePublicity() {
     } finally {
       setLoadingAudit(false)
     }
-  }
-
-  const isPublicizing = (item: PublicityScore) => {
-    const ps = getPubStatus(item.planId)
-    return ps.status === 'publicizing'
   }
 
   const pubLabelMeta: Record<string, { label: string; color: string }> = {

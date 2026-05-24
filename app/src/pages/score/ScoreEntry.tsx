@@ -66,7 +66,6 @@ export default function ScoreEntry() {
   const [showBatch, setShowBatch] = useState(false)
   const [batchForm, setBatchForm] = useState<{ candidateId: string; theoryScore: string; skillScore: string }>({ candidateId: '', theoryScore: '', skillScore: '' })
   const [publicityStatus, setPublicityStatus] = useState<PublicityStatus | null>(null)
-  const [loadingPublicity, setLoadingPublicity] = useState(false)
 
   // ─── Derived data ───
 
@@ -95,14 +94,11 @@ export default function ScoreEntry() {
     const fetchPublicity = async () => {
       const planId = items[0]?.planId
       if (!planId) return
-      setLoadingPublicity(true)
       try {
         const res = await apiRequest<PublicityStatus>(`/score/publicity-status/${encodeURIComponent(planId)}`)
         setPublicityStatus(res)
       } catch {
         setPublicityStatus(null)
-      } finally {
-        setLoadingPublicity(false)
       }
     }
     fetchPublicity()

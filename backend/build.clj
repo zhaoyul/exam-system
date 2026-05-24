@@ -1,5 +1,6 @@
 (ns build
-  (:require [clojure.java.shell :as shell]
+  (:require [clojure.java.io :as io]
+            [clojure.java.shell :as shell]
             [clojure.string :as string]
             [clojure.tools.build.api :as b]))
 
@@ -27,7 +28,21 @@
                 :basis basis
                 :src-dirs ["src/clj"]})
   (b/copy-dir {:src-dirs ["src/clj" "resources" "env/prod/resources" "env/prod/clj"]
-               :target-dir class-dir}))
+               :target-dir class-dir})
+  ;; 生成版本信息文件，打包时嵌入 jar（北京时间）
+  (let [shanghai (java.time.ZoneId/of "Asia/Shanghai")
+        now      (java.time.ZonedDateTime/now shanghai)
+        fmt      (java.time.format.DateTimeFormatter/ofPattern "yyyy-MM-dd HH:mm:ss")
+        build-time (.format now fmt)
+        git-commit (string/trim
+                     (:out (shell/sh "git" "rev-parse" "--short" "HEAD")
+                      "dev"))]
+    (io/make-parents (str class-dir "/version.properties"))
+    (spit (str class-dir "/version.properties")
+          (str "version=" version "\n"
+               "build.time=" build-time "\n"
+               "git.commit=" git-commit "\n"))
+    (println (str "Generated version.properties: v" version " @ " build-time " (CST)"))))
 
 (defn build-frontend [_]
   (println "Installing frontend dependencies...")

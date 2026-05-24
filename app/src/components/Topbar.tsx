@@ -1,4 +1,4 @@
-import { Bell, ChevronDown, LogOut, Key, User, RefreshCw, Menu, Shield, Building2, GraduationCap, ClipboardList, Briefcase, EyeIcon, Users, Repeat } from 'lucide-react'
+import { Bell, ChevronDown, LogOut, Key, User, RefreshCw, Menu, Shield, Building2, GraduationCap, ClipboardList, Briefcase, EyeIcon, Users, Repeat, Tag } from 'lucide-react'
 import { useApp } from '@/context/AppContext'
 import { useNavigate } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
@@ -16,6 +16,12 @@ const roleIcons: Record<UserRole, React.ElementType> = {
   candidate: Users,
 }
 
+interface BuildInfo {
+  version: string
+  buildTime: string
+  gitCommit: string
+}
+
 export default function Topbar() {
   const { logout, toggleSidebar, sidebarCollapsed, user, switchRole } = useApp()
   const backend = useBackendData()
@@ -23,9 +29,21 @@ export default function Topbar() {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotify, setShowNotify] = useState(false)
   const [showRoleSwitch, setShowRoleSwitch] = useState(false)
+  const [buildInfo, setBuildInfo] = useState<BuildInfo | null>(null)
   const userRef = useRef<HTMLDivElement>(null)
   const notifyRef = useRef<HTMLDivElement>(null)
   const roleRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    fetch('/api/health')
+      .then(r => r.json())
+      .then(data => {
+        if (data.build) {
+          setBuildInfo(data.build)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -175,6 +193,22 @@ export default function Topbar() {
               <button className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                 <Key className="w-4 h-4" /> 修改密码
               </button>
+              {buildInfo && (
+                <>
+                  <div className="border-t border-gray-100 my-1" />
+                  <div className="px-4 py-2">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Tag className="w-3 h-3 text-gray-400" />
+                      <span className="text-[10px] text-gray-400 font-medium">系统信息</span>
+                    </div>
+                    <div className="text-[10px] text-gray-400 leading-relaxed space-y-0.5">
+                      <div>版本: <span className="text-gray-500">{buildInfo.version}</span></div>
+                      <div>构建: <span className="text-gray-500">{buildInfo.gitCommit}</span></div>
+                      <div>时间: <span className="text-gray-500">{buildInfo.buildTime}</span></div>
+                    </div>
+                  </div>
+                </>
+              )}
               <div className="border-t border-gray-100 my-1" />
               <button onClick={logout} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                 <LogOut className="w-4 h-4" /> 退出系统

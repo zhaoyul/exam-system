@@ -291,6 +291,20 @@
    {:id "recog-plan-003" :org_id "org-dayawan" :code "Y0041GD0000032603003" :name "2026年核安全工程师三级认定" :occupation "核安全工程师" :level "三级" :planned_month "2026-08" :registration_deadline "2026-08-10" :candidate_count 28 :status "draft"}
    {:id "recog-plan-004" :org_id "org-csyxgs" :code "Y0041GD0000042603004" :name "2026年核电焊工四级认定" :occupation "核电焊工" :level "四级" :planned_month "2026-09" :registration_deadline "2026-09-01" :candidate_count 25 :status "draft"}])
 
+(def domain-plan-items
+  [{:id "plan-item-001" :org_id "org-csyxgs" :code "PI20260001" :plan_id "recog-plan-001" :name "理论考试-核反应堆运行值班员三级" :item_type "theory" :occupation "核反应堆运行值班员" :level "三级" :total_score 100 :pass_score 60 :status "active"}
+   {:id "plan-item-002" :org_id "org-csyxgs" :code "PI20260002" :plan_id "recog-plan-001" :name "实操考核-核反应堆运行值班员三级" :item_type "skill" :occupation "核反应堆运行值班员" :level "三级" :total_score 100 :pass_score 60 :status "active"}
+   {:id "plan-item-003" :org_id "org-yangjiang" :code "PI20260003" :plan_id "recog-plan-002" :name "理论考试-电气试验员四级" :item_type "theory" :occupation "电气试验员" :level "四级" :total_score 100 :pass_score 60 :status "active"}
+   {:id "plan-item-004" :org_id "org-yangjiang" :code "PI20260004" :plan_id "recog-plan-002" :name "实操考核-电气试验员四级" :item_type "skill" :occupation "电气试验员" :level "四级" :total_score 100 :pass_score 60 :status "active"}
+   {:id "plan-item-005" :org_id "org-dayawan" :code "PI20260005" :plan_id "recog-plan-003" :name "理论考试-核安全工程师三级" :item_type "theory" :occupation "核安全工程师" :level "三级" :total_score 100 :pass_score 60 :status "active"}
+   {:id "plan-item-006" :org_id "org-csyxgs" :code "PI20260006" :plan_id "recog-plan-004" :name "实操考核-核电焊工四级" :item_type "skill" :occupation "核电焊工" :level "四级" :total_score 100 :pass_score 60 :status "active"}])
+
+(def domain-exam-staff-assignments
+  [{:id "assign-001" :org_id "org-csyxgs" :code "SA001" :plan_id "recog-plan-001" :staff_id "exam-staff-002" :exam_room_id "room-001" :session_id "session-001" :assignment_role "invigilator" :assignment_date "2026-06-15" :status "assigned"}
+   {:id "assign-002" :org_id "org-csyxgs" :code "SA002" :plan_id "recog-plan-001" :staff_id "exam-staff-004" :exam_room_id "room-001" :session_id "session-001" :assignment_role "invigilator" :assignment_date "2026-06-15" :status "assigned"}
+   {:id "assign-003" :org_id "org-csyxgs" :code "SA003" :plan_id "recog-plan-001" :staff_id "exam-staff-001" :exam_room_id "room-001" :session_id "session-001" :assignment_role "exam_staff" :assignment_date "2026-06-15" :status "assigned"}
+   {:id "assign-004" :org_id "org-csyxgs" :code "SA004" :plan_id "recog-plan-001" :staff_id "exam-staff-003" :exam_room_id nil :session_id nil :assignment_role "evaluator" :assignment_date "2026-06-15" :status "assigned"}])
+
 (def domain-candidates
   [{:id "candidate-001" :org_id "org-dayawan" :code "CAN20260001" :name "陈小明" :id_card "440301199001011234" :gender "男" :phone "13800138201" :org_name "大亚湾核电" :occupation "核反应堆运行值班员" :level "三级" :education "本科" :status "approved"}
    {:id "candidate-002" :org_id "org-dayawan" :code "CAN20260002" :name "赵小红" :id_card "440301199105152345" :gender "女" :phone "13800138202" :org_name "大亚湾核电" :occupation "核反应堆运行值班员" :level "三级" :education "本科" :status "approved"}
@@ -448,6 +462,10 @@
     (ensure-domain-row! ds 'cgn_score_publicity "id" row))
   (doseq [row domain-exam-staff]
     (ensure-domain-row! ds 'cgn_exam_staff "id" row))
+  (doseq [row domain-plan-items]
+    (ensure-domain-row! ds 'cgn_plan_item "id" row))
+  (doseq [row domain-exam-staff-assignments]
+    (ensure-domain-row! ds 'cgn_exam_staff_assignment "id" row))
   {:status :domain-seeded})
 
 (defn- ensure-user! [ds {:keys [id username password display_name role org_id phone]}]

@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 import {
   AlertTriangle, Camera, CheckCircle, ChevronDown, ChevronRight, Download,
   Edit3, Eye, FileArchive, FileText, FileUp, MoreHorizontal, Plus, Search,
-  Settings, Send, Trash2, Upload, Users
+  Settings, Send, Trash2, Upload, Users, Info
 } from 'lucide-react'
 import { useBackendListState, useBackendResourceList, useBackendResourceState } from '@/hooks/useBackendListState'
 
@@ -40,7 +40,7 @@ interface PlanProfession {
   onlineCount: number
   groupCount: number
   ruleFile: boolean
-  examTypes: ExamType[]
+  levelExamConfigs: Record<string, ExamType>
 }
 
 interface ExamType {
@@ -58,6 +58,14 @@ interface RegOrg {
   phone: string
   selected: boolean
 }
+
+const ALL_LEVELS = ['五级/初级工', '四级/中级工', '三级/高级工', '二级/技师', '一级/高级技师'] as const
+
+const EXAM_FIELDS = ['职业道德', '理论', '技能', '综合', '工作业绩'] as const
+const EXAM_FIELD_KEYS = ['moral', 'theory', 'skill', 'comprehensive', 'performance'] as (keyof ExamType)[]
+const EXAM_OPTIONS = ['--', '机考', '笔试不读卡', '笔试读卡', '现场操作', '传统评分', '答辩', '论文', '作品评审', '口试']
+
+const defaultExamType = (): ExamType => ({ moral: '--', theory: '机考', skill: '现场操作', comprehensive: '--', performance: '--' })
 
 const mockPlans: CertPlan[] = [
   {
@@ -85,7 +93,7 @@ const mockPlans: CertPlan[] = [
         onlineCount: 12,
         groupCount: 8,
         ruleFile: true,
-        examTypes: [{ moral: '--', theory: '笔试不读卡', skill: '传统评分', comprehensive: '--', performance: '--' }],
+        levelExamConfigs: { '五级/初级工': { moral: '--', theory: '笔试不读卡', skill: '传统评分', comprehensive: '--', performance: '--' } },
       },
       {
         id: 'p2',
@@ -96,7 +104,11 @@ const mockPlans: CertPlan[] = [
         onlineCount: 18,
         groupCount: 27,
         ruleFile: false,
-        examTypes: [{ moral: '--', theory: '笔试不读卡', skill: '传统评分', comprehensive: '答辩', performance: '--' }],
+        levelExamConfigs: {
+          '五级/初级工': { moral: '--', theory: '笔试不读卡', skill: '传统评分', comprehensive: '--', performance: '--' },
+          '四级/中级工': { moral: '--', theory: '笔试不读卡', skill: '传统评分', comprehensive: '--', performance: '--' },
+          '二级/技师': { moral: '--', theory: '笔试不读卡', skill: '传统评分', comprehensive: '答辩', performance: '--' },
+        },
       },
     ],
   },
@@ -119,7 +131,11 @@ const occupationOptions: PlanProfession[] = [
     onlineCount: 0,
     groupCount: 0,
     ruleFile: false,
-    examTypes: [{ moral: '--', theory: '机考', skill: '现场操作', comprehensive: '--', performance: '--' }],
+    levelExamConfigs: {
+      '五级/初级工': { moral: '--', theory: '机考', skill: '现场操作', comprehensive: '--', performance: '--' },
+      '四级/中级工': { moral: '--', theory: '机考', skill: '现场操作', comprehensive: '--', performance: '--' },
+      '三级/高级工': { moral: '--', theory: '机考', skill: '现场操作', comprehensive: '--', performance: '--' },
+    },
   },
   {
     id: 'op2',
@@ -130,7 +146,11 @@ const occupationOptions: PlanProfession[] = [
     onlineCount: 0,
     groupCount: 0,
     ruleFile: false,
-    examTypes: [{ moral: '--', theory: '笔试不读卡', skill: '传统评分', comprehensive: '答辩', performance: '--' }],
+    levelExamConfigs: {
+      '四级/中级工': { moral: '--', theory: '笔试不读卡', skill: '传统评分', comprehensive: '--', performance: '--' },
+      '三级/高级工': { moral: '--', theory: '笔试不读卡', skill: '传统评分', comprehensive: '--', performance: '--' },
+      '二级/技师': { moral: '--', theory: '笔试不读卡', skill: '传统评分', comprehensive: '答辩', performance: '--' },
+    },
   },
   {
     id: 'op3',
@@ -141,11 +161,15 @@ const occupationOptions: PlanProfession[] = [
     onlineCount: 0,
     groupCount: 0,
     ruleFile: false,
-    examTypes: [{ moral: '--', theory: '机考', skill: '现场操作', comprehensive: '答辩', performance: '论文' }],
+    levelExamConfigs: {
+      '三级/高级工': { moral: '--', theory: '机考', skill: '现场操作', comprehensive: '--', performance: '--' },
+      '二级/技师': { moral: '--', theory: '机考', skill: '现场操作', comprehensive: '答辩', performance: '--' },
+      '一级/高级技师': { moral: '--', theory: '机考', skill: '现场操作', comprehensive: '答辩', performance: '论文' },
+    },
   },
 ]
 
-type ModalKind = 'material' | 'occupation' | 'importCandidates' | 'importPhotos' | 'multiCert' | 'approval' | 'examSetting' | 'setOrg' | null
+type ModalKind = 'material' | 'occupation' | 'importCandidates' | 'importPhotos' | 'multiCert' | 'approval' | 'examSetting' | 'setOrg' | 'publishConfirm' | null
 
 export default function CertPlanManage() {
   const [plans, setPlans] = useBackendListState<CertPlan>(mockPlans)
@@ -160,6 +184,11 @@ export default function CertPlanManage() {
   const [modalKind, setModalKind] = useState<ModalKind>(null)
   const [selectedPlanForAction, setSelectedPlanForAction] = useState<CertPlan | null>(mockPlans[0])
   const [selectedOccupationIds, setSelectedOccupationIds] = useState<string[]>([])
+  const [occupationSearch, setOccupationSearch] = useState('')
+  // Per-occupation level selection: occupationId -> Set<levelName>
+  const [occupationLevels, setOccupationLevels] = useState<Record<string, string[]>>({})
+  // Per-occupation per-level exam config: `${occupationId}::${level}` -> ExamType
+  const [occupationExamConfigs, setOccupationExamConfigs] = useState<Record<string, ExamType>>({})
   const [regOrgs, setRegOrgs] = useBackendResourceState<RegOrg>('/certification/execution/registration-orgs', mockRegOrgs)
   const [orgSearch, setOrgSearch] = useState('')
   const [importMode, setImportMode] = useState<'clear' | 'cover' | 'ignore'>('cover')
@@ -185,6 +214,12 @@ export default function CertPlanManage() {
 
   const openAction = (plan: CertPlan, kind: ModalKind) => {
     setSelectedPlanForAction(plan)
+    if (kind === 'occupation') {
+      setSelectedOccupationIds([])
+      setOccupationLevels({})
+      setOccupationExamConfigs({})
+      setOccupationSearch('')
+    }
     setModalKind(kind)
     setShowMoreMenu(null)
   }
@@ -224,9 +259,29 @@ export default function CertPlanManage() {
     toast.success(editingPlan ? '计划信息已保存' : `新增计划：${nextPlan.name}`)
   }
 
-  const handlePublish = (plan: CertPlan) => {
+  const handlePublishConfirm = () => {
+    if (!selectedPlanForAction) return
+    // Validate
+    const plan = selectedPlanForAction
+    if (!plan.name) { toast.error('计划名称不能为空'); return }
+    if (!plan.examDate) { toast.error('评价日期不能为空'); return }
+    if (plan.professions.length === 0) { toast.error('请至少添加一个职业工种'); return }
+    // Check each profession has at least one level with exam config
+    for (const prof of plan.professions) {
+      if (prof.levels.length === 0) {
+        toast.error(`"${prof.job}" 未选择技能等级`)
+        return
+      }
+      for (const level of prof.levels) {
+        if (!prof.levelExamConfigs[level]) {
+          toast.error(`"${prof.job}" 的 "${level}" 未配置考试设置`)
+          return
+        }
+      }
+    }
     setPlans(prev => prev.map(p => p.id === plan.id ? { ...p, status: 'published', statusLabel: '已发布' } : p))
     setShowMoreMenu(null)
+    setModalKind(null)
     toast.success('计划已发布')
   }
 
@@ -243,16 +298,91 @@ export default function CertPlanManage() {
     toast.success('计划材料已上传')
   }
 
+  const isOccupationSelected = (occId: string) => selectedOccupationIds.includes(occId)
+  const getOccLevels = (occId: string) => occupationLevels[occId] || []
+
+  const toggleOccSelection = (occId: string) => {
+    setSelectedOccupationIds(prev =>
+      prev.includes(occId)
+        ? prev.filter(id => id !== occId)
+        : [...prev, occId]
+    )
+    // Initialize levels from the occupation's available levels
+    if (!isOccupationSelected(occId)) {
+      const occ = backendOccupationOptions.find(o => o.id === occId)
+      if (occ && occ.levels.length > 0) {
+        setOccupationLevels(prev => ({
+          ...prev,
+          [occId]: [...occ.levels]
+        }))
+        const examConfigs: Record<string, ExamType> = {}
+        occ.levels.forEach(l => {
+          examConfigs[`${occId}::${l}`] = occ.levelExamConfigs[l] || defaultExamType()
+        })
+        setOccupationExamConfigs(prev => ({ ...prev, ...examConfigs }))
+      }
+    }
+  }
+
+  const toggleOccLevel = (occId: string, level: string) => {
+    setOccupationLevels(prev => {
+      const cur = prev[occId] || []
+      if (cur.includes(level)) {
+        return { ...prev, [occId]: cur.filter(l => l !== level) }
+      }
+      return { ...prev, [occId]: [...cur, level] }
+    })
+  }
+
+  const setOccLevelExamConfig = (occId: string, level: string, field: keyof ExamType, value: string) => {
+    const key = `${occId}::${level}`
+    setOccupationExamConfigs(prev => ({
+      ...prev,
+      [key]: { ...(prev[key] || defaultExamType()), [field]: value }
+    }))
+  }
+
+  const getOccLevelExamConfig = (occId: string, level: string): ExamType => {
+    return occupationExamConfigs[`${occId}::${level}`] || defaultExamType()
+  }
+
   const handleAddProfessions = () => {
     if (!selectedPlanForAction || selectedOccupationIds.length === 0) {
       toast.error('请至少选择一个职业工种')
       return
     }
+    // Validate at least one level selected per occupation
+    for (const occId of selectedOccupationIds) {
+      if (getOccLevels(occId).length === 0) {
+        const occ = backendOccupationOptions.find(o => o.id === occId)
+        toast.error(`"${occ?.job || occId}" 请至少选择一个技能等级`)
+        return
+      }
+    }
+    const timestamp = Date.now()
     const selected = backendOccupationOptions
       .filter(item => selectedOccupationIds.includes(item.id))
-      .map(item => ({ ...item, id: `${item.id}-${Date.now()}` }))
-    setPlans(prev => prev.map(plan => plan.id === selectedPlanForAction.id ? { ...plan, professions: [...plan.professions, ...selected] } : plan))
+      .map(item => {
+        const selLevels = getOccLevels(item.id)
+        const configs: Record<string, ExamType> = {}
+        selLevels.forEach(l => {
+          configs[l] = getOccLevelExamConfig(item.id, l)
+        })
+        return {
+          ...item,
+          id: `${item.id}-${timestamp}`,
+          levels: selLevels,
+          levelExamConfigs: configs,
+        }
+      })
+    setPlans(prev => prev.map(plan =>
+      plan.id === selectedPlanForAction.id
+        ? { ...plan, professions: [...plan.professions, ...selected] }
+        : plan
+    ))
     setSelectedOccupationIds([])
+    setOccupationLevels({})
+    setOccupationExamConfigs({})
     setExpandedId(selectedPlanForAction.id)
     setModalKind(null)
     toast.success(`已增加 ${selected.length} 个职业工种`)
@@ -275,6 +405,32 @@ export default function CertPlanManage() {
   }
 
   const selectedPlan = selectedPlanForAction || filtered[0] || plans[0]
+
+  // Publish validation
+  const publishValidation = useMemo(() => {
+    if (!selectedPlanForAction) return { valid: false, errors: [] as string[] }
+    const p = selectedPlanForAction
+    const errors: string[] = []
+    if (!p.name) errors.push('计划名称不能为空')
+    if (!p.examDate) errors.push('评价日期不能为空')
+    if (p.professions.length === 0) errors.push('请至少添加一个职业工种')
+    for (const prof of p.professions) {
+      if (prof.levels.length === 0) {
+        errors.push(`"${prof.job}" 未选择技能等级`)
+        continue
+      }
+      for (const level of prof.levels) {
+        if (!prof.levelExamConfigs[level]) {
+          errors.push(`"${prof.job}" 的 "${level}" 未配置考试设置`)
+        }
+      }
+    }
+    return { valid: errors.length === 0, errors }
+  }, [selectedPlanForAction])
+
+  const filteredOccupationOptions = backendOccupationOptions.filter(o =>
+    !occupationSearch || o.job.includes(occupationSearch) || o.occupation.includes(occupationSearch)
+  )
 
   return (
     <div className="space-y-4">
@@ -397,7 +553,7 @@ export default function CertPlanManage() {
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-1">
                       <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => openPlanDialog(plan)}><Edit3 className="w-3 h-3 mr-1" />编辑</Button>
-                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-green-600" onClick={() => handlePublish(plan)}><Send className="w-3 h-3 mr-1" />发布</Button>
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-green-600" onClick={() => openAction(plan, 'publishConfirm')}><Send className="w-3 h-3 mr-1" />发布</Button>
                       <div className="relative">
                         <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => { setSelectedPlanForAction(plan); setShowMoreMenu(showMoreMenu === plan.id ? null : plan.id) }}>
                           <MoreHorizontal className="w-3 h-3" />
@@ -405,8 +561,8 @@ export default function CertPlanManage() {
                         {showMoreMenu === plan.id && (
                           <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                             <button onClick={() => openAction(plan, 'multiCert')} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 text-left"><AlertTriangle className="w-3 h-3" />检查一人多证</button>
-                            <button onClick={() => openAction(plan, 'occupation')} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 text-left"><Plus className="w-3 h-3" />添加职业工种</button>
-                            <button onClick={() => { setSelectedPlanForAction(plan); handlePublish(plan) }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 text-left"><Send className="w-3 h-3" />发布</button>
+                            <button onClick={() => openAction(plan, 'occupation')} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 text-left"><Plus className="w-3 h-3" />新增考试计划项</button>
+                            <button onClick={() => openAction(plan, 'publishConfirm')} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 text-left"><Send className="w-3 h-3" />发布确认</button>
                             <button onClick={() => openAction(plan, 'importCandidates')} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 text-left"><FileUp className="w-3 h-3" />导入考生</button>
                             <button onClick={() => openAction(plan, 'importPhotos')} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 text-left"><Camera className="w-3 h-3" />导入考生照片</button>
                             <button onClick={() => openAction(plan, 'setOrg')} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 text-left"><Settings className="w-3 h-3" />设置报考机构</button>
@@ -423,9 +579,9 @@ export default function CertPlanManage() {
                   <tr className="bg-gray-50">
                     <td colSpan={12} className="px-4 py-4">
                       <div className="mb-2 flex items-center justify-between">
-                        <div className="text-xs text-gray-500 font-medium">职业工种 / 技能等级 / 获证规则</div>
+                        <div className="text-xs text-gray-500 font-medium">职业工种 / 技能等级 / 考试设置</div>
                         <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => openAction(plan, 'occupation')}>
-                          <Plus className="w-3 h-3 mr-1" />批量增加职业工种
+                          <Plus className="w-3 h-3 mr-1" />新增考试计划项
                         </Button>
                       </div>
                       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
@@ -467,7 +623,7 @@ export default function CertPlanManage() {
                               </tr>
                             ))}
                             {plan.professions.length === 0 && (
-                              <tr><td colSpan={9} className="px-3 py-10 text-center text-gray-400">暂无职业工种，请点击“批量增加职业工种”添加</td></tr>
+                              <tr><td colSpan={9} className="px-3 py-10 text-center text-gray-400">暂无职业工种，请点击"新增考试计划项"添加</td></tr>
                             )}
                           </tbody>
                         </table>
@@ -532,43 +688,247 @@ export default function CertPlanManage() {
         </DialogContent>
       </Dialog>
 
+      {/* Occupation modal: 新增考试计划项 — per-occupation level checkboxes + exam config */}
       <Dialog open={modalKind === 'occupation'} onOpenChange={() => setModalKind(null)}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader><DialogTitle>批量增加职业工种</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>新增考试计划项</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="relative w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input placeholder="职业工种" className="pl-9" />
+              <Input placeholder="搜索职业工种..." value={occupationSearch} onChange={e => setOccupationSearch(e.target.value)} className="pl-9" />
             </div>
-            <div className="rounded-lg border border-gray-200 overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-600"></th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">序号</th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">职业</th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">工种</th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">可选等级</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {backendOccupationOptions.map((item, idx) => (
-                    <tr key={item.id} className="hover:bg-gray-50">
-                      <td className="px-3 py-2"><input type="checkbox" checked={selectedOccupationIds.includes(item.id)} onChange={() => setSelectedOccupationIds(prev => prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id])} /></td>
-                      <td className="px-3 py-2 text-gray-600">{idx + 1}</td>
-                      <td className="px-3 py-2">{item.occupation}</td>
-                      <td className="px-3 py-2 font-medium">{item.job}</td>
-                      <td className="px-3 py-2 text-xs text-gray-600">{item.levels.join('、')}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="text-xs text-gray-500">选择职业工种并勾选级别，配置各级别的考试设置（职业道德/理论/技能/综合/工作业绩）</div>
+
+            {filteredOccupationOptions.map((item, idx) => {
+              const selected = isOccupationSelected(item.id)
+              const selLevels = getOccLevels(item.id)
+              return (
+                <div key={item.id} className={`rounded-lg border ${selected ? 'border-blue-300 bg-blue-50/50' : 'border-gray-200'} p-4`}>
+                  <div className="flex items-start gap-3">
+                    <input type="checkbox" checked={selected} onChange={() => toggleOccSelection(item.id)} className="mt-1" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs text-gray-400">{idx + 1}.</span>
+                        <span className="text-sm font-medium text-gray-900">{item.occupation}</span>
+                        <span className="text-sm text-[#1A56DB] font-medium">{item.job}</span>
+                        <span className="text-xs text-gray-400">{item.code}</span>
+                      </div>
+
+                      {selected && (
+                        <div className="space-y-3">
+                          <div>
+                            <div className="text-xs font-medium text-gray-600 mb-2">选择技能等级：</div>
+                            <div className="grid grid-cols-5 gap-2">
+                              {ALL_LEVELS.map(level => {
+                                const available = item.levels.includes(level)
+                                const checked = selLevels.includes(level)
+                                return (
+                                  <label key={level} className={`flex items-center gap-2 rounded-md border px-2.5 py-2 text-xs cursor-pointer transition-colors
+                                    ${!available ? 'opacity-30 cursor-not-allowed border-gray-100' :
+                                      checked ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`}>
+                                    <input
+                                      type="checkbox"
+                                      checked={checked}
+                                      disabled={!available}
+                                      onChange={() => toggleOccLevel(item.id, level)}
+                                      className="accent-blue-600"
+                                    />
+                                    <span>{level}</span>
+                                  </label>
+                                )
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Exam type config for each selected level */}
+                          {selLevels.length > 0 && (
+                            <div>
+                              <div className="text-xs font-medium text-gray-600 mb-2">考试设置（按级别）：</div>
+                              <div className="overflow-hidden rounded-lg border border-gray-200">
+                                <table className="w-full text-xs">
+                                  <thead className="bg-gray-50">
+                                    <tr>
+                                      <th className="px-2 py-2 text-left font-medium text-gray-600 w-28">级别</th>
+                                      {EXAM_FIELD_KEYS.map((key, ki) => (
+                                        <th key={key} className="px-2 py-2 text-left font-medium text-gray-600">{EXAM_FIELDS[ki]}</th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-100">
+                                    {selLevels.map((level) => {
+                                      const config = getOccLevelExamConfig(item.id, level)
+                                      return (
+                                        <tr key={level} className="bg-white">
+                                          <td className="px-2 py-1.5 text-gray-800 font-medium">{level}</td>
+                                          {EXAM_FIELD_KEYS.map(field => (
+                                            <td key={field} className="px-1 py-1">
+                                              <select
+                                                value={config[field]}
+                                                onChange={e => setOccLevelExamConfig(item.id, level, field, e.target.value)}
+                                                className="w-full h-7 rounded border border-gray-200 text-xs px-1 focus:outline-none focus:border-blue-400"
+                                              >
+                                                {EXAM_OPTIONS.map(opt => (
+                                                  <option key={opt} value={opt}>{opt}</option>
+                                                ))}
+                                              </select>
+                                            </td>
+                                          ))}
+                                        </tr>
+                                      )
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+            {filteredOccupationOptions.length === 0 && (
+              <div className="text-center text-sm text-gray-400 py-8">未找到匹配的职业工种</div>
+            )}
+            <div className="rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-700">
+              已选择信息：{selectedOccupationIds.length} 个职业工种
+              {selectedOccupationIds.length > 0 && (
+                <span>（共 {selectedOccupationIds.reduce((acc, id) => acc + getOccLevels(id).length, 0)} 个级别）</span>
+              )}
             </div>
-            <div className="rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-700">已选择信息：{selectedOccupationIds.length} 个职业工种</div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalKind(null)}>返回</Button>
             <Button onClick={handleAddProfessions}>保存</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Publish Confirmation Dialog */}
+      <Dialog open={modalKind === 'publishConfirm'} onOpenChange={() => setModalKind(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Send className="w-5 h-5 text-green-600" />
+              发布确认 — 校验计划信息完整性
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedPlanForAction && (
+            <div className="space-y-4">
+              {/* Plan Summary */}
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <div className="text-sm font-semibold text-gray-900 mb-2">计划基本信息</div>
+                <div className="grid grid-cols-3 gap-x-6 gap-y-2 text-sm">
+                  <div><span className="text-gray-500">计划名称：</span><span className="text-gray-900 font-medium">{selectedPlanForAction.name || '—'}</span></div>
+                  <div><span className="text-gray-500">计划编号：</span><span className="text-gray-900">{selectedPlanForAction.planNo || '—'}</span></div>
+                  <div><span className="text-gray-500">发证类型：</span><span className="text-gray-900">{selectedPlanForAction.issueType}</span></div>
+                  <div><span className="text-gray-500">评价日期：</span><span className="text-gray-900">{selectedPlanForAction.examDate || '—'}</span></div>
+                  <div><span className="text-gray-500">认定月份：</span><span className="text-gray-900">{selectedPlanForAction.examMonth || '—'}</span></div>
+                  <div><span className="text-gray-500">站点名称：</span><span className="text-gray-900">{selectedPlanForAction.site}</span></div>
+                  <div><span className="text-gray-500">备案地：</span><span className="text-gray-900">{selectedPlanForAction.filingOrg}</span></div>
+                  <div><span className="text-gray-500">报名截止：</span><span className="text-gray-900">{selectedPlanForAction.regDeadline || '—'}</span></div>
+                  <div><span className="text-gray-500">缴费截止：</span><span className="text-gray-900">{selectedPlanForAction.payDeadline || '—'}</span></div>
+                </div>
+              </div>
+
+              {/* Validation Errors */}
+              {!publishValidation.valid && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-red-700 mb-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    计划信息不完整，请补充以下内容后重试：
+                  </div>
+                  <ul className="list-disc list-inside text-xs text-red-600 space-y-0.5">
+                    {publishValidation.errors.map((err, i) => (
+                      <li key={i}>{err}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {publishValidation.valid && (
+                <div className="rounded-lg border border-green-200 bg-green-50 p-3 flex items-center gap-2 text-sm text-green-700">
+                  <CheckCircle className="w-4 h-4" />
+                  计划信息完整，可以发布
+                </div>
+              )}
+
+              {/* Exam Settings per Occupation per Level */}
+              {selectedPlanForAction.professions.length > 0 && (
+                <div className="rounded-lg border border-gray-200 overflow-hidden">
+                  <div className="bg-gray-50 px-4 py-2.5 text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    <Info className="w-4 h-4 text-blue-600" />
+                    考试设置（按职业工种和级别）
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead className="bg-gray-50/50 border-b border-gray-200">
+                        <tr>
+                          <th className="px-3 py-2 text-left font-medium text-gray-600">序号</th>
+                          <th className="px-3 py-2 text-left font-medium text-gray-600">职业</th>
+                          <th className="px-3 py-2 text-left font-medium text-gray-600">工种</th>
+                          <th className="px-3 py-2 text-left font-medium text-gray-600">级别</th>
+                          {EXAM_FIELDS.map(f => (
+                            <th key={f} className="px-2 py-2 text-left font-medium text-gray-600">{f}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {selectedPlanForAction.professions.flatMap((prof, pIdx) =>
+                          prof.levels.map((level, lIdx) => {
+                            const config = prof.levelExamConfigs[level]
+                            return (
+                              <tr key={`${prof.id}-${level}`} className={lIdx === 0 ? 'border-t-2 border-t-gray-300' : ''}>
+                                {lIdx === 0 ? (
+                                  <>
+                                    <td className="px-3 py-2 text-gray-600" rowSpan={prof.levels.length}>{pIdx + 1}</td>
+                                    <td className="px-3 py-2 text-gray-900" rowSpan={prof.levels.length}>{prof.occupation}</td>
+                                    <td className="px-3 py-2 font-medium text-gray-900" rowSpan={prof.levels.length}>{prof.job}</td>
+                                  </>
+                                ) : null}
+                                <td className="px-3 py-2">
+                                  <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{level}</span>
+                                </td>
+                                {config ? (
+                                  EXAM_FIELD_KEYS.map(field => (
+                                    <td key={field} className="px-2 py-2 text-gray-700">
+                                      <span className={`px-1.5 py-0.5 rounded text-xs ${config[field] === '--' ? 'text-gray-300' : 'bg-gray-100'}`}>
+                                        {config[field]}
+                                      </span>
+                                    </td>
+                                  ))
+                                ) : (
+                                  <td colSpan={5} className="px-2 py-2 text-red-500 text-xs">未配置考试设置</td>
+                                )}
+                              </tr>
+                            )
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {selectedPlanForAction.professions.length === 0 && (
+                <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center text-sm text-gray-400">
+                  暂无考试计划项。请先通过「新增考试计划项」添加职业工种和级别。
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalKind(null)}>返回修改</Button>
+            <Button
+              onClick={handlePublishConfirm}
+              disabled={!publishValidation.valid}
+              className={publishValidation.valid ? 'bg-green-600 hover:bg-green-700' : ''}
+            >
+              <Send className="w-4 h-4 mr-1" />确认发布
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -667,23 +1027,59 @@ export default function CertPlanManage() {
       </Dialog>
 
       <Dialog open={modalKind === 'examSetting'} onOpenChange={() => setModalKind(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader><DialogTitle>确认考试设置</DialogTitle></DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="max-w-3xl">
+          <DialogHeader><DialogTitle>考试设置 — 按级别配置考试方式</DialogTitle></DialogHeader>
+          <div className="space-y-4 max-h-[65vh] overflow-y-auto">
             {selectedPlan?.professions.map((profession, idx) => (
               <div key={profession.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="text-sm font-medium text-gray-900 mb-3">{idx + 1}. {profession.job}（{profession.levels.join('、')}）</div>
-                {profession.examTypes.map((et, i) => (
-                  <div key={i} className="grid grid-cols-5 gap-2 text-xs text-gray-600 bg-gray-50 rounded p-2">
-                    <span><span className="text-gray-400">职业道德:</span> {et.moral}</span>
-                    <span><span className="text-gray-400">理论:</span> {et.theory}</span>
-                    <span><span className="text-gray-400">技能:</span> {et.skill}</span>
-                    <span><span className="text-gray-400">综合:</span> {et.comprehensive}</span>
-                    <span><span className="text-gray-400">工作业绩:</span> {et.performance}</span>
-                  </div>
-                ))}
+                <div className="text-sm font-medium text-gray-900 mb-3">
+                  {idx + 1}. {profession.occupation} — {profession.job}
+                </div>
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-2 py-2 text-left font-medium text-gray-600">级别</th>
+                      {EXAM_FIELDS.map(f => (
+                        <th key={f} className="px-2 py-2 text-left font-medium text-gray-600">{f}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {profession.levels.map(level => {
+                      const config = profession.levelExamConfigs[level] || defaultExamType()
+                      return (
+                        <tr key={level}>
+                          <td className="px-2 py-1.5 text-gray-900 font-medium">{level}</td>
+                          {EXAM_FIELD_KEYS.map(field => (
+                            <td key={field} className="px-1 py-1">
+                              <select
+                                value={config[field]}
+                                onChange={e => {
+                                  const newConfigs = { ...profession.levelExamConfigs, [level]: { ...config, [field]: e.target.value } }
+                                  setPlans(prev => prev.map(p =>
+                                    p.id === selectedPlan.id
+                                      ? { ...p, professions: p.professions.map(pr => pr.id === profession.id ? { ...pr, levelExamConfigs: newConfigs } : pr) }
+                                      : p
+                                  ))
+                                }}
+                                className="w-full h-7 rounded border border-gray-200 text-xs px-1 focus:outline-none focus:border-blue-400"
+                              >
+                                {EXAM_OPTIONS.map(opt => (
+                                  <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                              </select>
+                            </td>
+                          ))}
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
               </div>
             ))}
+            {(!selectedPlan?.professions || selectedPlan.professions.length === 0) && (
+              <div className="text-center text-sm text-gray-400 py-8">暂无职业工种，请先添加考试计划项</div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalKind(null)}>返回</Button>

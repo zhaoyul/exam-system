@@ -1,5 +1,5 @@
 (ns zhaoyul.exam-system-backend.web.controllers.traceability
-  "溯源中心 API — 溯源案例/溯源预警"
+  "溯源中心 API — 溯源案例/溯源预警/时间轴"
   (:require
    [zhaoyul.exam-system-backend.domain.traceability :as trace]
    [zhaoyul.exam-system-backend.web.response :as response]))
@@ -55,3 +55,16 @@
     (if (trace/delete-alert! datasource id)
       (response/no-content)
       (response/not-found))))
+
+;; ─── 时间轴聚合 ───
+
+(defn get-timeline [{:keys [datasource]} request]
+  (let [candidate-id (get-in request [:path-params :candidate-id])]
+    (if-let [events (seq (trace/get-candidate-timeline datasource candidate-id))]
+      (response/ok {:candidateId candidate-id :events events})
+      (response/ok {:candidateId candidate-id :events []}))))
+
+(defn get-audit-logs [{:keys [datasource]} request]
+  (let [candidate-id (get-in request [:path-params :candidate-id])]
+    (response/ok {:candidateId candidate-id
+                  :items (trace/get-candidate-audit-logs datasource candidate-id)})))

@@ -538,6 +538,12 @@
    ["/traceability"
     {:swagger {:tags ["溯源中心"]}}
     (resource-endpoint ctx "/cert-records" "trace-cert-records" "溯源中心" "证书溯源记录")
+    ["/audit-logs/:candidate-id"
+     {:get {:summary "查询成绩修改记录"
+            :handler (partial traceability/get-audit-logs ctx)}}]
+    ["/timeline/:candidate-id"
+     {:get {:summary "查询候选人时间轴"
+            :handler (partial traceability/get-timeline ctx)}}]
     ["/cases"
      [""
       {:get {:summary "溯源案例列表" :handler (partial traceability/list-cases ctx)}

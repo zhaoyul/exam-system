@@ -100,6 +100,8 @@ const endpoints: Record<string, string> = {
   '/report/arrangement': '/report/arrangement',
   '/archive': '/archive',
   '/traceability': '/traceability/cases',
+  '/traceability/timeline': '/traceability/timeline',
+  '/traceability/audit-logs': '/traceability/audit-logs',
   '/monitor': '/monitor',
   '/messages': '/messages',
   '/exam/manage': '/exam/manage',

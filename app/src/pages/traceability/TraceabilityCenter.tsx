@@ -1,9 +1,14 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
+import { TraceTimeline } from '@/components/shared/TraceTimeline'
 import { useBackendResourceList } from '@/hooks/useBackendListState'
+import { apiRequest } from '@/lib/api'
+import type { TimelineEvent } from '@/types/traceTimeline'
 
 interface TraceRecord {
   id: string
@@ -18,10 +23,33 @@ interface TraceRecord {
   province: string
 }
 
+interface TimelineResponse {
+  candidateId: string
+  events: TimelineEvent[]
+}
+
+interface AuditLogItem {
+  id: string
+  createdAt: string
+  actorId: string
+  actorName: string
+  action: string
+  theoryScore?: { old: number; new: number }
+  skillScore?: { old: number; new: number }
+  reason?: string
+  candidateId: string
+  planId: string
+}
+
+interface AuditLogResponse {
+  candidateId: string
+  items: AuditLogItem[]
+}
+
 const initialRecords: TraceRecord[] = [
-  { id: 'tr1', name: '报名学员', idType: '居民身份证', idNo: '37*****21', certNo: 'Y000544031005263000001', issuer: '中国工业集团有限公司', generatedAt: '2026-04-17 10:01', occupation: '企业人力资源管理师', level: '三级/高级工', province: '广东省' },
-  { id: 'tr2', name: '报名学员2', idType: '居民身份证', idNo: '37*****16', certNo: 'Y000544031005263000002', issuer: '中国工业集团有限公司', generatedAt: '2026-04-17 10:01', occupation: '企业人力资源管理师', level: '三级/高级工', province: '广东省' },
-  { id: 'tr3', name: '水电费', idType: '居民身份证', idNo: '22*****13', certNo: 'Y000545000001263000001', issuer: '中国工业集团有限公司', generatedAt: '2026-04-10 16:22', occupation: '电机检修工', level: '三级/高级工', province: '广西壮族自治区' },
+  { id: 'candidate-001', name: '陈小明', idType: '居民身份证', idNo: '440301199001011234', certNo: 'Y0041GD0000012603001001', issuer: '中广核集团', generatedAt: '2026-07-15', occupation: '核反应堆运行值班员', level: '三级/高级工', province: '广东省' },
+  { id: 'candidate-002', name: '赵小红', idType: '居民身份证', idNo: '440301199105152345', certNo: 'Y0041GD0000012603001002', issuer: '中广核集团', generatedAt: '2026-07-15', occupation: '核反应堆运行值班员', level: '三级/高级工', province: '广东省' },
+  { id: 'candidate-003', name: '刘建国', idType: '居民身份证', idNo: '441700198803203456', certNo: '', issuer: '阳江核电', generatedAt: '--', occupation: '电气试验员', level: '四级/中级工', province: '广东省' },
 ]
 
 export default function TraceabilityCenter() {
@@ -31,6 +59,10 @@ export default function TraceabilityCenter() {
   const [activeMode, setActiveMode] = useState<'认定' | '申报'>('认定')
   const [active, setActive] = useState<TraceRecord | null>(null)
   const [dialog, setDialog] = useState<'process' | 'score' | null>(null)
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
+  const [timelineLoading, setTimelineLoading] = useState(false)
+  const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([])
+  const [auditHasData, setAuditHasData] = useState<Record<string, boolean>>({})
 
   const filtered = useMemo(() => records.filter(record => {
     const byProvince = activeProvince === '全部' || record.province === activeProvince
@@ -43,6 +75,50 @@ export default function TraceabilityCenter() {
     { label: '广东省', count: records.filter(item => item.province === '广东省').length },
     { label: '广西壮族自治区', count: records.filter(item => item.province === '广西壮族自治区').length },
   ]
+
+  const openProcessDialog = useCallback(async (record: TraceRecord) => {
+    setActive(record)
+    setDialog('process')
+    setTimelineLoading(true)
+    try {
+      const data = await apiRequest<TimelineResponse>(`/traceability/timeline/${encodeURIComponent(record.id)}`)
+      setTimelineEvents(data.events || [])
+    } catch {
+      setTimelineEvents([])
+    } finally {
+      setTimelineLoading(false)
+    }
+  }, [])
+
+  const openScoreDialog = useCallback(async (record: TraceRecord) => {
+    setActive(record)
+    setDialog('score')
+    if (auditHasData[record.id]) {
+      try {
+        const data = await apiRequest<AuditLogResponse>(`/traceability/audit-logs/${encodeURIComponent(record.id)}`)
+        setAuditLogs(data.items || [])
+      } catch {
+        setAuditLogs([])
+      }
+    }
+  }, [auditHasData])
+
+  // Check which candidates have audit logs on mount
+  useEffect(() => {
+    const checkAuditLogs = async () => {
+      const hasData: Record<string, boolean> = {}
+      await Promise.all(records.map(async (record) => {
+        try {
+          const data = await apiRequest<AuditLogResponse>(`/traceability/audit-logs/${encodeURIComponent(record.id)}`)
+          hasData[record.id] = (data.items && data.items.length > 0) || false
+        } catch {
+          hasData[record.id] = false
+        }
+      }))
+      setAuditHasData(prev => ({ ...prev, ...hasData }))
+    }
+    checkAuditLogs()
+  }, [records])
 
   return (
     <div className="space-y-4">
@@ -93,16 +169,22 @@ export default function TraceabilityCenter() {
                     <td className="px-4 py-3 text-gray-600">{index + 1}</td>
                     <td className="px-4 py-3 font-medium text-gray-900">{record.name}</td>
                     <td className="px-4 py-3 text-gray-600">{record.idType}</td>
-                    <td className="px-4 py-3 text-gray-600">{record.idNo}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-600">{record.certNo}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-600">{record.idNo}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-600">{record.certNo || '--'}</td>
                     <td className="px-4 py-3 text-gray-600">{record.issuer}</td>
                     <td className="px-4 py-3 text-gray-600">{record.generatedAt}</td>
                     <td className="px-4 py-3 text-gray-600">{record.occupation}</td>
                     <td className="px-4 py-3 text-gray-600">{record.level}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2 text-xs">
-                        <button onClick={() => { setActive(record); setDialog('process') }} className="text-[#1A56DB] hover:underline">认定过程</button>
-                        <button onClick={() => { setActive(record); setDialog('score') }} className="text-[#1A56DB] hover:underline">修改成绩记录</button>
+                        <button onClick={() => openProcessDialog(record)} className="text-[#1A56DB] hover:underline">认定过程</button>
+                        <button
+                          onClick={() => auditHasData[record.id] ? openScoreDialog(record) : undefined}
+                          className={auditHasData[record.id] ? 'text-[#1A56DB] hover:underline cursor-pointer' : 'text-gray-400 cursor-default'}
+                          disabled={!auditHasData[record.id]}
+                        >
+                          修改成绩记录
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -114,22 +196,58 @@ export default function TraceabilityCenter() {
         </div>
       </section>
 
-      <Dialog open={dialog === 'process'} onOpenChange={() => setDialog(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>认定过程</DialogTitle></DialogHeader>
-          <div className="space-y-2 text-sm">
-            {['认定计划', '考生报名', '考场编排', '成绩确认', '证书生成'].map((step, index) => <div key={step} className="rounded-md border border-gray-100 px-3 py-2">{index + 1}. {step} - {active?.name}</div>)}
-          </div>
+      <Dialog open={dialog === 'process'} onOpenChange={(open) => { if (!open) setDialog(null) }}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>认定过程 — {active?.name}</DialogTitle></DialogHeader>
+          {timelineLoading ? (
+            <div className="space-y-3 py-4">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </div>
+          ) : (
+            <TraceTimeline events={timelineEvents} className="py-2" />
+          )}
         </DialogContent>
       </Dialog>
 
-      <Dialog open={dialog === 'score'} onOpenChange={() => setDialog(null)}>
-        <DialogContent>
+      <Dialog open={dialog === 'score'} onOpenChange={(open) => { if (!open) setDialog(null) }}>
+        <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>修改成绩记录</DialogTitle></DialogHeader>
           <div className="space-y-3 text-sm">
             <Info label="姓名" value={active?.name || ''} />
-            <Info label="证书编号" value={active?.certNo || ''} />
-            <Info label="记录" value="暂无成绩修改记录" />
+            <Info label="证件号码" value={active?.idNo || ''} />
+            <Info label="证书编号" value={active?.certNo || '--'} />
+            {auditLogs.length > 0 ? (
+              <div className="space-y-2 mt-3">
+                <div className="text-sm font-medium text-gray-700">修改记录：</div>
+                {auditLogs.map((log) => (
+                  <div key={log.id} className="rounded-md border border-gray-100 p-3 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">{log.createdAt}</span>
+                      <Badge variant="outline" className="text-xs">{log.actorName}</Badge>
+                    </div>
+                    {log.theoryScore && (
+                      <div className="text-xs text-gray-700">
+                        理论成绩: <span className="line-through text-gray-400">{log.theoryScore.old}</span> → <span className="text-blue-600 font-medium">{log.theoryScore.new}</span>
+                      </div>
+                    )}
+                    {log.skillScore && (
+                      <div className="text-xs text-gray-700">
+                        技能成绩: <span className="line-through text-gray-400">{log.skillScore.old}</span> → <span className="text-blue-600 font-medium">{log.skillScore.new}</span>
+                      </div>
+                    )}
+                    {log.reason && (
+                      <div className="text-xs text-gray-500">修改理由: {log.reason}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-md border border-gray-100 p-4 text-center text-sm text-gray-400">
+                暂无成绩修改记录
+              </div>
+            )}
             <div className="flex justify-end"><Button onClick={() => { setDialog(null); toast.success('记录已确认') }}>确定</Button></div>
           </div>
         </DialogContent>

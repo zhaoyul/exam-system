@@ -11,6 +11,8 @@
    [zhaoyul.exam-system-backend.web.controllers.files :as files-ctrl]
    [zhaoyul.exam-system-backend.web.controllers.filing :as filing]
    [zhaoyul.exam-system-backend.web.controllers.numbering :as numbering]
+   [zhaoyul.exam-system-backend.web.controllers.registration-orgs :as registration-orgs]
+   [zhaoyul.exam-system-backend.web.controllers.scores :as score-controller]
    [zhaoyul.exam-system-backend.web.controllers.health :as health]
    [zhaoyul.exam-system-backend.web.controllers.organizations :as organizations]
    [zhaoyul.exam-system-backend.web.controllers.personal :as personal]

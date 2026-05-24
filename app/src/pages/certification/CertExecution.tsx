@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
+import { useMemo } from 'react'
 import CertPlanManage from './CertPlanManage'
 import ExamRegistration from './ExamRegistration'
 import ExamArrangement from './ExamArrangement'
@@ -8,9 +8,10 @@ import ScoreEntry from '@/pages/score/ScoreEntry'
 import ScorePublicityManage from './ScorePublicityManage'
 import CertificatesGroup from './CertificatesGroup'
 import CertificatesPrint from './CertificatesPrint'
+import { useApp } from '@/context/AppContext'
 import {
   ListChecks, Users, LayoutGrid, BookOpen, BarChart3, Eye, Award, Printer,
-  ChevronRight, CheckCircle, ArrowRight
+  ChevronRight, CheckCircle, ShieldAlert
 } from 'lucide-react'
 
 // 等级认定（机构）核心流程步骤
@@ -28,6 +29,13 @@ const flowSteps = [
 export default function CertExecution() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { user } = useApp()
+  const flowSteps = useMemo(() => {
+    if (user?.role === 'branch_admin') {
+      return baseFlowSteps.slice(0, 6)
+    }
+    return baseFlowSteps
+  }, [user?.role])
 
   // Determine current step from URL
   const currentPath = location.pathname
@@ -36,18 +44,6 @@ export default function CertExecution() {
 
   const handleStepClick = (index: number) => {
     navigate(flowSteps[index].path)
-  }
-
-  const handleNextStep = () => {
-    if (effectiveStep < flowSteps.length - 1) {
-      navigate(flowSteps[effectiveStep + 1].path)
-    }
-  }
-
-  const handlePrevStep = () => {
-    if (effectiveStep > 0) {
-      navigate(flowSteps[effectiveStep - 1].path)
-    }
   }
 
   return (
@@ -94,40 +90,34 @@ export default function CertExecution() {
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto bg-gray-50">
         {/* Top Bar */}
-        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-3">
           <div className="flex items-center gap-2">
             <span className="text-base font-medium text-gray-900">
-              {flowSteps[effectiveStep]?.label || '制定计划'}
+              {flowSteps[effectiveStep]?.id === 'plans' ? '指定计划' : (flowSteps[effectiveStep]?.label || '指定计划')}
             </span>
             <span className="text-xs text-gray-400">
               步骤 {effectiveStep + 1} / {flowSteps.length}
             </span>
             <span className="text-xs text-gray-400 ml-2">{flowSteps[effectiveStep]?.desc}</span>
           </div>
-          <div className="flex gap-2">
-            {effectiveStep > 0 && (
-              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handlePrevStep}>
-                上一步
-              </Button>
-            )}
-            {effectiveStep < flowSteps.length - 1 && (
-              <Button size="sm" className="h-7 text-xs" onClick={handleNextStep}>
-                下一步 <ArrowRight className="w-3 h-3 ml-1" />
-              </Button>
-            )}
-          </div>
         </div>
 
         {/* Step Content */}
         <div className="p-6">
+          {user?.role === 'branch_admin' && effectiveStep === flowSteps.length - 1 && (
+            <div className="mb-4 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              <ShieldAlert className="mt-0.5 h-4 w-4 flex-shrink-0" />
+              <div>成绩公示结束后，由集团管理员在“等级认定 / 集团证书”统一生成证书并确认打印，机构端仅负责前六个环节。</div>
+            </div>
+          )}
           {effectiveStep === 0 && <CertPlanManage />}
           {effectiveStep === 1 && <ExamRegistration />}
           {effectiveStep === 2 && <ExamArrangement />}
           {effectiveStep === 3 && <ExamSessionArrange />}
           {effectiveStep === 4 && <ScoreEntry />}
           {effectiveStep === 5 && <ScorePublicityManage />}
-          {effectiveStep === 6 && <CertificatesGroup />}
-          {effectiveStep === 7 && <CertificatesPrint />}
+          {user?.role !== 'branch_admin' && effectiveStep === 6 && <CertificatesGroup />}
+          {user?.role !== 'branch_admin' && effectiveStep === 7 && <CertificatesPrint />}
         </div>
       </main>
     </div>

@@ -14,13 +14,14 @@ interface EnrollUnit {
   phone: string
   contact: string
   site: string
+  filingArea: string
   description: string
   locked?: boolean
 }
 
 const initialUnits: EnrollUnit[] = [
-  { id: 'eu-1', loginName: 'dyw_yxbm', password: '123456', name: '大亚湾核电运行一部', code: 'DYW-YX01', phone: '0755-82345678', contact: '张主任', site: '中广核职业技能培训中心', description: '窗口报名与在线报名' },
-  { id: 'eu-2', loginName: 'yj_wxbm', password: '123456', name: '阳江核电维修部', code: 'YJ-WX01', phone: '0662-2234567', contact: '李部长', site: '阳江实操训练基地', description: '负责维修工种报名' },
+  { id: 'eu-1', loginName: 'dyw_yxbm', password: '123456', name: '大亚湾核电运行一部', code: 'DYW-YX01', phone: '0755-82345678', contact: '张主任', site: '大亚湾基地考点', filingArea: '广东省', description: '窗口报名与在线报名', locked: false },
+  { id: 'eu-2', loginName: 'yj_wxbm', password: '123456', name: '阳江核电维修部', code: 'YJ-WX01', phone: '0662-2234567', contact: '李部长', site: '阳江实操训练基地', filingArea: '广东省', description: '负责维修工种报名', locked: true },
 ]
 
 const emptyForm = {
@@ -30,7 +31,8 @@ const emptyForm = {
   code: '',
   phone: '',
   contact: '',
-  site: '中广核职业技能培训中心',
+  site: '大亚湾基地考点',
+  filingArea: '广东省',
   description: '',
 }
 
@@ -56,6 +58,7 @@ export default function RegistrationOrgManage() {
       phone: String(fd.get('phone') || ''),
       contact: String(fd.get('contact') || ''),
       site: String(fd.get('site') || ''),
+      filingArea: String(fd.get('filingArea') || ''),
       description: String(fd.get('description') || ''),
     }
     if (editing) {
@@ -82,6 +85,12 @@ export default function RegistrationOrgManage() {
   const remove = (id: string) => {
     setUnits(prev => prev.filter(unit => unit.id !== id))
     toast.success('报名机构已删除')
+  }
+
+  const toggleLock = (id: string) => {
+    setUnits(prev => prev.map(unit => unit.id === id ? { ...unit, locked: !unit.locked } : unit))
+    const target = units.find(unit => unit.id === id)
+    toast.success(target?.locked ? '报名机构已解锁' : '报名机构已锁定')
   }
 
   return (
@@ -111,8 +120,10 @@ export default function RegistrationOrgManage() {
                 <th className="w-20 px-4 py-3 text-center font-medium">序号</th>
                 <th className="px-4 py-3 text-center font-medium">登录名</th>
                 <th className="px-4 py-3 text-center font-medium">机构名称</th>
+                <th className="px-4 py-3 text-center font-medium">所属站点</th>
                 <th className="px-4 py-3 text-center font-medium">联系电话</th>
                 <th className="px-4 py-3 text-center font-medium">联系人</th>
+                <th className="px-4 py-3 text-center font-medium">状态</th>
                 <th className="w-56 px-4 py-3 text-center font-medium">操作</th>
               </tr>
             </thead>
@@ -122,11 +133,20 @@ export default function RegistrationOrgManage() {
                   <td className="px-4 py-3 text-center text-gray-600">{index + 1}</td>
                   <td className="px-4 py-3 text-center font-mono text-xs text-gray-600">{unit.loginName}</td>
                   <td className="px-4 py-3 text-center font-medium text-gray-900">{unit.name}</td>
+                  <td className="px-4 py-3 text-center text-gray-600">{unit.filingArea} / {unit.site}</td>
                   <td className="px-4 py-3 text-center text-gray-600">{unit.phone}</td>
                   <td className="px-4 py-3 text-center text-gray-600">{unit.contact}</td>
                   <td className="px-4 py-3 text-center">
+                    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs ${unit.locked ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
+                      {unit.locked ? '已锁定' : '正常'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-center">
                     <div className="flex justify-center gap-3">
                       <button onClick={() => setEditing(unit)} className="text-xs text-[#1A56DB] hover:underline"><Edit3 className="mr-1 inline h-3.5 w-3.5" />编辑</button>
+                      <button onClick={() => toggleLock(unit.id)} className="text-xs text-amber-600 hover:underline">
+                        {unit.locked ? '解锁' : '锁定'}
+                      </button>
                       <button onClick={() => setResetTarget(unit)} className="text-xs text-gray-600 hover:text-[#1A56DB]"><KeyRound className="mr-1 inline h-3.5 w-3.5" />重置密码</button>
                       <button onClick={() => remove(unit.id)} className="text-xs text-red-600 hover:underline"><Trash2 className="mr-1 inline h-3.5 w-3.5" />删除</button>
                     </div>
@@ -135,7 +155,7 @@ export default function RegistrationOrgManage() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-16 text-center text-gray-400">暂无数据</td>
+                  <td colSpan={8} className="px-4 py-16 text-center text-gray-400">暂无数据</td>
                 </tr>
               )}
             </tbody>
@@ -189,8 +209,9 @@ function UnitDialog({
             <Field label="机构名称：" name="name" defaultValue={initial.name} required placeholder="请输入机构名称" />
             <Field label="联系电话：" name="phone" defaultValue={initial.phone} required placeholder="请输入联系电话" />
             <Field label="联系人：" name="contact" defaultValue={initial.contact} required placeholder="请输入联系人" />
+            <SelectField label="备案地：" name="filingArea" defaultValue={initial.filingArea || '广东省'} options={['广东省', '北京市', '广西壮族自治区']} />
+            <SelectField label="所属站点：" name="site" defaultValue={initial.site || emptyForm.site} options={['大亚湾基地考点', '阳江实操训练基地', '台山培训考点', '北京市技能人才评价站']} />
             <input type="hidden" name="code" defaultValue={initial.code || ''} />
-            <input type="hidden" name="site" defaultValue={initial.site || emptyForm.site} />
             <input type="hidden" name="description" defaultValue={initial.description || ''} />
           </div>
           <div className="flex justify-end gap-2 pt-2">
@@ -208,6 +229,17 @@ function Field({ label, name, defaultValue, required, placeholder }: { label: st
     <label className="block">
       <span className="font-medium text-gray-700">{label}</span>
       <input name={name} defaultValue={defaultValue || ''} required={required} placeholder={placeholder} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3 focus:border-[#1A56DB] focus:outline-none" />
+    </label>
+  )
+}
+
+function SelectField({ label, name, defaultValue, options }: { label: string; name: string; defaultValue: string; options: string[] }) {
+  return (
+    <label className="block">
+      <span className="font-medium text-gray-700">{label}</span>
+      <select name={name} defaultValue={defaultValue} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3 focus:border-[#1A56DB] focus:outline-none">
+        {options.map(option => <option key={option}>{option}</option>)}
+      </select>
     </label>
   )
 }

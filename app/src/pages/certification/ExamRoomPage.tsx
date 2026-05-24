@@ -5,12 +5,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { useBackendResourceState } from '@/hooks/useBackendListState'
+import { EXAM_ROOM_TYPES, type ExamRoomType } from '@/lib/workflow'
 
 interface Room {
   id: string
   name: string
   seats: number
-  type: '笔试' | '机考' | '理论考场' | '技能考场'
+  type: ExamRoomType
 }
 
 interface TestSpot {
@@ -30,9 +31,9 @@ const initialSpots: TestSpot[] = [
     address: '广东省深圳市大鹏新区大亚湾核电基地培训中心',
     phone: '0755-84212345',
     rooms: [
-      { id: 'r1', name: '理论一考场', seats: 50, type: '笔试' },
-      { id: 'r2', name: '理论二考场', seats: 45, type: '笔试' },
-      { id: 'r3', name: '机考一考场', seats: 30, type: '机考' },
+      { id: 'r1', name: '笔试一考场', seats: 50, type: '笔试考场' },
+      { id: 'r2', name: '笔试二考场', seats: 45, type: '笔试考场' },
+      { id: 'r3', name: '机考一考场', seats: 30, type: '机考考场' },
     ],
   },
 ]
@@ -44,7 +45,7 @@ export default function ExamRoomPage() {
   const [roomSpot, setRoomSpot] = useState<TestSpot | null>(null)
   const [recordArea, setRecordArea] = useState('全部')
   const [showSpotDialog, setShowSpotDialog] = useState(false)
-  const [roomForm, setRoomForm] = useState({ name: '', seats: 30, type: '理论考场' as Room['type'] })
+  const [roomForm, setRoomForm] = useState({ name: '', seats: 30, type: '笔试考场' as Room['type'] })
 
   const recordAreas = useMemo(() => ['全部', ...Array.from(new Set(spots.map(spot => spot.recordArea).filter(Boolean)))], [spots])
 
@@ -56,7 +57,7 @@ export default function ExamRoomPage() {
 
   const openAddRoom = (spot: TestSpot) => {
     setRoomSpot(spot)
-    setRoomForm({ name: '', seats: 30, type: '理论考场' })
+    setRoomForm({ name: '', seats: 30, type: '笔试考场' })
   }
 
   const addRoom = () => {
@@ -75,7 +76,7 @@ export default function ExamRoomPage() {
     setSpots(prev => prev.map(spot => spot.id === roomSpot.id ? { ...spot, rooms: [...spot.rooms, newRoom] } : spot))
     setActiveSpot(prev => prev ? { ...prev, rooms: [...prev.rooms, newRoom] } : prev)
     setRoomSpot(prev => prev ? { ...prev, rooms: [...prev.rooms, newRoom] } : prev)
-    setRoomForm({ name: '', seats: 30, type: '理论考场' })
+    setRoomForm({ name: '', seats: 30, type: '笔试考场' })
     toast.success('考场已增加')
   }
 
@@ -93,8 +94,8 @@ export default function ExamRoomPage() {
   }
 
   const roomCount = (spot: TestSpot, type: 'written' | 'machine') => spot.rooms.filter(room => {
-    if (type === 'written') return room.type === '笔试' || room.type === '理论考场'
-    return room.type === '机考' || room.type === '技能考场'
+    if (type === 'written') return room.type === '笔试考场'
+    return room.type === '机考考场'
   }).length
 
   return (
@@ -124,6 +125,7 @@ export default function ExamRoomPage() {
               <tr>
                 <th className="w-16 px-4 py-3 text-center font-medium">序号</th>
                 <th className="px-4 py-3 text-left font-medium">考点名称</th>
+                <th className="px-4 py-3 text-left font-medium">备案地</th>
                 <th className="px-4 py-3 text-left font-medium">考点地址</th>
                 <th className="px-4 py-3 text-left font-medium">联系电话</th>
                 <th className="px-4 py-3 text-center font-medium">笔试考场数</th>
@@ -136,6 +138,7 @@ export default function ExamRoomPage() {
                 <tr key={spot.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-center text-gray-600">{index + 1}</td>
                   <td className="px-4 py-3 font-medium text-gray-900"><MapPin className="mr-2 inline h-4 w-4 text-[#1A56DB]" />{spot.name}</td>
+                  <td className="px-4 py-3 text-gray-600">{spot.recordArea}</td>
                   <td className="px-4 py-3 text-gray-600">{spot.address}</td>
                   <td className="px-4 py-3 text-gray-600">{spot.phone}</td>
                   <td className="px-4 py-3 text-center">{roomCount(spot, 'written')}</td>
@@ -149,7 +152,7 @@ export default function ExamRoomPage() {
               ))}
               {filteredSpots.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-16 text-center text-gray-400">暂无数据</td>
+                  <td colSpan={8} className="px-4 py-16 text-center text-gray-400">暂无数据</td>
                 </tr>
               )}
             </tbody>
@@ -158,53 +161,57 @@ export default function ExamRoomPage() {
       </section>
 
       <Dialog open={showSpotDialog} onOpenChange={setShowSpotDialog}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-5xl">
           <DialogHeader><DialogTitle>{activeSpot?.name || '考点'} - 考场维护</DialogTitle></DialogHeader>
-          <div className="max-h-[62vh] overflow-auto rounded-lg border border-gray-200">
+          <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm">
+              <div className="space-y-2">
+                <div><span className="text-gray-500">备案地：</span><span className="font-medium text-gray-900">{activeSpot?.recordArea || '-'}</span></div>
+                <div><span className="text-gray-500">考点名称：</span><span className="font-medium text-gray-900">{activeSpot?.name || '-'}</span></div>
+                <div><span className="text-gray-500">联系电话：</span><span className="font-medium text-gray-900">{activeSpot?.phone || '-'}</span></div>
+                <div><span className="text-gray-500">地址：</span><span className="font-medium text-gray-900">{activeSpot?.address || '-'}</span></div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Badge variant="outline">笔试考场 {activeSpot ? roomCount(activeSpot, 'written') : 0}</Badge>
+                <Badge variant="outline">机考考场 {activeSpot ? roomCount(activeSpot, 'machine') : 0}</Badge>
+              </div>
+              <Button className="mt-4 w-full" onClick={() => activeSpot && openAddRoom(activeSpot)}>
+                <Plus className="mr-1 h-4 w-4" />新增考场
+              </Button>
+            </div>
+            <div className="max-h-[62vh] overflow-auto rounded-lg border border-gray-200">
             <table className="w-full text-sm">
               <thead className="bg-[#F9FAFB] text-gray-600">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium">序号</th>
-                  <th className="px-4 py-3 text-left font-medium">考点名称</th>
-                  <th className="px-4 py-3 text-left font-medium">备案地</th>
-                  <th className="px-4 py-3 text-left font-medium">考点地址</th>
-                  <th className="px-4 py-3 text-left font-medium">联系电话</th>
-                  <th className="px-4 py-3 text-center font-medium">理论考场</th>
-                  <th className="px-4 py-3 text-center font-medium">技能考场</th>
+                  <th className="px-4 py-3 text-left font-medium">考场名称</th>
+                  <th className="px-4 py-3 text-left font-medium">考场类型</th>
+                  <th className="px-4 py-3 text-center font-medium">座位数</th>
                   <th className="px-4 py-3 text-left font-medium">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {activeSpot && (
-                  <tr className="align-top hover:bg-gray-50">
-                    <td className="px-4 py-3 text-gray-500">1</td>
-                    <td className="px-4 py-3 font-medium text-gray-900">
-                      <MapPin className="mr-2 inline h-4 w-4 text-[#1A56DB]" />{activeSpot.name}
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {activeSpot.rooms.map(room => (
-                          <Badge key={room.id || room.name} variant="outline" className="bg-white text-[11px]">
-                            {room.name} · {room.seats}座
-                            <button onClick={() => removeRoom(activeSpot.id, room.id || room.name)} className="ml-1 text-gray-400 hover:text-red-600">
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                          </Badge>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{activeSpot.recordArea || '-'}</td>
-                    <td className="max-w-[240px] px-4 py-3 text-gray-600">{activeSpot.address}</td>
-                    <td className="px-4 py-3 text-gray-600">{activeSpot.phone}</td>
-                    <td className="px-4 py-3 text-center">{roomCount(activeSpot, 'written')}</td>
-                    <td className="px-4 py-3 text-center">{roomCount(activeSpot, 'machine')}</td>
+                {activeSpot?.rooms.map((room, index) => (
+                  <tr key={room.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-gray-500">{index + 1}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900">{room.name}</td>
+                    <td className="px-4 py-3 text-gray-600">{room.type}</td>
+                    <td className="px-4 py-3 text-center text-gray-600">{room.seats}</td>
                     <td className="px-4 py-3">
-                      <button onClick={() => openAddRoom(activeSpot)} className="text-xs text-[#1A56DB] hover:underline">
-                        <Plus className="mr-1 inline h-3.5 w-3.5" />添加考场
+                      <button onClick={() => activeSpot && removeRoom(activeSpot.id, room.id)} className="text-xs text-red-600 hover:underline">
+                        <Trash2 className="mr-1 inline h-3.5 w-3.5" />移除
                       </button>
                     </td>
+                  </tr>
+                ))}
+                {!activeSpot?.rooms.length && (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-12 text-center text-gray-400">暂无考场，请先新增考场</td>
                   </tr>
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -239,8 +246,7 @@ export default function ExamRoomPage() {
                 onChange={event => setRoomForm(prev => ({ ...prev, type: event.target.value as Room['type'] }))}
                 className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3"
               >
-                <option>理论考场</option>
-                <option>技能考场</option>
+                {EXAM_ROOM_TYPES.map(type => <option key={type}>{type}</option>)}
               </select>
             </div>
             <div className="flex justify-end gap-2 pt-2">

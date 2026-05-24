@@ -123,7 +123,11 @@
           body (if (:orgId body) body (assoc body :orgId org-id))]
       (try
         (let [result (demand/batch-push! datasource body)
-              status (if (pos? (:failed result)) 207 201)]
+              is-batch (contains? result :failed)
+              success? (if is-batch
+                         (= 0 (:failed result))
+                         (= "success" (:pushStatus result)))
+              status (if success? 201 207)]
           {:status status :body result})
         (catch Exception e
           (response/bad-request (.getMessage e)))))))

@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
+import { SITE_OPTIONS, generateCertificateNumber } from '@/lib/workflow'
 
 type PrintState = '全部' | '已打印' | '未打印'
 type BorderMode = '不打印边框' | '打印边框' | '图文边框'
@@ -241,15 +242,39 @@ export default function CertIssue() {
     setExpanded(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id])
   }
 
+  const buildCandidateCertNo = (batch: CertBatch, candidate: CertCandidate, usedNumbers: string[]) => {
+    const matchedSite = SITE_OPTIONS.find(item => item.siteName === batch.siteName)
+    return generateCertificateNumber(matchedSite?.siteCode || '00000000', candidate.issueDate, candidate.level, usedNumbers)
+  }
+
   const confirmPrint = (batch: CertBatch) => {
+    const usedNumbers = items.flatMap(item => item.candidates.map(candidate => candidate.certNo))
     setItems(prev => prev.map(item => item.id === batch.id
       ? {
           ...item,
           isPrint: true,
-          candidates: item.candidates.map(candidate => ({ ...candidate, status: '已打印' as const })),
+          candidates: item.candidates.map(candidate => {
+            const nextCertNo = buildCandidateCertNo(item, candidate, usedNumbers)
+            usedNumbers.push(nextCertNo)
+            return {
+              ...candidate,
+              certNo: nextCertNo,
+              status: '已打印' as const,
+              events: [
+                ...candidate.events,
+                {
+                  id: `print-${candidate.id}-${Date.now()}`,
+                  time: new Date().toLocaleString('zh-CN'),
+                  step: '确认打印',
+                  result: '集团管理员确认打印并锁定证书编号',
+                  operator: '集团管理员',
+                },
+              ],
+            }
+          }),
         }
       : item))
-    toast.success(`已确认打印：${batch.title}`)
+    toast.success(`已确认打印：${batch.title}，证书编号已按站点代码 + 年度 + 等级编码 + 顺序号规则生成`)
   }
 
   const adjustCert = (batch: CertBatch, range: '全部' | '12级' | '345级' = '全部') => {

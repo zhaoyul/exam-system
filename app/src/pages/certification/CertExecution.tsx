@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 
 // 等级认定（机构）核心流程步骤
-const flowSteps = [
+const baseFlowSteps = [
   { id: 'plans', label: '制定计划', icon: ListChecks, path: '/cert/exec/plans', desc: '创建认定计划，选择站点、职业工种' },
   { id: 'registration', label: '考试报名', icon: Users, path: '/cert/exec/registration', desc: '集体报名，批量导入考生' },
   { id: 'arrangement', label: '考场编排', icon: LayoutGrid, path: '/cert/exec/arrangement', desc: '安排考点、考场、座位' },

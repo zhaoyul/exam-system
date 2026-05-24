@@ -30,6 +30,10 @@
 (defn- publicity-open? [ds plan-id]
   (if-let [p (get-publicity ds plan-id)]
     (and (= "publicizing" (:status p))
+         (or (nil? (:publicity_start p))
+             (let [now (java.time.LocalDateTime/now)
+                   start (java.time.LocalDateTime/parse (:publicity_start p))]
+               (not (.isBefore now start))))
          (or (nil? (:publicity_end p))
              (let [now (java.time.LocalDateTime/now)
                    end (java.time.LocalDateTime/parse (:publicity_end p))]
@@ -43,6 +47,50 @@
                end (java.time.LocalDateTime/parse (:publicity_end p))]
            (.isAfter now end)))
     false))
+
+(defn- publicity-not-started? [ds plan-id]
+  (if-let [p (get-publicity ds plan-id)]
+    (and (:publicity_start p)
+         (let [now (java.time.LocalDateTime/now)
+               start (java.time.LocalDateTime/parse (:publicity_start p))]
+           (.isBefore now start)))
+    false))
+
+(defn- maybe-auto-lock! [ds plan-id]
+  (when (publicity-expired? ds plan-id)
+    (db/execute! ds
+      ["UPDATE cgn_score_publicity SET status = 'locked', updated_at = CURRENT_TIMESTAMP
+        WHERE plan_id = ? AND status = 'publicizing'" plan-id])
+    (db/execute! ds
+      ["UPDATE cgn_score SET status = 'locked', updated_at = CURRENT_TIMESTAMP
+        WHERE plan_id = ? AND status != 'locked'" plan-id])))
+
+(defn get-publicity-status
+  "Returns publicity status info for a plan.
+   Status keywords: :not-started, :publicizing, :expired, :locked, :none"
+  [ds plan-id]
+  (if-let [p (get-publicity ds plan-id)]
+    (let [result {:id (:id p)
+                  :planId (:plan_id p)
+                  :name (:name p)
+                  :publicityStart (:publicity_start p)
+                  :publicityEnd (:publicity_end p)
+                  :publicityDays (:publicity_days p)
+                  :candidateCount (:candidate_count p)}]
+      (cond
+        (= "locked" (:status p))
+        (assoc result :status "locked" :label "已锁定")
+        (publicity-expired? ds plan-id)
+        (assoc result :status "expired" :label "公示已结束")
+        (publicity-not-started? ds plan-id)
+        (assoc result :status "pending" :label "待公示")
+        (publicity-open? ds plan-id)
+        (assoc result :status "publicizing" :label "公示中")
+        (= "publicizing" (:status p))
+        (assoc result :status "publicizing" :label "公示中")
+        :else
+        (assoc result :status (:status p) :label (str (:status p)))))
+    {:status "none" :label "未配置公示"}))
 
 ;; ─── audit_log ───
 
@@ -75,6 +123,9 @@
         sql (str "SELECT * FROM cgn_score WHERE "
                  (clojure.string/join " AND " filters)
                  " ORDER BY updated_at DESC")]
+    ;; Auto-lock expired publicity periods on query
+    (when (seq plan-id)
+      (try (maybe-auto-lock! ds plan-id) (catch Exception _)))
     {:items (mapv row->score (db/query ds (into [sql] args)))}))
 
 (defn get-score [ds id]

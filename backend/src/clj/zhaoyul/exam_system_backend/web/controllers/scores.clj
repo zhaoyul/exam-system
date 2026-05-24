@@ -69,6 +69,14 @@
     (scores/unlock-scores-by-plan! datasource plan-id)
     (response/ok {:status "unlocked" :plan-id plan-id})))
 
+;; ─── 公示状态 ───
+
+(defn get-publicity-status [{:keys [datasource]} request]
+  (let [plan-id (get-in request [:path-params :plan-id])]
+    (if-let [status-info (scores/get-publicity-status datasource plan-id)]
+      (response/ok status-info)
+      (response/not-found "未配置公示信息"))))
+
 ;; ─── audit_log 查询 ───
 
 (defn list-audit-logs [{:keys [datasource]} request]

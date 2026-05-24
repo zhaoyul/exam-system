@@ -161,6 +161,9 @@
              :handler (partial score-controller/list-scores ctx)}
        :post {:summary "新增成绩"
               :handler (partial score-controller/create-score ctx)}}]]
+    ["/publicity-status/:plan-id"
+     {:get {:summary "查询计划公示状态"
+            :handler (partial score-controller/get-publicity-status ctx)}}]
     ["/audit-logs"
      {:get {:summary "成绩修改记录"
             :handler (partial score-controller/list-audit-logs ctx)}}]

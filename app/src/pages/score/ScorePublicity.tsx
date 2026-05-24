@@ -1,11 +1,20 @@
-import { useMemo, useState } from 'react'
-import { Search, Eye, Download, Calendar, History, Lock, Unlock } from 'lucide-react'
+import { useMemo, useState, useEffect } from 'react'
+import { Search, Eye, Download, Calendar, History, Lock, Unlock, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useBackendListState } from '@/hooks/useBackendListState'
 import { apiRequest } from '@/lib/api'
 import { toast } from 'sonner'
+
+interface PublicityStatusInfo {
+  status: string
+  label: string
+  planId?: string
+  publicityStart?: string
+  publicityEnd?: string
+  publicityDays?: number
+}
 
 // ─── Types ───
 
@@ -57,6 +66,37 @@ export default function ScorePublicity() {
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([])
   const [showAuditLogs, setShowAuditLogs] = useState(false)
   const [loadingAudit, setLoadingAudit] = useState(false)
+  const [publicityStatuses, setPublicityStatuses] = useState<Record<string, PublicityStatusInfo>>({})
+  const [loadingPublicity, setLoadingPublicity] = useState(false)
+
+  // ─── Fetch publicity status per plan ───
+
+  const planIds = useMemo(() => Array.from(new Set(items.map(i => i.planId).filter(Boolean))), [items])
+
+  useEffect(() => {
+    if (planIds.length === 0) return
+    setLoadingPublicity(true)
+    Promise.all(
+      planIds.map(async (planId) => {
+        try {
+          const res = await apiRequest<PublicityStatusInfo>(`/score/publicity-status/${encodeURIComponent(planId)}`)
+          return { planId, status: res }
+        } catch {
+          return { planId, status: { status: 'none', label: '未配置公示' } as PublicityStatusInfo }
+        }
+      })
+    ).then((results) => {
+      const map: Record<string, PublicityStatusInfo> = {}
+      results.forEach(({ planId, status }) => { map[planId] = status })
+      setPublicityStatuses(map)
+      setLoadingPublicity(false)
+    }).catch(() => setLoadingPublicity(false))
+  }, [planIds])
+
+  const getPubStatus = (planId?: string): PublicityStatusInfo => {
+    if (!planId) return { status: 'none', label: '未配置公示' }
+    return publicityStatuses[planId] || { status: 'none', label: '未配置公示' }
+  }
 
   const plans = useMemo(() => {
     const names = Array.from(new Set(items.map(i => i.planName).filter(Boolean)))
@@ -109,12 +149,28 @@ export default function ScorePublicity() {
     }
   }
 
-  const isPublicizing = (item: PublicityScore) => item.status === 'publicizing'
+  const isPublicizing = (item: PublicityScore) => {
+    const ps = getPubStatus(item.planId)
+    return ps.status === 'publicizing'
+  }
+
+  const pubLabelMeta: Record<string, { label: string; color: string }> = {
+    pending:     { label: '待公示', color: 'bg-slate-50 text-slate-500' },
+    publicizing: { label: '可修改', color: 'bg-amber-50 text-amber-700' },
+    expired:     { label: '已结束', color: 'bg-gray-100 text-gray-500' },
+    locked:      { label: '已锁定', color: 'bg-gray-100 text-gray-500' },
+    none:        { label: '未配置', color: 'bg-gray-50 text-gray-400' },
+  }
 
   const handleLock = async (planId: string) => {
     try {
       await apiRequest(`/score/scoring/${planId}/lock`, { method: 'POST' })
       toast.success('公示期已结束，成绩已锁定')
+      // Refresh publicity status
+      try {
+        const res = await apiRequest<PublicityStatusInfo>(`/score/publicity-status/${encodeURIComponent(planId)}`)
+        setPublicityStatuses(prev => ({ ...prev, [planId]: res }))
+      } catch { /* ignore */ }
     } catch { toast.error('锁定失败') }
   }
 
@@ -122,6 +178,10 @@ export default function ScorePublicity() {
     try {
       await apiRequest(`/score/scoring/${planId}/unlock`, { method: 'POST' })
       toast.success('成绩已解锁，可在公示期修改')
+      try {
+        const res = await apiRequest<PublicityStatusInfo>(`/score/publicity-status/${encodeURIComponent(planId)}`)
+        setPublicityStatuses(prev => ({ ...prev, [planId]: res }))
+      } catch { /* ignore */ }
     } catch { toast.error('解锁失败') }
   }
 
@@ -149,20 +209,33 @@ export default function ScorePublicity() {
       {/* Plan batch summary cards */}
       {Object.keys(stats).length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {Object.entries(stats).map(([planName, s]) => (
+          {Object.entries(stats).map(([planName, s]) => {
+            const planId = items.find(i => i.planName === planName)?.planId
+            const ps = getPubStatus(planId)
+            const pubMeta = pubLabelMeta[ps.status] || pubLabelMeta.none
+            return (
             <div key={planName} className="rounded-lg border border-gray-200 bg-white p-4">
-              <div className="text-sm font-medium text-gray-900 truncate">{planName}</div>
+              <div className="flex items-center gap-2">
+                <div className="text-sm font-medium text-gray-900 truncate flex-1">{planName}</div>
+                <Badge className={`text-[10px] ${pubMeta.color}`}>{pubMeta.label}</Badge>
+              </div>
               <div className="flex items-center gap-3 mt-2">
                 <div><span className="text-xs text-gray-500">考生</span><p className="text-lg font-bold text-gray-900">{s.total}</p></div>
                 <div><span className="text-xs text-gray-500">合格</span><p className="text-lg font-bold text-green-600">{s.pass}</p></div>
                 <div><span className="text-xs text-gray-500">不合格</span><p className="text-lg font-bold text-red-600">{s.fail}</p></div>
               </div>
+              {ps.publicityStart && ps.publicityEnd && (
+                <div className="text-xs text-gray-400 mt-1">
+                  <Clock className="w-3 h-3 inline mr-0.5" />
+                  {ps.publicityStart?.slice(0, 10)} ~ {ps.publicityEnd?.slice(0, 10)}
+                </div>
+              )}
               <div className="flex gap-2 mt-3">
-                <Button variant="outline" size="sm" onClick={() => handleLock(planName)} className="h-7 text-xs"><Lock className="w-3 h-3 mr-1" />锁定</Button>
-                <Button variant="outline" size="sm" onClick={() => handleUnlock(planName)} className="h-7 text-xs"><Unlock className="w-3 h-3 mr-1" />解锁</Button>
+                <Button variant="outline" size="sm" onClick={() => handleLock(planId || planName)} disabled={ps.status === 'locked' || ps.status === 'expired' || ps.status === 'none'} className="h-7 text-xs"><Lock className="w-3 h-3 mr-1" />锁定</Button>
+                <Button variant="outline" size="sm" onClick={() => handleUnlock(planId || planName)} disabled={ps.status !== 'locked'} className="h-7 text-xs"><Unlock className="w-3 h-3 mr-1" />解锁</Button>
               </div>
             </div>
-          ))}
+          )})}
         </div>
       )}
 
@@ -211,9 +284,17 @@ export default function ScorePublicity() {
                   <Badge className={`text-[10px] ${isPass(i) ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{isPass(i) ? '合格' : '不合格'}</Badge>
                 </td>
                 <td className="px-4 py-3">
-                  {isPublicizing(i)
-                    ? <Badge className="bg-amber-50 text-amber-700 text-[10px]"><Calendar className="w-3 h-3 mr-1" />可修改</Badge>
-                    : <Badge className="bg-gray-50 text-gray-500 text-[10px]">已锁定</Badge>}
+                  {(() => {
+                    const ps = getPubStatus(i.planId)
+                    const meta = pubLabelMeta[ps.status] || pubLabelMeta.none
+                    return (
+                      <Badge className={`${meta.color} text-[10px]`}>
+                        {ps.status === 'publicizing' && <Calendar className="w-3 h-3 mr-1" />}
+                        {ps.status === 'expired' && <Clock className="w-3 h-3 mr-1" />}
+                        {meta.label}
+                      </Badge>
+                    )
+                  })()}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
@@ -241,9 +322,11 @@ export default function ScorePublicity() {
               <div className="flex justify-between"><span className="text-gray-500">技能</span><span className="font-medium">{viewItem.skillScore ?? '-'}</span></div>
               <div className="flex justify-between"><span className="text-gray-500">总分</span><span className="font-bold text-[#1A56DB]">{total(viewItem)}</span></div>
               <div className="flex justify-between"><span className="text-gray-500">状态</span>
-                {isPublicizing(viewItem)
-                  ? <Badge className="bg-amber-50 text-amber-700 text-xs">公示中（可修改）</Badge>
-                  : <Badge className="bg-gray-50 text-gray-500 text-xs">已锁定</Badge>}
+                {(() => {
+                  const ps = getPubStatus(viewItem.planId)
+                  const meta = pubLabelMeta[ps.status] || pubLabelMeta.none
+                  return <Badge className={`text-xs ${meta.color}`}>{ps.label || meta.label}</Badge>
+                })()}
               </div>
               <div className="flex justify-between"><span className="text-gray-500">最后更新</span><span className="text-xs text-gray-400">{formatTime(viewItem.updatedAt)}</span></div>
             </div>

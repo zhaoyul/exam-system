@@ -1,11 +1,19 @@
-import { useMemo, useState, useCallback } from 'react'
-import { Search, CheckCircle, Edit3, Upload, Download, RotateCcw, Plus, Lock, Unlock } from 'lucide-react'
+import { useMemo, useState, useCallback, useEffect } from 'react'
+import { Search, CheckCircle, Edit3, Upload, Download, RotateCcw, Plus, Lock, Unlock, Calendar, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { useBackendListState } from '@/hooks/useBackendListState'
 import { apiRequest } from '@/lib/api'
+
+interface PublicityStatus {
+  status: string
+  label: string
+  publicityStart?: string
+  publicityEnd?: string
+  publicityDays?: number
+}
 
 // ─── Types matching backend cgn_score table (camelCase from scores controller) ───
 
@@ -33,6 +41,14 @@ const statusMeta: Record<string, { label: string; color: string }> = {
   publicizing: { label: '公示中', color: 'bg-amber-50 text-amber-700' },
 }
 
+const publicityLabelMeta: Record<string, { label: string; color: string }> = {
+  pending:     { label: '待公示', color: 'bg-slate-50 text-slate-500' },
+  publicizing: { label: '公示中（可修改）', color: 'bg-amber-50 text-amber-700' },
+  expired:     { label: '公示已结束', color: 'bg-gray-100 text-gray-500' },
+  locked:      { label: '已锁定', color: 'bg-gray-100 text-gray-500' },
+  none:        { label: '未配置公示', color: 'bg-gray-50 text-gray-400' },
+}
+
 const initialTemplate: ScoreRecord[] = [
   { candidateId: '', candidateName: '', code: '', planId: '', planName: '20220412第3批认定', occupation: '核反应堆运行值班员', level: '三级/高级工', idCard: '440301199001011234', theoryScore: null, skillScore: null, totalScore: null, status: 'draft' },
 ]
@@ -49,6 +65,8 @@ export default function ScoreEntry() {
   const [showImport, setShowImport] = useState(false)
   const [showBatch, setShowBatch] = useState(false)
   const [batchForm, setBatchForm] = useState<{ candidateId: string; theoryScore: string; skillScore: string }>({ candidateId: '', theoryScore: '', skillScore: '' })
+  const [publicityStatus, setPublicityStatus] = useState<PublicityStatus | null>(null)
+  const [loadingPublicity, setLoadingPublicity] = useState(false)
 
   // ─── Derived data ───
 
@@ -70,6 +88,30 @@ export default function ScoreEntry() {
       return t >= 60 && s >= 60
     }).length
   }, [items])
+
+  // ─── Publicity status fetch ───
+
+  useEffect(() => {
+    const fetchPublicity = async () => {
+      const planId = items[0]?.planId
+      if (!planId) return
+      setLoadingPublicity(true)
+      try {
+        const res = await apiRequest<PublicityStatus>(`/score/publicity-status/${encodeURIComponent(planId)}`)
+        setPublicityStatus(res)
+      } catch {
+        setPublicityStatus(null)
+      } finally {
+        setLoadingPublicity(false)
+      }
+    }
+    fetchPublicity()
+  }, [items])
+
+  const canEdit = useMemo(() => {
+    if (!publicityStatus) return true // fallback: allow if unknown
+    return publicityStatus.status === 'publicizing' || publicityStatus.status === 'none' || publicityStatus.status === 'pending'
+  }, [publicityStatus])
 
   // ─── Inline editing ───
 
@@ -168,6 +210,20 @@ export default function ScoreEntry() {
         <div>
           <h1 className="text-xl font-bold text-gray-900">成绩管理</h1>
           <p className="text-sm text-gray-500 mt-1">录入理论、技能成绩，公示期支持修改并自动记录变更</p>
+          {publicityStatus && publicityStatus.status !== 'none' && (
+            <div className="flex items-center gap-2 mt-2">
+              <Badge className={`text-xs ${(publicityLabelMeta[publicityStatus.status] || publicityLabelMeta.none).color}`}>
+                <Calendar className="w-3 h-3 mr-1" />
+                {(publicityLabelMeta[publicityStatus.status] || publicityLabelMeta.none).label}
+              </Badge>
+              {publicityStatus.publicityStart && publicityStatus.publicityEnd && (
+                <span className="text-xs text-gray-400">
+                  <Clock className="w-3 h-3 inline mr-0.5" />
+                  {publicityStatus.publicityStart?.slice(0, 10)} ~ {publicityStatus.publicityEnd?.slice(0, 10)}
+                </span>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setShowBatch(true)}><Plus className="w-4 h-4 mr-2" />批量录入</Button>
@@ -263,8 +319,10 @@ export default function ScoreEntry() {
                           <button onClick={() => saveEdit(item)} className="text-green-600 hover:text-green-700"><CheckCircle className="w-4 h-4" /></button>
                           <button onClick={cancelEdit} className="text-gray-400 hover:text-gray-600"><RotateCcw className="w-4 h-4" /></button>
                         </>
-                      ) : (
+                      ) : canEdit ? (
                         <button onClick={() => startEdit(item)} className="text-gray-500 hover:text-amber-600" title="编辑成绩"><Edit3 className="w-3.5 h-3.5" /></button>
+                      ) : (
+                        <button disabled className="text-gray-300 cursor-not-allowed" title="公示期已结束，成绩已锁定"><Edit3 className="w-3.5 h-3.5" /></button>
                       )}
                     </div>
                   </td>

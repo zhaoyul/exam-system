@@ -15,6 +15,7 @@
    [zhaoyul.exam-system-backend.web.controllers.scores :as score-controller]
    [zhaoyul.exam-system-backend.web.controllers.health :as health]
    [zhaoyul.exam-system-backend.web.controllers.organizations :as organizations]
+   [zhaoyul.exam-system-backend.web.controllers.paper-demand :as paper-demand]
    [zhaoyul.exam-system-backend.web.controllers.personal :as personal]
    [zhaoyul.exam-system-backend.web.controllers.resources :as resource-controller]
    [zhaoyul.exam-system-backend.web.controllers.supervision :as supervision]
@@ -352,7 +353,35 @@
    ;; 身份证解析
    ["/utils/parse-id-card"
     {:get {:summary "解析身份证号 (返回性别和出生日期)"
-           :handler exam-staff/parse-id-card}}]
+           :handler exam-staff/parse-id-card}}]]
+   ["/paper-demand"
+    {:swagger {:tags ["试卷需求"]}}
+    ["/assembly-methods"
+     {:get {:summary "组卷方式枚举"
+            :handler (paper-demand/assembly-methods ctx)}}]
+    ["/items"
+     [""
+      {:get {:summary "试卷需求项列表"
+             :handler (paper-demand/list-demands ctx)}
+       :post {:summary "创建试卷需求项（按工种）"
+              :handler (paper-demand/create-demand ctx)}}]
+     ["/:id"
+      {:get {:summary "查看需求项详情"
+             :handler (paper-demand/get-demand ctx)}
+       :put {:summary "更新需求项"
+             :handler (paper-demand/update-demand ctx)}
+       :delete {:summary "删除需求项"
+                :handler (paper-demand/delete-demand ctx)}}]
+     ["/:id/:action"
+      {:post {:summary "需求项业务动作"
+              :handler (paper-demand/action-demand ctx)}}]]
+    ["/push"
+     [""
+      {:post {:summary "试卷完成推送（回推）"
+              :handler (paper-demand/push-results ctx)}}]
+     ["/results"
+      {:get {:summary "推送结果列表"
+             :handler (paper-demand/list-push-results ctx)}}]]]
    ["/question-bank"
     {:swagger {:tags ["题库"]}}
     (resource-endpoint ctx "/subject-categories" "subject-categories" "题库" "科目分类")

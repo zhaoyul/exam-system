@@ -36,8 +36,7 @@
                (seq status) (conj status)
                (seq org-id) (conj org-id))
         sql (str "SELECT * FROM cgn_reg_org WHERE " (str/join " AND " filters) " ORDER BY updated_at DESC")]
-    (response/ok {:items (mapv row->reg-org (db/query datasource (into [sql] args)))}
-                 :if-not-empty true)))
+    (response/ok {:items (mapv row->reg-org (db/query datasource (into [sql] args)))})))
 
 (defn get-registration-org [{:keys [datasource]} request]
   (let [id (get-in request [:path-params :id])]

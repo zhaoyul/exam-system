@@ -370,6 +370,17 @@
 (def domain-doc-receives
   [{:id "doc-receive-001" :org_id "org-csyxgs" :code "RCV20260001" :distribution_id "doc-dist-001" :name "2026年认定工作通知接收" :sender_org "集团中心" :receive_date "2026-05-20" :status "received"}])
 
+(def domain-scores
+  [{:id "score-001" :org_id "org-csyxgs" :code "SCR20260001" :plan_id "recog-plan-001" :candidate_id "candidate-001" :candidate_name "陈小明" :theory_score 86.0 :skill_score 90.0 :total_score 88.0 :status "draft"}
+   {:id "score-002" :org_id "org-csyxgs" :code "SCR20260002" :plan_id "recog-plan-001" :candidate_id "candidate-002" :candidate_name "赵小红" :theory_score 78.0 :skill_score 85.0 :total_score 81.5 :status "draft"}
+   {:id "score-003" :org_id "org-yangjiang" :code "SCR20260003" :plan_id "recog-plan-002" :candidate_id "candidate-003" :candidate_name "刘建国" :theory_score 92.0 :skill_score 88.0 :total_score 90.0 :status "draft"}
+   {:id "score-004" :org_id "org-yangjiang" :code "SCR20260004" :plan_id "recog-plan-002" :candidate_id "candidate-004" :candidate_name "孙丽华" :theory_score 75.0 :skill_score 80.0 :total_score 77.5 :status "draft"}
+   {:id "score-005" :org_id "org-csyxgs" :code "SCR20260005" :plan_id "recog-plan-001" :candidate_id "candidate-005" :candidate_name "周文博" :theory_score 95.0 :skill_score 92.0 :total_score 93.5 :status "draft"}])
+
+(def domain-score-publicities
+  [{:id "score-pub-001" :org_id "org-csyxgs" :code "PUB20260001" :plan_id "recog-plan-001" :name "2026年第一批成绩公示" :publicity_start "2026-06-25T00:00:00" :publicity_end "2026-07-02T00:00:00" :publicity_days 7 :candidate_count 45 :status "publicizing"}
+   {:id "score-pub-002" :org_id "org-yangjiang" :code "PUB20260002" :plan_id "recog-plan-002" :name "2026年第二批成绩公示" :publicity_start "2026-07-22T00:00:00" :publicity_end "2026-07-29T00:00:00" :publicity_days 7 :candidate_count 32 :status "pending"}])
+
 (def domain-exam-staff
   [{:id "exam-staff-001" :org_id "org-csyxgs" :code "ES20260001" :name "李考务" :login_name "440301198201011234" :phone "13800138111" :gender "男" :staff_type "exam_staff" :unit_name "测试有限公司" :id_card "440301198201011234" :photo_url nil :position "考务主管" :status "active"}
    {:id "exam-staff-002" :org_id "org-csyxgs" :code "ES20260002" :name "王监考" :login_name "440301199005152345" :phone "13800138112" :gender "女" :staff_type "proctor" :unit_name "测试有限公司" :id_card "440301199005152345" :photo_url nil :position "主监考" :status "active"}
@@ -431,6 +442,10 @@
     (ensure-domain-row! ds 'cgn_doc_distribution "id" row))
   (doseq [row domain-doc-receives]
     (ensure-domain-row! ds 'cgn_doc_receive "id" row))
+  (doseq [row domain-scores]
+    (ensure-domain-row! ds 'cgn_score "id" row))
+  (doseq [row domain-score-publicities]
+    (ensure-domain-row! ds 'cgn_score_publicity "id" row))
   (doseq [row domain-exam-staff]
     (ensure-domain-row! ds 'cgn_exam_staff "id" row))
   {:status :domain-seeded})

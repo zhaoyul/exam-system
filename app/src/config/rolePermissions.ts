@@ -27,7 +27,7 @@ export const ROLE_MENU_ACCESS: Record<UserRole, string[] | undefined> = {
   // Group admin: full access
   group_admin: undefined,
 
-  // Branch admin: certification flow + local management
+  // Branch admin: certification flow + local management (NO certificate management)
   branch_admin: [
     '/dashboard',
     '/wb/theory',
@@ -67,8 +67,6 @@ export const ROLE_MENU_ACCESS: Record<UserRole, string[] | undefined> = {
     '/score/review',
     '/score/publicity',
     '/score/correction',
-    '/certificate/issue',
-    '/certificate/view',
     '/grading',
     '/monitor',
     '/report/statistics',

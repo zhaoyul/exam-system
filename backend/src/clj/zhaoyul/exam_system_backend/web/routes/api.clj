@@ -9,6 +9,7 @@
    [zhaoyul.exam-system-backend.web.controllers.catalog :as catalog]
    [zhaoyul.exam-system-backend.web.controllers.exam-staff :as exam-staff]
    [zhaoyul.exam-system-backend.web.controllers.files :as files-ctrl]
+   [zhaoyul.exam-system-backend.web.controllers.numbering :as numbering]
    [zhaoyul.exam-system-backend.web.controllers.filing :as filing]
    [zhaoyul.exam-system-backend.web.controllers.health :as health]
    [zhaoyul.exam-system-backend.web.controllers.organizations :as organizations]
@@ -287,6 +288,17 @@
     (resource-endpoint ctx "/evaluator-staff" "evaluator-staff" "等级认定" "考评人员")
     (resource-endpoint ctx "/declaration" "cert-declarations" "等级认定" "证书申报")
     (resource-endpoint ctx "/video-monitor" "video-monitor" "等级认定" "视频监控")]
+   ["/numbering"
+    {:swagger {:tags ["编号服务"]}}
+    ["/plan-number"
+     {:post {:summary "生成计划编号"
+             :handler (partial numbering/generate-plan-number ctx)}}]
+    ["/cert-number"
+     {:post {:summary "生成证书号"
+             :handler (partial numbering/generate-cert-number ctx)}}]
+    ["/level-mapping"
+     {:get {:summary "获取等级编码映射"
+            :handler numbering/get-level-mapping}}]]
    ["/cert"
     {:swagger {:tags ["等级认定兼容路径"]}}
     ["/public-query" {:get {:summary "公共证书查询" :handler (resource-controller/list-alias ctx "certificates")}}]

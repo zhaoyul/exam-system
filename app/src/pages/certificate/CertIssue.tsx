@@ -12,6 +12,7 @@ import {
   Printer,
   Search,
   Settings,
+  Sparkles,
   UserRound,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -43,6 +44,7 @@ interface CertBatchItem {
   level: string
   onlineCount: number
   groupCount: number
+  certStartNo: string
 }
 
 interface CertCandidate {
@@ -88,9 +90,9 @@ const batches: CertBatch[] = [
     isPrint: false,
     canAdjust: true,
     items: [
-      { id: 'p1-i1', occupation: '道路客运汽车驾驶员', level: '五级/初级工', onlineCount: 0, groupCount: 1 },
-      { id: 'p1-i2', occupation: '抄表核算收费员', level: '五级/初级工', onlineCount: 0, groupCount: 1 },
-      { id: 'p1-i3', occupation: '抄表核算收费员', level: '四级/中级工', onlineCount: 0, groupCount: 1 },
+      { id: 'p1-i1', occupation: '道路客运汽车驾驶员', level: '五级/初级工', onlineCount: 0, groupCount: 1, certStartNo: 'Y001011999966215000001' },
+      { id: 'p1-i2', occupation: '抄表核算收费员', level: '五级/初级工', onlineCount: 0, groupCount: 1, certStartNo: 'Y001011999966215000002' },
+      { id: 'p1-i3', occupation: '抄表核算收费员', level: '四级/中级工', onlineCount: 0, groupCount: 1, certStartNo: 'Y001011999966215000003' },
     ],
     candidates: [
       {
@@ -143,7 +145,7 @@ const batches: CertBatch[] = [
     isPrint: true,
     canAdjust: false,
     items: [
-      { id: 'p2-i1', occupation: '秘书', level: '五级/初级工', onlineCount: 0, groupCount: 3 },
+      { id: 'p2-i1', occupation: '秘书', level: '五级/初级工', onlineCount: 0, groupCount: 3, certStartNo: 'Y001011999966215000004' },
     ],
     candidates: [
       {
@@ -178,8 +180,8 @@ const batches: CertBatch[] = [
     isPrint: false,
     canAdjust: true,
     items: [
-      { id: 'p3-i1', occupation: '核反应堆运行值班员', level: '三级/高级工', onlineCount: 4, groupCount: 16 },
-      { id: 'p3-i2', occupation: '机械设备检修工', level: '四级/中级工', onlineCount: 2, groupCount: 11 },
+      { id: 'p3-i1', occupation: '核反应堆运行值班员', level: '三级/高级工', onlineCount: 4, groupCount: 16, certStartNo: 'Y004145117705263000018' },
+      { id: 'p3-i2', occupation: '机械设备检修工', level: '四级/中级工', onlineCount: 2, groupCount: 11, certStartNo: 'Y004145117705263000034' },
     ],
     candidates: [
       {
@@ -218,6 +220,8 @@ export default function CertIssue() {
   const [teamBatch, setTeamBatch] = useState<CertBatch | null>(null)
   const [certPreview, setCertPreview] = useState<CertCandidate | null>(null)
   const [eventCandidate, setEventCandidate] = useState<CertCandidate | null>(null)
+  const [generateBatch, setGenerateBatch] = useState<CertBatch | null>(null)
+  const [generateDate, setGenerateDate] = useState('')
 
   const filtered = useMemo(() => {
     return items.filter(item => {
@@ -254,6 +258,21 @@ export default function CertIssue() {
 
   const adjustCert = (batch: CertBatch, range: '全部' | '12级' | '345级' = '全部') => {
     toast.success(`${batch.title} 已进入证书调整：${range}`)
+  }
+
+  const handleGenerateCert = () => {
+    if (!generateBatch || !generateDate) return
+    setItems(prev => prev.map(item => item.id === generateBatch.id
+      ? { ...item, candidates: item.candidates.map(c => ({ ...c, issueDate: generateDate })) }
+      : item))
+    toast.success(`${generateBatch.title} 证书生成成功，发证日期：${generateDate}`)
+    setGenerateBatch(null)
+    setGenerateDate('')
+  }
+
+  const openGenerate = (batch: CertBatch) => {
+    setGenerateDate(new Date().toISOString().slice(0, 10))
+    setGenerateBatch(batch)
   }
 
   return (
@@ -393,6 +412,11 @@ export default function CertIssue() {
                         ) : (
                           <button onClick={() => setTeamBatch(batch)} className="inline-flex items-center gap-1 text-xs text-[#1A56DB] hover:underline">
                             <FileArchive className="h-3.5 w-3.5" />集体证书
+                          </button>
+                        )}
+                        {!batch.isPrint && (
+                          <button onClick={() => openGenerate(batch)} className="inline-flex items-center gap-1 text-xs text-purple-700 hover:underline">
+                            <Sparkles className="h-3.5 w-3.5" />生成证书
                           </button>
                         )}
                         {!batch.isPrint && (
@@ -629,6 +653,91 @@ export default function CertIssue() {
                   <div className="mt-1 text-xs text-gray-500">操作人：{event.operator}</div>
                 </div>
               ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Generate Certificate Dialog */}
+      <Dialog open={!!generateBatch} onOpenChange={() => { setGenerateBatch(null); setGenerateDate('') }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-600" />
+              生成证书
+            </DialogTitle>
+          </DialogHeader>
+          {generateBatch && (
+            <div className="space-y-4">
+              <div className="rounded-md bg-purple-50 border border-purple-100 p-3">
+                <div className="font-medium text-gray-900">{generateBatch.title}</div>
+                <div className="mt-1 text-xs text-gray-500">
+                  {generateBatch.unitName} · {generateBatch.testMonth} · 共 {generateBatch.items.length} 个职业等级
+                </div>
+              </div>
+
+              <div className="overflow-hidden rounded-lg border border-gray-200">
+                <table className="w-full text-sm">
+                  <thead className="bg-[#F9FAFB] text-gray-600">
+                    <tr>
+                      <th className="px-3 py-2.5 text-left font-medium">序号</th>
+                      <th className="px-3 py-2.5 text-left font-medium">职业工种</th>
+                      <th className="px-3 py-2.5 text-left font-medium">考试级别</th>
+                      <th className="px-3 py-2.5 text-left font-medium">证书编码起始号</th>
+                      <th className="px-3 py-2.5 text-left font-medium">证书数量</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {generateBatch.items.map((item, idx) => (
+                      <tr key={item.id} className="hover:bg-gray-50">
+                        <td className="px-3 py-2.5 text-gray-600">{idx + 1}</td>
+                        <td className="px-3 py-2.5 text-gray-900">{item.occupation}</td>
+                        <td className="px-3 py-2.5 text-gray-600">{item.level}</td>
+                        <td className="px-3 py-2.5 font-mono text-xs text-purple-700">
+                          <span className="rounded bg-purple-50 px-2 py-0.5">{item.certStartNo}</span>
+                        </td>
+                        <td className="px-3 py-2.5 text-gray-600">
+                          {item.onlineCount + item.groupCount} 本
+                          <span className="ml-1 text-xs text-gray-400">（网报{item.onlineCount} + 集体{item.groupCount}）</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="rounded-md border border-amber-200 bg-amber-50 p-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                  <Award className="h-4 w-4 text-amber-600" />
+                  确认发证日期
+                </div>
+                <div className="mt-3 flex items-center gap-3">
+                  <label className="text-sm text-gray-600">发证日期：</label>
+                  <input
+                    type="date"
+                    value={generateDate}
+                    onChange={e => setGenerateDate(e.target.value)}
+                    className="h-9 rounded-md border border-gray-200 px-3 text-sm focus:border-[#1A56DB] focus:outline-none"
+                  />
+                </div>
+                <p className="mt-2 text-xs text-amber-700">
+                  确认发证日期后，点击"生成"按钮将为以上 {generateBatch.items.reduce((sum, i) => sum + i.onlineCount + i.groupCount, 0)} 本证书生成证书编号并归档。
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2 border-t border-gray-100 pt-3">
+                <Button variant="outline" onClick={() => { setGenerateBatch(null); setGenerateDate('') }}>
+                  取消
+                </Button>
+                <Button
+                  onClick={handleGenerateCert}
+                  disabled={!generateDate}
+                  className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
+                >
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  生成证书
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>

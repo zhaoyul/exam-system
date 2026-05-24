@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import { AppProvider } from '@/context/AppContext'
 import MainLayout from '@/components/MainLayout'
+import { RequireRole } from '@/components/RequireRole'
 import Login from '@/pages/Login'
 import Dashboard from '@/pages/Dashboard'
 
@@ -263,10 +264,10 @@ export default function App() {
           <Route path="/score/review" element={<ScoreReview />} />
           <Route path="/score/publicity" element={<ScorePublicity />} />
           <Route path="/score/correction" element={<ScoreCorrection />} />
-          {/* Certificate */}
-          <Route path="/certificate/issue" element={<CertIssue />} />
-          <Route path="/certificate/view" element={<CertView />} />
-          <Route path="/certificate/reissue" element={<CertReissue />} />
+          {/* Certificate — group_admin only */}
+          <Route path="/certificate/issue" element={<RequireRole roles={['group_admin']}><CertIssue /></RequireRole>} />
+          <Route path="/certificate/view" element={<RequireRole roles={['group_admin']}><CertView /></RequireRole>} />
+          <Route path="/certificate/reissue" element={<RequireRole roles={['group_admin']}><CertReissue /></RequireRole>} />
           {/* Supervision */}
           <Route path="/supervision/training" element={<TrainingPage />} />
           <Route path="/supervision/evaluator-training" element={<EvaluatorTrainingPage />} />

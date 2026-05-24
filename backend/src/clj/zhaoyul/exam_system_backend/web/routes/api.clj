@@ -15,7 +15,6 @@
    [zhaoyul.exam-system-backend.web.controllers.organizations :as organizations]
    [zhaoyul.exam-system-backend.web.controllers.personal :as personal]
    [zhaoyul.exam-system-backend.web.controllers.resources :as resource-controller]
-   [zhaoyul.exam-system-backend.web.controllers.scores :as score-controller]
    [zhaoyul.exam-system-backend.web.controllers.supervision :as supervision]
    [zhaoyul.exam-system-backend.web.controllers.traceability :as traceability]
    [zhaoyul.exam-system-backend.web.middleware-auth :as auth-middleware]
@@ -135,47 +134,10 @@
     (resource-endpoint ctx "/ledger" "finance-ledgers" "财务系统" "收费台账")
     (resource-endpoint ctx "/standard" "finance-standards" "财务系统" "收费标准")]
    ["/score"
-    {:swagger {:tags ["成绩管理"]}}
-    ["/entry"
-     [""
-      {:get {:summary "成绩列表" :handler (partial score-controller/list-scores ctx)}
-       :post {:summary "录入成绩" :handler (partial score-controller/create-score ctx)}}]
-     ["/batch"
-      {:post {:summary "批量录入成绩" :handler (partial score-controller/batch-create-scores ctx)}}]
-     ["/:id"
-      {:get {:summary "查看成绩详情" :handler (partial score-controller/get-score ctx)}
-       :put {:summary "修改成绩（公示期内）" :handler (partial score-controller/update-score ctx)}
-       :delete {:summary "删除成绩" :handler (partial score-controller/delete-score ctx)}}]]
-    ["/review"
-     [""
-      {:get {:summary "成绩审核列表" :handler (resource-controller/list-alias ctx "score-reviews")}
-       :post {:summary "新增成绩审核" :handler (resource-controller/create-alias ctx "score-reviews")}}]
-     ["/:id"
-      {:get {:summary "查看审核详情" :handler (resource-controller/get-alias ctx "score-reviews")}
-       :put {:summary "更新审核" :handler (resource-controller/update-alias ctx "score-reviews")}
-       :delete {:summary "删除审核" :handler (resource-controller/delete-alias ctx "score-reviews")}}]]
-    ["/publicity"
-     [""
-      {:get {:summary "成绩公示批次列表" :handler (resource-controller/list-alias ctx "score-publicity-batches")}
-       :post {:summary "新增公示批次" :handler (resource-controller/create-alias ctx "score-publicity-batches")}}]
-     ["/:id"
-      {:get {:summary "查看公示详情" :handler (resource-controller/get-alias ctx "score-publicity-batches")}
-       :put {:summary "更新公示" :handler (resource-controller/update-alias ctx "score-publicity-batches")}
-       :delete {:summary "删除公示" :handler (resource-controller/delete-alias ctx "score-publicity-batches")}}]]
-    ["/audit-logs"
-     {:get {:summary "成绩修改记录查询" :handler (partial score-controller/list-audit-logs ctx)}}]
-    ["/lock/:plan-id"
-     {:post {:summary "锁定计划成绩" :handler (partial score-controller/lock-plan-scores ctx)}}]
-    ["/unlock/:plan-id"
-     {:post {:summary "解锁计划成绩" :handler (partial score-controller/unlock-plan-scores ctx)}}]
-    ["/correction"
-     [""
-      {:get {:summary "成绩更正列表" :handler (resource-controller/list-alias ctx "score-corrections")}
-       :post {:summary "新增成绩更正" :handler (resource-controller/create-alias ctx "score-corrections")}}]
-     ["/:id"
-      {:get {:summary "查看更正详情" :handler (resource-controller/get-alias ctx "score-corrections")}
-       :put {:summary "更新更正" :handler (resource-controller/update-alias ctx "score-corrections")}
-       :delete {:summary "删除更正" :handler (resource-controller/delete-alias ctx "score-corrections")}}]]]
+    (resource-endpoint ctx "/entry" "scores" "成绩管理" "成绩录入")
+    (resource-endpoint ctx "/review" "score-reviews" "成绩管理" "成绩审核")
+    (resource-endpoint ctx "/publicity" "score-publicity-batches" "成绩管理" "成绩公示")
+    (resource-endpoint ctx "/correction" "score-corrections" "成绩管理" "成绩更正")]
    ["/certificate"
     (resource-endpoint ctx "/issue" "certificates" "证书管理" "证书核发")
     (resource-endpoint ctx "/view" "certificates" "证书管理" "证书查看" false)

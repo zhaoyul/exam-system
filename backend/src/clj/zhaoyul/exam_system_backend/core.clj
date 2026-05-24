@@ -37,7 +37,7 @@
                  (ig/init))]
     (reset! system sys)
     (try
-n      (zhaoyul.exam-system-backend.domain.seed/seed!
+      (zhaoyul.exam-system-backend.domain.seed/seed!
         (get sys :zhaoyul.exam-system-backend.infra.datasource/datasource))
       (exam-arr/ensure-tables!
         (get sys :zhaoyul.exam-system-backend.infra.datasource/datasource))

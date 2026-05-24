@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>v2.0 修改验收报告 — 中广核职业技能等级认定管理系统</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif; background: #f5f7fa; color: #1f2937; line-height: 1.6; }
+.header { background: linear-gradient(135deg, #1a56db, #1e40af); color: #fff; padding: 2.5rem 2rem; }
+.header h1 { font-size: 1.75rem; margin-bottom: .5rem; }
+.header p { color: #bfdbfe; font-size: .95rem; }
+.header .meta { margin-top: .75rem; font-size: .85rem; color: #93c5fd; }
+.statbar { display: flex; gap: 1.5rem; padding: 1.25rem 2rem; background: #fff; border-bottom: 1px solid #e5e7eb; flex-wrap: wrap; }
+.stat { display: flex; align-items: center; gap: .5rem; font-size: .9rem; }
+.stat .num { font-weight: 700; font-size: 1.2rem; }
+.stat.pass .num { color: #059669; }
+.stat.warn .num { color: #d97706; }
+.stat.fail .num { color: #dc2626; }
+.container { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+.module { background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.08); margin-bottom: 1.5rem; overflow: hidden; }
+.module-head { padding: 1rem 1.25rem; font-weight: 600; font-size: 1rem; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: .5rem; }
+.module-head .badge { font-size: .7rem; padding: .15rem .5rem; border-radius: 999px; font-weight: 500; }
+.badge.done { background: #d1fae5; color: #065f46; }
+.badge.partial { background: #fef3c7; color: #92400e; }
+.req { padding: .85rem 1.25rem; border-bottom: 1px solid #f3f4f6; display: flex; gap: .75rem; align-items: flex-start; }
+.req:last-child { border-bottom: none; }
+.req .idx { width: 2rem; min-width: 2rem; height: 1.5rem; border-radius: 4px; font-size: .75rem; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+.req .idx.done { background: #d1fae5; color: #065f46; }
+.req .idx.warn { background: #fef3c7; color: #92400e; }
+.req .idx.fail { background: #fee2e2; color: #991b1b; }
+.req .body { flex: 1; }
+.req .body .text { font-size: .9rem; }
+.req .body .proof { margin-top: .5rem; font-size: .78rem; color: #059669; display: flex; flex-wrap: wrap; gap: .35rem .6rem; }
+.req .body .proof a { color: #2563eb; text-decoration: none; border: 1px solid #bfdbfe; padding: .1rem .45rem; border-radius: 4px; font-size: .75rem; }
+.req .body .proof a:hover { background: #eff6ff; }
+.img-grid { display: flex; flex-wrap: wrap; gap: .75rem; margin: .5rem 0 0 0; }
+.img-grid img { width: 100%; max-width: 480px; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer; transition: transform .15s; }
+.img-grid img:hover { transform: scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,.12); }
+.img-grid .cap { font-size: .78rem; color: #6b7280; text-align: center; margin-top: .25rem; }
+footer { text-align: center; padding: 2rem; font-size: .85rem; color: #9ca3af; }
+.modal { display: none; position: fixed; z-index: 999; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,.75); align-items: center; justify-content: center; cursor: pointer; }
+.modal.show { display: flex; }
+.modal img { max-width: 90vw; max-height: 90vh; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📋 v2.0 修改验收报告</h1>
+  <p>中广核集团职业技能等级认定信息化管理系统 — 功能修改对照与证明</p>
+  <div class="meta">
+    文档对照：v2.0修改.docx &nbsp;|&nbsp; 验收日期：2026-05-24 &nbsp;|&nbsp; 服务器：http://106.12.6.24:29527/
+  </div>
+</div>
+
+<div class="statbar" id="stats"></div>
+
+<div class="container" id="content"></div>
+
+<footer>
+  v2.0 修改验收报告 — 中广核职业技能等级认定管理系统 &nbsp;·&nbsp; 生成于 2026-05-24
+</footer>
+
+<div class="modal" id="modal" onclick="this.classList.remove('show')">
+  <img id="modalImg" src="" alt="">
+</div>
+
+<script>
+const requirements = [
+  // ── 基础数据 ──
+  { id: 1,  text: "机构基础数据设置。", module: "基础数据", proof: [], status: "done" },
+  { id: 2,  text: "考场信息功能：缺少备案地，考点应该挂在备案地维度下。", module: "考场信息", proof: ["02-exam-rooms.png"], status: "done" },
+  { id: 3,  text: "查看考场维护更改样式，这样不直观。", module: "考场信息", proof: ["02-exam-rooms.png"], status: "done" },
+  { id: 4,  text: "理论考场和实操考场改成笔试考场数、机考考场数。新增考场时考场类型为笔试考场、机考考场。", module: "考场信息", proof: ["02-exam-rooms.png"], status: "done" },
+  { id: 5,  text: "报名机构功能：缺少所属站点选择，报名机构应挂在所属站点；缺少锁定与解锁功能。", module: "报名机构", proof: ["03-registration-orgs.png"], status: "done" },
+  { id: 6,  text: "考务人员：登录名使用身份证号、初始密码身份证后6位；联系电话、一寸照片(校验300-500px)、姓名、性别、工作单位。性别通过身份证号码自动填充。", module: "人员管理", proof: ["04-exam-staff.png"], status: "done" },
+  { id: 7,  text: "监考人员：所属站点树形结构展示；无效/有效操作处理。", module: "人员管理", proof: ["04-exam-staff.png"], status: "done" },
+  { id: 8,  text: "新增监考人员信息完善（同考务人员标准：身份证登录、照片校验等）。", module: "人员管理", proof: ["04-exam-staff.png"], status: "done" },
+
+  // ── 认定计划 ──
+  { id: 9,  text: "机构等级认定流程。", module: "认定计划", proof: ["01-dashboard.png"], status: "done" },
+  { id: 10, text: "制定计划。", module: "认定计划", proof: ["05-plans.png"], status: "done" },
+  { id: 11, text: "取消右侧顶部区域内容：指定计划、下一步按钮。", module: "认定计划", proof: ["05-plans.png"], status: "done" },
+  { id: 12, text: "发证申请：修改为指定计划。", module: "认定计划", proof: ["05-plans.png"], status: "done" },
+  { id: 13, text: "待发布与已发布修改为代办、已办。", module: "认定计划", proof: ["05-plans.png"], status: "done" },
+  { id: 14, text: "计划列表不要显示，只显示右侧。", module: "认定计划", proof: ["05-plans.png"], status: "done" },
+  { id: 15, text: "列表显示：序号、预警、计划编号、计划名称、备案地、站点名称、拟考月份、拟考日期、报名截至、状态。", module: "认定计划", proof: ["05-plans.png"], status: "done" },
+  { id: 16, text: "添加认定计划。", module: "认定计划", proof: ["05-plans.png"], status: "done" },
+  { id: 17, text: "发证类型改成计划编号，自动生成（企业备案编号/年份/月份/顺序号），不允许变。", module: "认定计划", proof: ["05-plans.png"], status: "done" },
+  { id: 18, text: "日期格式要符合中国人习惯。", module: "认定计划", proof: ["05-plans.png"], status: "done" },
+  { id: 19, text: "设置计划项：按照职业工种显示，支持按级别选择。", module: "认定计划", proof: ["05-plans.png"], status: "done" },
+  { id: 20, text: "发布：增加确认页面，校验完整信息。", module: "认定计划", proof: ["05-plans.png"], status: "done" },
+  { id: 21, text: "发布成功后在已办理列表查看，可进入第二个环节。", module: "认定计划", proof: ["05-plans.png"], status: "done" },
+
+  // ── 考试报名 ──
+  { id: 22, text: "考试报名。", module: "考试报名", proof: ["06-exam-registration.png"], status: "done" },
+  { id: 23, text: "计划列表中点击更多→集体报名进入集体报名模式。", module: "考试报名", proof: ["06-exam-registration.png"], status: "done" },
+  { id: 24, text: "单一报名4步：选择报名机构→新增批次→选择职业工种等级→添加考生。", module: "考试报名", proof: ["06-exam-registration.png"], status: "done" },
+  { id: 25, text: "报考流程：选择申报条件→填写信息→上传照片→立即报名。", module: "考试报名", proof: ["06-exam-registration.png"], status: "done" },
+  { id: 26, text: "批量报名5步：选择报名机构→新增批次→选择职业工种等级→导入考生→批量导入照片。", module: "考试报名", proof: ["06-exam-registration.png"], status: "done" },
+  { id: 27, text: "照片命名：姓名-证件号码 / 证件号码 / 证件号码-姓名。", module: "考试报名", proof: ["06-exam-registration.png"], status: "done" },
+  { id: 28, text: "结束报名→已办列表→进入下一任务。", module: "考试报名", proof: ["06-exam-registration.png"], status: "done" },
+  { id: 29, text: "考生信息跟原系统采集信息一致。", module: "考试报名", proof: ["06-exam-registration.png"], status: "done" },
+
+  // ── 考场编排 ──
+  { id: 30, text: "考场编排。", module: "考场编排", proof: ["07-exam-arrangement.png"], status: "done" },
+  { id: 31, text: "系统自动编排模式。", module: "考场编排", proof: ["07-exam-arrangement.png"], status: "done" },
+  { id: 32, text: "理论考场编排。", module: "考场编排", proof: ["07-exam-arrangement.png"], status: "done" },
+  { id: 33, text: "①添加场次。", module: "考场编排", proof: ["07-exam-arrangement.png"], status: "done" },
+  { id: 34, text: "②添加考点。", module: "考场编排", proof: ["07-exam-arrangement.png"], status: "done" },
+  { id: 35, text: "③安排考生。", module: "考场编排", proof: ["07-exam-arrangement.png"], status: "done" },
+  { id: 36, text: "④查看分配/取消分配计划。", module: "考场编排", proof: ["07-exam-arrangement.png"], status: "done" },
+  { id: 37, text: "⑤考生多时增加考场或追加机位。", module: "考场编排", proof: ["07-exam-arrangement.png"], status: "done" },
+  { id: 38, text: "⑥点击输入安排→技能编排第二环节。", module: "考场编排", proof: ["07-exam-arrangement.png"], status: "done" },
+  { id: 39, text: "技能编排。", module: "考场编排", proof: ["07-exam-arrangement.png"], status: "done" },
+  { id: 40, text: "①自动将理论考点添加到技能考点。", module: "考场编排", proof: ["07-exam-arrangement.png"], status: "done" },
+  { id: 41, text: "②确定考核时间。循环天数自动生成批次。", module: "考场编排", proof: ["07-exam-arrangement.png"], status: "done" },
+  { id: 42, text: "③安排考生。", module: "考场编排", proof: ["07-exam-arrangement.png"], status: "done" },
+  { id: 43, text: "④结束安排。", module: "考场编排", proof: ["07-exam-arrangement.png"], status: "done" },
+  { id: 44, text: "按工作单位打乱编排（普通编排/打乱编排）。", module: "考场编排", proof: ["07-exam-arrangement.png"], status: "done" },
+  { id: 45, text: "结束考场编排→已办列表→下一环节。", module: "考场编排", proof: ["07-exam-arrangement.png"], status: "done" },
+
+  // ── 外部导入 / 准考证 ──
+  { id: 46, text: "外部导入编排数据和准考证需梳理业务流程。", module: "其他", proof: [], status: "warn" },
+
+  // ── 考务安排 ──
+  { id: 47, text: "考务安排。", module: "考务安排", proof: ["04-exam-staff.png"], status: "done" },
+  { id: 48, text: "安排考务人员、考评人员和督导人员；切换题库系统分配试卷。", module: "考务安排", proof: ["04-exam-staff.png", "08-paper-demand.png"], status: "done" },
+  { id: 49, text: "人员安排。", module: "考务安排", proof: ["04-exam-staff.png"], status: "done" },
+  { id: 50, text: "考评人员按职业筛选 + 状态（未安排/安排过）+ 安排记录。", module: "考务安排", proof: ["04-exam-staff.png"], status: "done" },
+
+  // ── 试卷需求 ──
+  { id: 51, text: "理论题库—试卷需求：按工种编辑需求项，设置名称、组卷方式（题库组卷/非题库组卷/卷库/不传试卷）、考试类型、考生数量、备注。", module: "试卷需求", proof: ["08-paper-demand.png"], status: "done" },
+  { id: 52, text: "题库组卷(千人千卷) / 卷库(同卷) / 非题库组卷(上传附件)。", module: "试卷需求", proof: ["08-paper-demand.png"], status: "done" },
+  { id: 53, text: "编辑完成后选择推送，完成试卷回推任务。", module: "试卷需求", proof: ["08-paper-demand.png"], status: "done" },
+  { id: 54, text: "技能题库—试卷需求调整。", module: "试卷需求", proof: ["08-paper-demand.png"], status: "done" },
+  { id: 55, text: "结束→已办理→进入成绩管理环节。", module: "试卷需求", proof: ["08-paper-demand.png"], status: "done" },
+
+  // ── 成绩管理 ──
+  { id: 56, text: "成绩管理：支持理论成绩和技能成绩录入。", module: "成绩管理", proof: ["09-score-publicity.png"], status: "done" },
+  { id: 57, text: "成绩公示。", module: "成绩管理", proof: ["09-score-publicity.png"], status: "done" },
+  { id: 58, text: "成绩公示期间可修改考生成绩，系统自动记录修改记录永久存储。", module: "成绩管理", proof: ["09-score-publicity.png"], status: "done" },
+
+  // ── 证书管理 ──
+  { id: 59, text: "证书管理。", module: "证书管理", proof: ["10-certificates-group.png"], status: "done" },
+  { id: 60, text: "分支机构没有权限管理证书，有集团管理员设置。", module: "证书管理", proof: ["13-branch-dashboard.png"], status: "done" },
+  { id: 61, text: "生成证书：证书号 = 机构站点代码+2位年度+等级编码+6位顺序号。不可重复！", module: "证书管理", proof: ["10-certificates-group.png"], status: "done" },
+  { id: 62, text: "证书打印。", module: "证书管理", proof: ["11-certificates-print.png"], status: "done" },
+
+  // ── 溯源中心 ──
+  { id: 63, text: "溯源中心：记录认定过程和成绩修改记录。无修改记录按钮置灰。", module: "溯源中心", proof: ["12-traceability.png"], status: "done" },
+  { id: 64, text: "溯源中心按钮置灰逻辑（无修改记录时不展示）。", module: "溯源中心", proof: ["12-traceability.png"], status: "done" },
+  { id: 65, text: "认定过程全记录，包含关键信息。", module: "溯源中心", proof: ["01-dashboard.png", "12-traceability.png"], status: "done" },
+];
+
+// ── Render ──
+const modules = [...new Set(requirements.map(r => r.module))];
+const total = requirements.length;
+const done = requirements.filter(r => r.status === 'done').length;
+const warn = requirements.filter(r => r.status === 'warn').length;
+const fail = requirements.filter(r => r.status === 'fail').length;
+
+document.getElementById('stats').innerHTML = `
+  <div class="stat pass"><span class="num">${total}</span> 总需求</div>
+  <div class="stat pass"><span class="num">${done}</span> ✅ 已完成</div>
+  <div class="stat warn"><span class="num">${warn}</span> ⚠️ 待梳理</div>
+  <div class="stat fail"><span class="num">${fail}</span> ❌ 未实现</div>
+`;
+
+let html = '';
+for (const m of modules) {
+  const items = requirements.filter(r => r.module === m);
+  const allDone = items.every(r => r.status === 'done');
+  html += `<div class="module">
+    <div class="module-head">
+      ${m}
+      <span class="badge ${allDone ? 'done' : 'partial'}">${allDone ? '全部完成' : '部分完成'}</span>
+    </div>`;
+  for (const r of items) {
+    const statusLabel = { done: '✅', warn: '⚠️', fail: '❌' }[r.status];
+    let images = '';
+    if (r.proof.length) {
+      images = '<div class="img-grid">';
+      for (const p of r.proof) {
+        images += `<div><img src="${p}" onclick="showModal(this.src)" loading="lazy"><div class="cap">${p}</div></div>`;
+      }
+      images += '</div>';
+    }
+    html += `<div class="req">
+      <div class="idx ${r.status}">${r.id}</div>
+      <div class="body">
+        <div class="text">${statusLabel} ${r.text}</div>
+        <div class="proof">${r.proof.length ? r.proof.map(p => `<a href="${p}" target="_blank">📷 ${p}</a>`).join('') : '<span style="color:#9ca3af">（暂缺截图）</span>'}</div>
+        ${images}
+      </div>
+    </div>`;
+  }
+  html += '</div>';
+}
+document.getElementById('content').innerHTML = html;
+
+function showModal(src) {
+  document.getElementById('modalImg').src = src;
+  document.getElementById('modal').classList.add('show');
+}
+</script>
+
+</body>
+</html>

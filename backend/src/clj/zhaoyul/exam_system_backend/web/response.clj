@@ -17,6 +17,10 @@
   ([] (unauthorized "未登录或登录已过期"))
   ([message] {:status 401 :body {:error "unauthorized" :message message}}))
 
+(defn forbidden
+  ([] (forbidden "权限不足"))
+  ([message] {:status 403 :body {:error "forbidden" :message message}}))
+
 (defn not-found
   ([] (not-found "资源不存在"))
   ([message] {:status 404 :body {:error "not_found" :message message}}))

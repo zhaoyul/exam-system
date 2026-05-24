@@ -16,6 +16,7 @@
    [zhaoyul.exam-system-backend.web.controllers.supervision :as supervision]
    [zhaoyul.exam-system-backend.web.controllers.traceability :as traceability]
    [zhaoyul.exam-system-backend.web.middleware-auth :as auth-middleware]
+   [zhaoyul.exam-system-backend.web.middleware-role :as role-middleware]
    [zhaoyul.exam-system-backend.web.middleware.exception :as exception]
    [zhaoyul.exam-system-backend.web.middleware.formats :as formats]
    [zhaoyul.exam-system-backend.web.routes.certification-biz :as cert-biz-routes]))
@@ -81,6 +82,7 @@
      ["/:id"
       {:get {:summary "模块工作台详情" :handler (resource-controller/get-alias ctx "workbench-cards")}}]]]
    ["/system"
+    {:middleware [[role-middleware/wrap-require-role #{"group_admin"}]]}
     (resource-endpoint ctx "/users" "system-users" "基础数据" "系统用户")
     (resource-endpoint ctx "/personnel" "personnel" "基础数据" "人员信息")
     (resource-endpoint ctx "/filing-group" "filing-group" "机构备案" "集团备案")
@@ -93,6 +95,7 @@
    ["/filing"
     {:swagger {:tags ["机构备案"]}}
     ["/group"
+     {:middleware [[role-middleware/wrap-require-role #{"group_admin"}]]}
      [""
       {:get {:summary "集团备案列表" :handler (partial filing/list-filing-group ctx)}
        :post {:summary "新增集团备案" :handler (partial filing/create-filing-group ctx)}}]
@@ -101,6 +104,7 @@
        :put {:summary "更新集团备案" :handler (partial filing/update-filing-group ctx)}
        :delete {:summary "删除集团备案" :handler (partial filing/delete-filing-group ctx)}}]]
     ["/branch"
+     {:middleware [[role-middleware/wrap-require-role #{"group_admin" "branch_admin"}]]}
      [""
       {:get {:summary "分支备案列表" :handler (partial filing/list-filing-branch ctx)}
        :post {:summary "新增分支备案" :handler (partial filing/create-filing-branch ctx)}}]
@@ -137,6 +141,7 @@
     (resource-endpoint ctx "/publicity" "score-publicity-batches" "成绩管理" "成绩公示")
     (resource-endpoint ctx "/correction" "score-corrections" "成绩管理" "成绩更正")]
    ["/certificate"
+    {:middleware [[role-middleware/wrap-require-role #{"group_admin"}]]}
     (resource-endpoint ctx "/issue" "certificates" "证书管理" "证书核发")
     (resource-endpoint ctx "/view" "certificates" "证书管理" "证书查看" false)
     (resource-endpoint ctx "/reissue" "certificate-reissues" "证书管理" "证书补发")]
@@ -265,7 +270,7 @@
     (resource-endpoint ctx "/statistics" "certification-statistics" "等级认定" "认定统计" false)
     (resource-endpoint ctx "/approval-settings" "approval-settings" "等级认定" "批复设置")
     (resource-endpoint ctx "/approvals" "approvals" "等级认定" "认定批复")
-    (resource-endpoint ctx "/certificate-reports" "certificate-reports" "等级认定" "证书上报")
+    (resource-endpoint ctx "/certificate-reports" "certificate-reports" "等级认定" "证书上报") ;; group_admin via /cert wrap
     (resource-endpoint ctx "/violations" "trace-alerts" "等级认定" "预警违规")
     (resource-endpoint ctx "/special-applications" "special-applications" "等级认定" "特办申请")
     (resource-endpoint ctx "/historical" "historical-certifications" "等级认定" "历次认定" false)

@@ -2,6 +2,7 @@ import { useApp } from '@/context/AppContext'
 import { Navigate, Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
+import { RequireMenuAccess } from './RequireRole'
 import { BackendDataProvider } from '@/context/BackendDataContext'
 
 export default function MainLayout() {
@@ -21,7 +22,9 @@ export default function MainLayout() {
           style={{ marginLeft: sidebarCollapsed ? 64 : 240 }}
         >
           <div className="p-6">
-            <Outlet />
+            <RequireMenuAccess>
+              <Outlet />
+            </RequireMenuAccess>
           </div>
         </main>
       </div>

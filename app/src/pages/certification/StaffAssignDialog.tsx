@@ -77,9 +77,6 @@ interface AssignableStaff {
   assignedSessionName: string | null
 }
 
-interface PlanOccupation {
-  occupation: string
-}
 
 type AssignmentRole = 'supervisor' | 'exam_staff' | 'invigilator' | 'evaluator'
 

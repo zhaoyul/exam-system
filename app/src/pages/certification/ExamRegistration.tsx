@@ -14,7 +14,7 @@ import {
   FileSpreadsheet, AlertTriangle, ChevronRight, UserPlus, RotateCcw,
   Camera, FileUp, ChevronLeft, RefreshCw, Search, Mail, Phone,
   Building2, GraduationCap, Calendar, ClipboardList, Image, FileText,
-  Check, X, ArrowRight, MoreHorizontal
+  Check, X, FileArchive, ArrowRight, MoreHorizontal
 } from 'lucide-react'
 import { useBackendResourceList, useBackendResourceState } from '@/hooks/useBackendListState'
 

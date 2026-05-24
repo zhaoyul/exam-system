@@ -229,6 +229,7 @@
                            :examRoomId exam-room-id
                            :assignmentRole assignment-role
                            :assignmentDate assignment-date
-                           :status "assigned"})))
-  {:success true
-   :assignedCount (count staff-ids)})
+                           :status "assigned"}))
+    {:success true
+     :assignedCount (count staff-ids)}))
+

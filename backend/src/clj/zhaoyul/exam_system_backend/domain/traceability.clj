@@ -187,7 +187,7 @@
                                               (when-let [new (:new_score p)] (str new))
                                               (when-let [r (:reason p)] (str " (理由: " r ")")))]
                                    (-> (row->timeline-event (assoc row :detail d))
-                                       (assoc :type :score)))))
+                                       (assoc :type :score))))))
         all-events (->> (concat reg-events arr-events score-events cert-events audit-events)
                         (sort-by :time)
                         vec)]

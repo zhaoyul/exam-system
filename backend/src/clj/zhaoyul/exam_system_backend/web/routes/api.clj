@@ -300,10 +300,35 @@
    ["/certification/execution"
     {:swagger {:tags ["机构端等级认定"]}}
     (resource-endpoint ctx "/exam-rooms" "exam-rooms" "机构端等级认定" "考场信息")
-    (resource-endpoint ctx "/registration-orgs" "registration-orgs" "机构端等级认定" "报名机构")
+    ["/registration-orgs"
+     {:swagger {:tags ["机构端等级认定"]}}
+     ["/site-tree"
+      {:get {:summary "站点树"
+             :handler (partial registration-orgs/site-tree ctx)}}]
+     [""
+      {:get {:summary "报名机构列表"
+             :handler (partial registration-orgs/list-registration-orgs ctx)}
+       :post {:summary "新增报名机构"
+              :handler (partial registration-orgs/create-registration-org ctx)}}]
+    ["/:id"
+      {:get {:summary "查看报名机构"
+             :handler (partial registration-orgs/get-registration-org ctx)}
+       :put {:summary "更新报名机构"
+             :handler (partial registration-orgs/update-registration-org ctx)}
+       :delete {:summary "删除报名机构"
+                :handler (partial registration-orgs/delete-registration-org ctx)}}]
+     ["/:id/lock"
+      {:post {:summary "锁定机构"
+              :handler (partial registration-orgs/lock-org ctx)}}]
+     ["/:id/unlock"
+      {:post {:summary "解锁机构"
+              :handler (partial registration-orgs/unlock-org ctx)}}]
+     ["/:id/reset-password"
+      {:post {:summary "重置密码"
+              :handler (partial registration-orgs/reset-password ctx)}}]]
     (resource-endpoint ctx "/exam-staff" "exam-staff" "机构端等级认定" "考务人员")
     (resource-endpoint ctx "/supervisors" "supervisors" "机构端等级认定" "监考人员")
-    (resource-endpoint ctx "/marking-leads" "marking-leads" "机构端等级认定" "阅卷负责人")]
+    (resource-endpoint ctx "/marking-leads" "marking-leads" "机构端等级认定" "阅卷负责人")
    ;; 人员管理统一 API - 共用 cgn_exam_staff 表
    ["/staff"
     {:swagger {:tags ["人员管理"]}}
@@ -439,7 +464,7 @@
      ["/:id"
       {:get {:summary "查看预警详情" :handler (partial traceability/get-alert ctx)}
        :put {:summary "更新预警" :handler (partial traceability/update-alert ctx)}
-       :delete {:summary "删除预警" :handler (partial traceability/delete-alert ctx)}}]]]])
+       :delete {:summary "删除预警" :handler (partial traceability/delete-alert ctx)}}]]]]])
 
 (defn api-routes [opts]
   (let [ctx {:datasource (:datasource opts)

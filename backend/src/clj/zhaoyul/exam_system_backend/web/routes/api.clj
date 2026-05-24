@@ -10,15 +10,14 @@
    [zhaoyul.exam-system-backend.web.controllers.exam-staff :as exam-staff]
    [zhaoyul.exam-system-backend.web.controllers.files :as files-ctrl]
    [zhaoyul.exam-system-backend.web.controllers.filing :as filing]
+   [zhaoyul.exam-system-backend.web.controllers.numbering :as numbering]
    [zhaoyul.exam-system-backend.web.controllers.health :as health]
    [zhaoyul.exam-system-backend.web.controllers.organizations :as organizations]
    [zhaoyul.exam-system-backend.web.controllers.personal :as personal]
-   [zhaoyul.exam-system-backend.web.controllers.registration-orgs :as registration-orgs]
    [zhaoyul.exam-system-backend.web.controllers.resources :as resource-controller]
    [zhaoyul.exam-system-backend.web.controllers.supervision :as supervision]
    [zhaoyul.exam-system-backend.web.controllers.traceability :as traceability]
    [zhaoyul.exam-system-backend.web.middleware-auth :as auth-middleware]
-   [zhaoyul.exam-system-backend.web.middleware-role :as role-middleware]
    [zhaoyul.exam-system-backend.web.middleware.exception :as exception]
    [zhaoyul.exam-system-backend.web.middleware.formats :as formats]
    [zhaoyul.exam-system-backend.web.routes.certification-biz :as cert-biz-routes]))
@@ -84,7 +83,6 @@
      ["/:id"
       {:get {:summary "模块工作台详情" :handler (resource-controller/get-alias ctx "workbench-cards")}}]]]
    ["/system"
-    {:middleware [[role-middleware/wrap-require-role #{"group_admin"}]]}
     (resource-endpoint ctx "/users" "system-users" "基础数据" "系统用户")
     (resource-endpoint ctx "/personnel" "personnel" "基础数据" "人员信息")
     (resource-endpoint ctx "/filing-group" "filing-group" "机构备案" "集团备案")
@@ -97,7 +95,6 @@
    ["/filing"
     {:swagger {:tags ["机构备案"]}}
     ["/group"
-     {:middleware [[role-middleware/wrap-require-role #{"group_admin"}]]}
      [""
       {:get {:summary "集团备案列表" :handler (partial filing/list-filing-group ctx)}
        :post {:summary "新增集团备案" :handler (partial filing/create-filing-group ctx)}}]
@@ -106,7 +103,6 @@
        :put {:summary "更新集团备案" :handler (partial filing/update-filing-group ctx)}
        :delete {:summary "删除集团备案" :handler (partial filing/delete-filing-group ctx)}}]]
     ["/branch"
-     {:middleware [[role-middleware/wrap-require-role #{"group_admin" "branch_admin"}]]}
      [""
       {:get {:summary "分支备案列表" :handler (partial filing/list-filing-branch ctx)}
        :post {:summary "新增分支备案" :handler (partial filing/create-filing-branch ctx)}}]
@@ -143,7 +139,6 @@
     (resource-endpoint ctx "/publicity" "score-publicity-batches" "成绩管理" "成绩公示")
     (resource-endpoint ctx "/correction" "score-corrections" "成绩管理" "成绩更正")]
    ["/certificate"
-    {:middleware [[role-middleware/wrap-require-role #{"group_admin"}]]}
     (resource-endpoint ctx "/issue" "certificates" "证书管理" "证书核发")
     (resource-endpoint ctx "/view" "certificates" "证书管理" "证书查看" false)
     (resource-endpoint ctx "/reissue" "certificate-reissues" "证书管理" "证书补发")]
@@ -272,7 +267,7 @@
     (resource-endpoint ctx "/statistics" "certification-statistics" "等级认定" "认定统计" false)
     (resource-endpoint ctx "/approval-settings" "approval-settings" "等级认定" "批复设置")
     (resource-endpoint ctx "/approvals" "approvals" "等级认定" "认定批复")
-    (resource-endpoint ctx "/certificate-reports" "certificate-reports" "等级认定" "证书上报") ;; group_admin via /cert wrap
+    (resource-endpoint ctx "/certificate-reports" "certificate-reports" "等级认定" "证书上报")
     (resource-endpoint ctx "/violations" "trace-alerts" "等级认定" "预警违规")
     (resource-endpoint ctx "/special-applications" "special-applications" "等级认定" "特办申请")
     (resource-endpoint ctx "/historical" "historical-certifications" "等级认定" "历次认定" false)
@@ -287,6 +282,17 @@
     (resource-endpoint ctx "/evaluator-staff" "evaluator-staff" "等级认定" "考评人员")
     (resource-endpoint ctx "/declaration" "cert-declarations" "等级认定" "证书申报")
     (resource-endpoint ctx "/video-monitor" "video-monitor" "等级认定" "视频监控")]
+   ["/numbering"
+    {:swagger {:tags ["编号服务"]}}
+    ["/plan-number"
+     {:post {:summary "生成计划编号"
+             :handler (partial numbering/generate-plan-number ctx)}}]
+    ["/cert-number"
+     {:post {:summary "生成证书号"
+             :handler (partial numbering/generate-cert-number ctx)}}]
+    ["/level-mapping"
+     {:get {:summary "获取等级编码映射"
+            :handler numbering/get-level-mapping}}]]
    ["/cert"
     {:swagger {:tags ["等级认定兼容路径"]}}
     ["/public-query" {:get {:summary "公共证书查询" :handler (resource-controller/list-alias ctx "certificates")}}]
@@ -294,32 +300,7 @@
    ["/certification/execution"
     {:swagger {:tags ["机构端等级认定"]}}
     (resource-endpoint ctx "/exam-rooms" "exam-rooms" "机构端等级认定" "考场信息")
-    ["/registration-orgs"
-     {:swagger {:tags ["机构端等级认定"]}}
-     ["/site-tree"
-      {:get {:summary "站点树"
-             :handler (partial registration-orgs/site-tree ctx)}}]
-     [""
-      {:get {:summary "报名机构列表"
-             :handler (partial registration-orgs/list-registration-orgs ctx)}
-       :post {:summary "新增报名机构"
-              :handler (partial registration-orgs/create-registration-org ctx)}}]
-     ["/:id"
-      {:get {:summary "查看报名机构"
-             :handler (partial registration-orgs/get-registration-org ctx)}
-       :put {:summary "更新报名机构"
-             :handler (partial registration-orgs/update-registration-org ctx)}
-       :delete {:summary "删除报名机构"
-                :handler (partial registration-orgs/delete-registration-org ctx)}}]
-     ["/:id/lock"
-      {:post {:summary "锁定机构"
-              :handler (partial registration-orgs/lock-org ctx)}}]
-     ["/:id/unlock"
-      {:post {:summary "解锁机构"
-              :handler (partial registration-orgs/unlock-org ctx)}}]
-     ["/:id/reset-password"
-      {:post {:summary "重置密码"
-              :handler (partial registration-orgs/reset-password ctx)}}]
+    (resource-endpoint ctx "/registration-orgs" "registration-orgs" "机构端等级认定" "报名机构")
     (resource-endpoint ctx "/exam-staff" "exam-staff" "机构端等级认定" "考务人员")
     (resource-endpoint ctx "/supervisors" "supervisors" "机构端等级认定" "监考人员")
     (resource-endpoint ctx "/marking-leads" "marking-leads" "机构端等级认定" "阅卷负责人")]

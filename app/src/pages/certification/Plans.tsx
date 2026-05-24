@@ -1,130 +1,434 @@
-import { useState } from 'react'
-import { Plus, Search, Play, Users, MapPin, FileText, Award, ChevronRight, Save, Trash2, Edit3 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { AlertTriangle, Clock, Plus, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { toast } from 'sonner'
 import { useBackendListState } from '@/hooks/useBackendListState'
 
-const workflowSteps = ['制定计划', '考试报名', '考场编排', '考务安排', '成绩管理', '成绩公示', '证书管理']
+// ─── Types ───
 
-const statusMap: Record<string, { label: string; cls: string }> = {
-  completed: { label: '已完成', cls: 'bg-green-50 text-green-700' },
-  processing: { label: '进行中', cls: 'bg-blue-50 text-blue-700' },
-  pending: { label: '待审批', cls: 'bg-amber-50 text-amber-700' },
-  draft: { label: '草稿', cls: 'bg-gray-100 text-gray-600' },
+type PlanStatus = 'draft' | 'published' | 'done'
+
+interface CertPlan {
+  id: string
+  planNo: string
+  name: string
+  site: string
+  filingOrg: string
+  examMonth: string
+  examDate: string
+  regDeadline: string
+  status: PlanStatus
+  statusLabel: string
+  description: string
 }
 
+// ─── Filing / Site data for cascade ───
+
+const filingLocations: Record<string, { code: string; sites: { id: string; name: string }[] }> = {
+  '北京市': { code: 'BJ', sites: [{ id: 'bj-1', name: '中国原子能科学研究院' }] },
+  '广东省': { code: 'GD', sites: [{ id: 'gd-1', name: '大亚湾核电培训中心' }, { id: 'gd-2', name: '阳江核电实训基地' }] },
+  '福建省': { code: 'FJ', sites: [{ id: 'fj-1', name: '福建宁德核电培训中心' }] },
+  '辽宁省': { code: 'LN', sites: [{ id: 'ln-1', name: '红沿河核电实训基地' }] },
+}
+
+const mockPlans: CertPlan[] = [
+  {
+    id: '1',
+    planNo: 'BJ202605001',
+    name: '2026年第五批技能认定',
+    site: '中国原子能科学研究院',
+    filingOrg: '北京市',
+    examMonth: '2026-05',
+    examDate: '2026-05-28',
+    regDeadline: '2026-05-20',
+    status: 'draft',
+    statusLabel: '待办',
+    description: '',
+  },
+  {
+    id: '2',
+    planNo: 'GD202606001',
+    name: '2026年第六批技能认定',
+    site: '大亚湾核电培训中心',
+    filingOrg: '广东省',
+    examMonth: '2026-06',
+    examDate: '2026-06-15',
+    regDeadline: '2026-06-05',
+    status: 'published',
+    statusLabel: '已办',
+    description: '',
+  },
+]
+
+// ─── Helpers ───
+
+function generatePlanNo(filingOrg: string, existingPlans: CertPlan[]): string {
+  const now = new Date()
+  const yyyy = now.getFullYear().toString()
+  const mm = String(now.getMonth() + 1).padStart(2, '0')
+  const prefix = (filingLocations[filingOrg]?.code || 'XX') + yyyy + mm
+  const maxSeq = existingPlans
+    .filter(p => p.planNo.startsWith(prefix))
+    .reduce((max, p) => {
+      const seq = parseInt(p.planNo.slice(-3), 10)
+      return seq > max ? seq : max
+    }, 0)
+  return prefix + String(maxSeq + 1).padStart(3, '0')
+}
+
+function formatDate(d: string): string {
+  return d || ''
+}
+
+// ─── Component ───
+
 export default function Plans() {
-  const [items, setItems] = useBackendListState([
-    { id: '1', name: '2026年第一批技能认定', date: '2026-05-20', occupation: '核反应堆运行值班员', level: '三级', status: 'draft' },
-    { id: '2', name: '2026年第二批技能认定', date: '2026-06-15', occupation: '电气试验员', level: '四级', status: 'pending' },
-    { id: '3', name: '2026年第三批技能认定', date: '2026-07-10', occupation: '机械设备检修工', level: '三级', status: 'processing' },
-    { id: '4', name: '2026年第四批技能认定', date: '2026-04-28', occupation: '仪控设备检修工', level: '二级', status: 'completed' },
-  ])
+  const [plans, setPlans] = useBackendListState<CertPlan>(mockPlans)
   const [search, setSearch] = useState('')
-  const [showAdd, setShowAdd] = useState(false)
-  const [showEdit, setShowEdit] = useState<any>(null)
-  const [showDelete, setShowDelete] = useState<string | null>(null)
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
-  const [step, setStep] = useState(0)
-  const [form, setForm] = useState({ name: '', date: '', occupation: '', level: '三级', status: 'draft' })
+  const [queryType, setQueryType] = useState('计划名称')
+  const [activeTab, setActiveTab] = useState<'待办' | '已办'>('待办')
+  const [showDialog, setShowDialog] = useState(false)
+  const [editing, setEditing] = useState<CertPlan | null>(null)
 
-  const levels = ['一级', '二级', '三级', '四级', '五级']
-  const occupations = ['核反应堆运行值班员', '电气试验员', '机械设备检修工', '仪控设备检修工', '焊接工', '起重机械操作工']
+  // Form state
+  const [fName, setFName] = useState('')
+  const [fFilingOrg, setFFilingOrg] = useState('')
+  const [fSite, setFSite] = useState('')
+  const [fMonth, setFMonth] = useState('')
+  const [fDate, setFDate] = useState('')
+  const [fDeadline, setFDeadline] = useState('')
+  const [fDesc, setFDesc] = useState('')
 
-  const filtered = items.filter(p => !search || p.name.includes(search) || p.occupation.includes(search))
-  const selected = items.find(p => p.id === selectedPlan)
+  // Computed
+  const availableSites = useMemo(() => {
+    if (!fFilingOrg) return []
+    return filingLocations[fFilingOrg]?.sites || []
+  }, [fFilingOrg])
 
-  const openAdd = () => { setForm({ name: '', date: '', occupation: '', level: '三级', status: 'draft' }); setShowAdd(true) }
-  const openEdit = (p: any) => { setForm(p); setShowEdit(p) }
-  const handleSave = () => {
-    if (!form.name || !form.date) return
-    if (showEdit) {
-      setItems(prev => prev.map(i => i.id === showEdit.id ? { ...form, id: showEdit.id } : i))
-      setShowEdit(null)
-    } else {
-      setItems(prev => [{ ...form, id: Date.now().toString() }, ...prev])
-      setShowAdd(false)
-    }
-    setForm({ name: '', date: '', occupation: '', level: '三级', status: 'draft' })
+  const filtered = useMemo(() => {
+    return plans.filter(plan => {
+      const tabMatch = activeTab === '待办'
+        ? plan.status === 'draft'
+        : plan.status === 'published' || plan.status === 'done'
+      const q = search
+      if (!q) return tabMatch
+      return tabMatch && (
+        plan.name.includes(q) || plan.planNo.includes(q)
+        || plan.filingOrg.includes(q) || plan.site.includes(q)
+      )
+    })
+  }, [activeTab, plans, search])
+
+  const statusColor = (s: PlanStatus) =>
+    s === 'published' || s === 'done' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
+
+  // ─── Dialog handlers ───
+
+  const resetForm = () => {
+    setFName(''); setFFilingOrg(''); setFSite('')
+    setFMonth(''); setFDate(''); setFDeadline(''); setFDesc('')
   }
-  const handleDelete = (id: string) => { setItems(prev => prev.filter(i => i.id !== id)); setShowDelete(null); if (selectedPlan === id) setSelectedPlan(null) }
 
-  const FormFields = () => (
-    <div className="space-y-3">
-      <div><label className="text-sm font-medium text-gray-700">计划名称</label><input value={form.name} onChange={e => setForm({...form,name:e.target.value})} className="w-full mt-1 h-9 px-3 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-[#1A56DB]" placeholder="输入计划名称" /></div>
-      <div><label className="text-sm font-medium text-gray-700">拟考日期</label><input type="date" value={form.date} onChange={e => setForm({...form,date:e.target.value})} className="w-full mt-1 h-9 px-3 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-[#1A56DB]" /></div>
-      <div><label className="text-sm font-medium text-gray-700">职业(工种)</label><select value={form.occupation} onChange={e => setForm({...form,occupation:e.target.value})} className="w-full mt-1 h-9 px-3 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-[#1A56DB]"><option value="">请选择</option>{occupations.map(o => <option key={o}>{o}</option>)}</select></div>
-      <div><label className="text-sm font-medium text-gray-700">等级</label><select value={form.level} onChange={e => setForm({...form,level:e.target.value})} className="w-full mt-1 h-9 px-3 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-[#1A56DB]">{levels.map(l => <option key={l}>{l}</option>)}</select></div>
-      <div><label className="text-sm font-medium text-gray-700">状态</label><select value={form.status} onChange={e => setForm({...form,status:e.target.value})} className="w-full mt-1 h-9 px-3 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-[#1A56DB]">{Object.entries(statusMap).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}</select></div>
-    </div>
-  )
+  const openAdd = () => {
+    resetForm()
+    setEditing(null)
+    setShowDialog(true)
+  }
+
+  const openEdit = (p: CertPlan) => {
+    setEditing(p)
+    setFName(p.name); setFFilingOrg(p.filingOrg); setFSite(p.site)
+    setFMonth(p.examMonth); setFDate(p.examDate)
+    setFDeadline(p.regDeadline); setFDesc(p.description)
+    setShowDialog(true)
+  }
+
+  const handleSave = () => {
+    if (!fName.trim()) { toast.error('请输入计划名称'); return }
+    if (!fFilingOrg) { toast.error('请选择备案地'); return }
+    if (!fSite) { toast.error('请选择站点'); return }
+    if (!fMonth) { toast.error('请选择拟考月份'); return }
+    if (!fDate) { toast.error('请选择拟考日期'); return }
+    if (!fDeadline) { toast.error('请选择报名截止日期'); return }
+
+    if (editing) {
+      setPlans(prev => prev.map(p =>
+        p.id === editing.id
+          ? { ...p, name: fName, filingOrg: fFilingOrg, site: fSite,
+              examMonth: fMonth, examDate: fDate, regDeadline: fDeadline, description: fDesc }
+          : p
+      ))
+      toast.success('计划已更新')
+    } else {
+      const planNo = generatePlanNo(fFilingOrg, plans)
+      setPlans(prev => [{
+        id: Date.now().toString(), planNo, name: fName,
+        filingOrg: fFilingOrg, site: fSite,
+        examMonth: fMonth, examDate: fDate, regDeadline: fDeadline,
+        status: 'draft', statusLabel: '待办', description: fDesc,
+      }, ...prev])
+      toast.success(`新计划已创建：${planNo}`)
+    }
+    setShowDialog(false)
+  }
+
+  const handlePublish = (plan: CertPlan) => {
+    setPlans(prev => prev.map(p =>
+      p.id === plan.id ? { ...p, status: 'published', statusLabel: '已办' } : p
+    ))
+    toast.success('计划已发布')
+  }
+
+  const handleDelete = (plan: CertPlan) => {
+    setPlans(prev => prev.filter(p => p.id !== plan.id))
+    toast.success('计划已删除')
+  }
+
+  // ─── Render ───
 
   return (
-    <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-4">等级认定</h1>
-      {!selectedPlan ? (
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="搜索计划..." className="h-9 pl-9 pr-4 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-[#1A56DB] w-72" />
-            </div>
-            <Button onClick={openAdd} className="h-9 px-4 bg-[#1A56DB] text-white rounded-md text-sm flex items-center gap-1.5 hover:bg-[#1748B5]"><Plus className="w-4 h-4" /> 添加计划</Button>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-gray-900">制定计划</h1>
+        <Button onClick={openAdd}><Plus className="w-4 h-4 mr-2" />添加计划</Button>
+      </div>
+
+      {/* Search + Tabs */}
+      <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-3">
+        <div className="flex items-center gap-2">
+          <Select value={queryType} onValueChange={setQueryType}>
+            <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="计划名称">计划名称</SelectItem>
+              <SelectItem value="计划编号">计划编号</SelectItem>
+              <SelectItem value="备案地">备案地</SelectItem>
+              <SelectItem value="站点名称">站点名称</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="relative w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input placeholder={`请输入${queryType}`} value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
           </div>
-          <div className="bg-white rounded-lg border border-gray-200 overflow-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-[#F9FAFB] text-gray-600 font-medium"><tr><th className="px-4 py-3 text-left">计划名称</th><th className="px-4 py-3 text-left">拟考日期</th><th className="px-4 py-3 text-left">职业(工种)</th><th className="px-4 py-3 text-left">等级</th><th className="px-4 py-3 text-left">状态</th><th className="px-4 py-3 text-left">操作</th></tr></thead>
-              <tbody className="divide-y divide-gray-100">
-                {filtered.map(p => (
-                  <tr key={p.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-900">{p.name}</td>
-                    <td className="px-4 py-3 text-gray-600">{p.date}</td>
-                    <td className="px-4 py-3 text-gray-600">{p.occupation}</td>
-                    <td className="px-4 py-3"><span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{p.level}</span></td>
-                    <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${statusMap[p.status]?.cls}`}>{statusMap[p.status]?.label}</span></td>
-                    <td className="px-4 py-3"><div className="flex items-center gap-2"><button onClick={() => setSelectedPlan(p.id)} className="text-[#1A56DB] hover:underline text-xs flex items-center gap-0.5">管理<ChevronRight className="w-3 h-3" /></button><button onClick={() => openEdit(p)} className="text-gray-500 hover:text-amber-600"><Edit3 className="w-3.5 h-3.5" /></button><button onClick={() => setShowDelete(p.id)} className="text-gray-500 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button></div></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Button variant="outline" size="sm" onClick={() => toast.success('查询完成')}>查询</Button>
         </div>
-      ) : (
-        <div>
-          <button onClick={() => setSelectedPlan(null)} className="text-sm text-[#1A56DB] hover:underline mb-4">&larr; 返回计划列表</button>
-          <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">{selected?.name}</h2>
-              <div className="flex items-center gap-2"><button onClick={() => openEdit(selected)} className="text-xs text-[#1A56DB] hover:underline flex items-center gap-1"><Edit3 className="w-3 h-3" />编辑</button><button onClick={() => setShowDelete(selected?.id || '')} className="text-xs text-red-600 hover:underline flex items-center gap-1"><Trash2 className="w-3 h-3" />删除</button></div>
-            </div>
-            <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-              <span><MapPin className="w-3.5 h-3.5 inline mr-1" />大亚湾核电</span>
-              <span><FileText className="w-3.5 h-3.5 inline mr-1" />{selected?.occupation}</span>
-              <span><Award className="w-3.5 h-3.5 inline mr-1" />{selected?.level}</span>
-              <span><Users className="w-3.5 h-3.5 inline mr-1" />128人报名</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2">
-            {workflowSteps.map((s, i) => (
-              <button key={s} onClick={() => setStep(i)} className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap flex items-center gap-1 ${i === step ? 'bg-[#1A56DB] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                <Play className="w-3 h-3" />{s}
-              </button>
+        <div className="flex rounded-md border border-gray-200 bg-gray-50 p-0.5">
+          {(['待办', '已办'] as const).map(tab => (
+            <button
+              key={tab}
+              className={`px-5 py-1.5 text-xs rounded transition-colors ${
+                activeTab === tab ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-white'
+              }`}
+              onClick={() => setActiveTab(tab)}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="overflow-auto rounded-lg border border-gray-200 bg-white">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-3 text-left font-medium text-gray-600 w-12">序号</th>
+              <th className="px-4 py-3 text-center font-medium text-gray-600 w-16">预警</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">计划编号</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">计划名称</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">备案地</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">站点名称</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">拟考月份</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">拟考日期</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">报名截止</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">状态</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">操作</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {filtered.map((plan, idx) => (
+              <tr key={plan.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-4 py-3 text-gray-500 text-xs">{idx + 1}</td>
+                <td className="px-4 py-3 text-center">
+                  {(() => {
+                    const now = new Date()
+                    const deadline = new Date(plan.regDeadline)
+                    const daysLeft = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+                    if (plan.status !== 'draft') return null
+                    if (daysLeft <= 0) return (
+                      <span title="已截止" className="inline-flex items-center gap-1 text-xs text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
+                        <AlertTriangle className="w-3 h-3" />
+                      </span>
+                    )
+                    if (daysLeft <= 3) return (
+                      <span title="报名即将截止" className="inline-flex items-center gap-1 text-xs text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">
+                        <Clock className="w-3 h-3" />
+                        {daysLeft}天
+                      </span>
+                    )
+                    if (daysLeft <= 7) return (
+                      <span title="即将截止" className="inline-flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+                        <Clock className="w-3 h-3" />
+                        {daysLeft}天
+                      </span>
+                    )
+                    return null
+                  })()}
+                </td>
+                <td className="px-4 py-3 font-mono text-xs text-gray-700">{plan.planNo}</td>
+                <td className="px-4 py-3 font-medium text-gray-900">{plan.name}</td>
+                <td className="px-4 py-3 text-gray-600">{plan.filingOrg}</td>
+                <td className="px-4 py-3 text-gray-600">{plan.site}</td>
+                <td className="px-4 py-3 text-gray-600">{plan.examMonth}</td>
+                <td className="px-4 py-3 text-gray-600">{formatDate(plan.examDate)}</td>
+                <td className="px-4 py-3 text-gray-600">{formatDate(plan.regDeadline)}</td>
+                <td className="px-4 py-3">
+                  <span className={`px-2.5 py-0.5 rounded text-xs font-medium ${statusColor(plan.status)}`}>
+                    {plan.statusLabel}
+                  </span>
+                </td>
+                <td className="px-4 py-3">
+                  {plan.status === 'draft' ? (
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => openEdit(plan)}>
+                        <Search className="w-3 h-3 mr-1" />编辑
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-green-600" onClick={() => handlePublish(plan)}>
+                        发布
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-red-500" onClick={() => handleDelete(plan)}>
+                        删除
+                      </Button>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-gray-400">—</span>
+                  )}
+                </td>
+              </tr>
             ))}
-          </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-base font-semibold text-gray-900 mb-2">{workflowSteps[step]}</h3>
-            <p className="text-sm text-gray-500 mb-4">当前处于「{workflowSteps[step]}」阶段，请完成相关操作。</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {[{icon: Users, label: '报名人数', val: '128'}, {icon: FileText, label: '考场数', val: '6'}, {icon: Award, label: '通过人数', val: '--'}].map(c => (
-                <div key={c.label} className="border border-gray-200 rounded-lg p-4"><c.icon className="w-6 h-6 text-[#1A56DB] mb-2" /><div className="text-2xl font-bold text-gray-900">{c.val}</div><div className="text-xs text-gray-500">{c.label}</div></div>
-              ))}
+            {filtered.length === 0 && (
+              <tr><td colSpan={11} className="px-4 py-16 text-center text-sm text-gray-400">暂无数据</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Add/Edit Dialog */}
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editing ? '编辑计划信息' : '新增计划信息'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Plan No preview (new only) */}
+            {!editing && (
+              <div className="space-y-1">
+                <Label>计划编号</Label>
+                <div className="h-9 rounded-md border border-gray-200 bg-gray-50 px-3 text-sm flex items-center text-gray-500">
+                  {fFilingOrg
+                    ? `${filingLocations[fFilingOrg]?.code || 'XX'}${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}XXX`
+                    : '请先选择备案地'}
+                </div>
+                <p className="text-xs text-gray-400">格式：备案地代码+年月+3位顺序号，自动生成不可编辑</p>
+              </div>
+            )}
+            {editing && (
+              <div className="space-y-1">
+                <Label>计划编号</Label>
+                <div className="h-9 rounded-md border border-gray-200 bg-gray-50 px-3 text-sm flex items-center text-gray-500">
+                  {editing.planNo}
+                </div>
+              </div>
+            )}
+
+            {/* Name */}
+            <div className="space-y-1">
+              <Label>计划名称 *</Label>
+              <Input value={fName} onChange={e => setFName(e.target.value)} placeholder="输入计划名称" />
+            </div>
+
+            {/* Site: filing org → cascade */}
+            <div className="rounded-lg border border-gray-200 p-4">
+              <div className="mb-3 text-sm font-medium text-gray-900">选择站点</div>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label>备案地 *</Label>
+                  <div className="space-y-1.5">
+                    {Object.keys(filingLocations).map(place => (
+                      <label key={place} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:text-blue-600">
+                        <input
+                          type="radio"
+                          name="plFilingOrg"
+                          value={place}
+                          checked={fFilingOrg === place}
+                          onChange={() => { setFFilingOrg(place); setFSite('') }}
+                          className="accent-blue-600"
+                        />
+                        {place}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>站点名称 *</Label>
+                  {fFilingOrg ? (
+                    <div className="space-y-1.5">
+                      {availableSites.map(site => (
+                        <label key={site.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:text-blue-600">
+                          <input
+                            type="radio"
+                            name="plSite"
+                            value={site.name}
+                            checked={fSite === site.name}
+                            onChange={() => setFSite(site.name)}
+                            className="accent-blue-600"
+                          />
+                          {site.name}
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="h-20 flex items-center justify-center text-sm text-gray-400 border border-dashed border-gray-200 rounded">
+                      请先选择备案地
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Dates */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1">
+                <Label>拟考月份 *</Label>
+                <Input type="month" value={fMonth} onChange={e => setFMonth(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label>拟考日期 *</Label>
+                <Input type="date" value={fDate} onChange={e => setFDate(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label>报名截止 *</Label>
+                <Input type="date" value={fDeadline} onChange={e => setFDeadline(e.target.value)} />
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-1">
+              <Label>描述</Label>
+              <Textarea value={fDesc} onChange={e => setFDesc(e.target.value)} placeholder="输入描述信息（可选）" className="h-20" />
             </div>
           </div>
-        </div>
-      )}
-      <Dialog open={showAdd} onOpenChange={setShowAdd}><DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>添加认定计划</DialogTitle></DialogHeader><FormFields /><div className="flex justify-end gap-2 mt-4"><Button variant="outline" onClick={() => setShowAdd(false)}>取消</Button><Button onClick={handleSave} className="bg-[#1A56DB] hover:bg-[#1748B5]"><Save className="w-4 h-4 mr-1" />保存</Button></div></DialogContent></Dialog>
-      <Dialog open={!!showEdit} onOpenChange={() => setShowEdit(null)}><DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>编辑认定计划</DialogTitle></DialogHeader><FormFields /><div className="flex justify-end gap-2 mt-4"><Button variant="outline" onClick={() => setShowEdit(null)}>取消</Button><Button onClick={handleSave} className="bg-[#1A56DB] hover:bg-[#1748B5]"><Save className="w-4 h-4 mr-1" />保存</Button></div></DialogContent></Dialog>
-      <Dialog open={!!showDelete} onOpenChange={() => setShowDelete(null)}><DialogContent className="sm:max-w-sm"><DialogHeader><DialogTitle>确认删除</DialogTitle></DialogHeader><p className="text-sm text-gray-500">确定要删除此计划吗？此操作不可撤销。</p><div className="flex justify-end gap-2 mt-4"><Button variant="outline" onClick={() => setShowDelete(null)}>取消</Button><Button variant="destructive" onClick={() => showDelete && handleDelete(showDelete)}>删除</Button></div></DialogContent></Dialog>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowDialog(false)}>取消</Button>
+            <Button onClick={handleSave} className="bg-[#1A56DB] hover:bg-[#1748B5]">保存</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -12,6 +12,7 @@
    [zhaoyul.exam-system-backend.web.controllers.filing :as filing]
    [zhaoyul.exam-system-backend.web.controllers.health :as health]
    [zhaoyul.exam-system-backend.web.controllers.organizations :as organizations]
+   [zhaoyul.exam-system-backend.web.controllers.plans :as plans-ctrl]
    [zhaoyul.exam-system-backend.web.controllers.personal :as personal]
    [zhaoyul.exam-system-backend.web.controllers.registration-orgs :as registration-orgs]
    [zhaoyul.exam-system-backend.web.controllers.resources :as resource-controller]
@@ -268,6 +269,9 @@
        :delete {:summary "删除认定机构"
                 :handler (partial organizations/delete-organization ctx)}}]]
     (resource-endpoint ctx "/plans" "certification-plans" "等级认定" "认定计划")
+    ["/plans/generate-number"
+     {:get {:summary "自动生成计划编号"
+            :handler (partial plans-ctrl/generate-number ctx)}}]
     (resource-endpoint ctx "/supervision" "certification-supervision" "等级认定" "认定监督")
     (resource-endpoint ctx "/statistics" "certification-statistics" "等级认定" "认定统计" false)
     (resource-endpoint ctx "/approval-settings" "approval-settings" "等级认定" "批复设置")
@@ -294,6 +298,9 @@
    ["/certification/execution"
     {:swagger {:tags ["机构端等级认定"]}}
     (resource-endpoint ctx "/exam-rooms" "exam-rooms" "机构端等级认定" "考场信息")
+    ["/filing-sites"
+     {:get {:summary "站点列表（备案地级联用）"
+            :handler (partial plans-ctrl/list-filing-sites ctx)}}]
     ["/registration-orgs"
      {:swagger {:tags ["机构端等级认定"]}}
      ["/site-tree"

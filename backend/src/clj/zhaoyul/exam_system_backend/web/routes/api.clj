@@ -168,7 +168,7 @@
     (resource-endpoint ctx "/entry" "scores" "成绩管理" "成绩录入")
     (resource-endpoint ctx "/review" "score-reviews" "成绩管理" "成绩审核")
     (resource-endpoint ctx "/publicity" "score-publicity-batches" "成绩管理" "成绩公示")
-    (resource-endpoint ctx "/correction" "score-corrections" "成绩管理" "成绩更正")
+    (resource-endpoint ctx "/correction" "score-corrections" "成绩管理" "成绩更正")]
    ["/certificate"
     {:swagger {:tags ["证书管理"]}}
     ;; 证书批次管理
@@ -183,21 +183,22 @@
       {:post {:summary "生成批次证书号" :handler (partial certificate/generate-certificates ctx)}}]
      ["/:id/print"
       {:post {:summary "标记批次已打印" :handler (partial certificate/mark-batch-printed ctx)}}]]
-    ;; 证书列表/详情
-    ["/list"
-     {:get {:summary "证书列表" :handler (partial certificate/list-certificates ctx)}}]
-    ["/:id"
-     {:get {:summary "证书详情" :handler (partial certificate/get-certificate ctx)}}]
     ;; 打印操作
     ["/print"
      {:post {:summary "标记证书已打印" :handler (partial certificate/mark-certificates-printed ctx)}}]
     ;; 等级映射
     ["/level-mapping"
      {:get {:summary "等级编码映射" :handler certificate/get-level-mapping}}]
+    ;; 证书列表/详情
+    ["/list"
+     {:get {:summary "证书列表" :handler (partial certificate/list-certificates ctx)}}]
     ;; 向后兼容的通用资源端点
     (resource-endpoint ctx "/issue" "certificates" "证书管理" "证书核发")
     (resource-endpoint ctx "/view" "certificates" "证书管理" "证书查看" false)
-    (resource-endpoint ctx "/reissue" "certificate-reissues" "证书管理" "证书补发")]
+    (resource-endpoint ctx "/reissue" "certificate-reissues" "证书管理" "证书补发")
+    ;; 证书详情 (id-based, must be after fixed paths)
+    ["/:id"
+     {:get {:summary "证书详情" :handler (partial certificate/get-certificate ctx)}}]]
    ["/candidates"
     {:swagger {:tags ["考生管理"]}}
     ["/manage"

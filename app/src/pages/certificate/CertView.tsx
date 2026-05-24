@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Search, Eye, Award } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useBackendListState } from '@/hooks/useBackendListState'
+import { useBackendResourceList } from '@/hooks/useBackendListState'
 
 const certs = [
   { id: '1', name: '张三', idCard: '440301199001011234', occupation: '核反应堆运行值班员', level: '三级', certNo: 'CGN-2026-001', issueDate: '2026-06-01', org: '大亚湾核电' },
@@ -13,7 +13,7 @@ const certs = [
 export default function CertView() {
   const [search, setSearch] = useState('')
   const [viewItem, setViewItem] = useState<any>(null)
-  const [items] = useBackendListState(certs)
+  const items = useBackendResourceList('/certificate/list', certs)
 
   const filtered = items.filter(i => !search || i.name.includes(search) || i.certNo.includes(search) || i.idCard.includes(search))
 

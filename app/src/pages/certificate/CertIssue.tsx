@@ -18,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
+import { apiRequest } from '@/lib/api'
 import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
 
 type PrintState = '全部' | '已打印' | '未打印'
@@ -245,27 +246,50 @@ export default function CertIssue() {
     setExpanded(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id])
   }
 
-  const confirmPrint = (batch: CertBatch) => {
-    setItems(prev => prev.map(item => item.id === batch.id
-      ? {
-          ...item,
-          isPrint: true,
-          candidates: item.candidates.map(candidate => ({ ...candidate, status: '已打印' as const })),
-        }
-      : item))
-    toast.success(`已确认打印：${batch.title}`)
+  const confirmPrint = async (batch: CertBatch) => {
+    try {
+      await apiRequest(`/certificate/batches/${batch.id}/print`, { method: 'POST' })
+      setItems(prev => prev.map(item => item.id === batch.id
+        ? {
+            ...item,
+            isPrint: true,
+            candidates: item.candidates.map(candidate => ({ ...candidate, status: '已打印' as const })),
+          }
+        : item))
+      toast.success(`已确认打印：${batch.title}`)
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : '打印确认失败')
+    }
   }
 
   const adjustCert = (batch: CertBatch, range: '全部' | '12级' | '345级' = '全部') => {
     toast.success(`${batch.title} 已进入证书调整：${range}`)
   }
 
-  const handleGenerateCert = () => {
+  const handleGenerateCert = async () => {
     if (!generateBatch || !generateDate) return
-    setItems(prev => prev.map(item => item.id === generateBatch.id
-      ? { ...item, candidates: item.candidates.map(c => ({ ...c, issueDate: generateDate })) }
-      : item))
-    toast.success(`${generateBatch.title} 证书生成成功，发证日期：${generateDate}`)
+    try {
+      const result = await apiRequest<{ count: number }>(`/certificate/batches/${generateBatch.id}/generate`, {
+        method: 'POST',
+        body: JSON.stringify({
+          candidates: generateBatch.candidates.map(c => ({
+            name: c.name,
+            'id-card': c.idCard,
+            occupation: c.occupation,
+            level: c.level,
+          })),
+          'site-code': 'GD',
+          year: new Date(generateDate).getFullYear(),
+          'issue-date': generateDate,
+        }),
+      })
+      toast.success(`${generateBatch.title} 证书生成成功，共生成 ${result.count} 本证书`)
+      // Reload batch list
+      const updated = await apiRequest<{ items: CertBatch[] }>('/certificate/batches')
+      if (updated?.items) setItems(updated.items)
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : '证书生成失败')
+    }
     setGenerateBatch(null)
     setGenerateDate('')
   }

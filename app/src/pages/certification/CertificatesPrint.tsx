@@ -10,6 +10,7 @@ import {
   Search, Printer, MoreHorizontal, CheckCircle, Users, Eye
 } from 'lucide-react'
 import { useBackendResourceList, useBackendResourceState } from '@/hooks/useBackendListState'
+import { apiRequest } from '@/lib/api'
 
 interface PrintPlan {
   id: string
@@ -84,14 +85,30 @@ export default function CertificatesPrint() {
   const filtered = plans.filter(p => !search || p.name.includes(search) || p.planNo.includes(search))
   const candidateList = candidates
 
-  const handlePrint = () => {
-    setCandidates(prev => prev.map(c => selectedCandidates.includes(c.id) ? { ...c, status: 'printed' as const } : c))
-    toast.success(`证书打印完成！边框：${borderType === 'none' ? '无边框' : borderType === 'border' ? '打印边框' : '图文边框'}，${printPhoto ? '打印照片' : '不打印照片'}`)
+  const handlePrint = async () => {
+    try {
+      await apiRequest('/certificate/print', {
+        method: 'POST',
+        body: JSON.stringify({ ids: selectedCandidates }),
+      })
+      setCandidates(prev => prev.map(c => selectedCandidates.includes(c.id) ? { ...c, status: 'printed' as const } : c))
+      toast.success(`证书打印完成！边框：${borderType === 'none' ? '无边框' : borderType === 'border' ? '打印边框' : '图文边框'}，${printPhoto ? '打印照片' : '不打印照片'}`)
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : '打印失败')
+    }
   }
 
-  const handlePrintOne = (id: string) => {
-    setCandidates(prev => prev.map(c => c.id === id ? { ...c, status: 'printed' as const } : c))
-    toast.success('当前证书已打印')
+  const handlePrintOne = async (id: string) => {
+    try {
+      await apiRequest('/certificate/print', {
+        method: 'POST',
+        body: JSON.stringify({ ids: [id] }),
+      })
+      setCandidates(prev => prev.map(c => c.id === id ? { ...c, status: 'printed' as const } : c))
+      toast.success('当前证书已打印')
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : '打印失败')
+    }
   }
 
   const toggleSelectCandidate = (id: string) => {

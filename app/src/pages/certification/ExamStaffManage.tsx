@@ -1,9 +1,10 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { Download, Edit3, KeyRound, Plus, Trash2, Upload } from 'lucide-react'
+import { Download, Edit3, KeyRound, Plus, Trash2, Upload, UserCog } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { useBackendListState } from '@/hooks/useBackendListState'
+import StaffAssignDialog from './StaffAssignDialog'
 
 interface ExamStaff {
   id: number
@@ -64,6 +65,7 @@ export default function ExamStaffManage() {
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<ExamStaff | null>(null)
   const [resetTarget, setResetTarget] = useState<ExamStaff | null>(null)
+  const [showAssignDialog, setShowAssignDialog] = useState(false)
 
   const filtered = useMemo(() => staff.filter(item => {
     const byName = !search || item.name.includes(search)
@@ -141,6 +143,9 @@ export default function ExamStaffManage() {
           <Button onClick={() => toast.success('导入完成')} className="bg-[#1A56DB] hover:bg-[#1748B5]">
             <Upload className="mr-2 h-4 w-4" />导入
           </Button>
+          <Button variant="outline" onClick={() => setShowAssignDialog(true)}>
+            <UserCog className="mr-2 h-4 w-4" />人员安排
+          </Button>
           <Button onClick={() => setAdding(true)} className="bg-[#1A56DB] hover:bg-[#1748B5]">
             <Plus className="mr-2 h-4 w-4" />添加
           </Button>
@@ -214,6 +219,9 @@ export default function ExamStaffManage() {
         }}
         onSubmit={saveStaff}
       />
+
+      {/* Staff Assignment Dialog */}
+      <StaffAssignDialog open={showAssignDialog} onClose={() => setShowAssignDialog(false)} />
 
       <Dialog open={!!resetTarget} onOpenChange={() => setResetTarget(null)}>
         <DialogContent className="sm:max-w-md">

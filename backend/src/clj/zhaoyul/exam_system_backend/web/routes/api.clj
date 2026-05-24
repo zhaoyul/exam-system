@@ -9,6 +9,7 @@
    [zhaoyul.exam-system-backend.web.controllers.certificate :as certificate]
    [zhaoyul.exam-system-backend.web.controllers.catalog :as catalog]
    [zhaoyul.exam-system-backend.web.controllers.exam-staff :as exam-staff]
+   [zhaoyul.exam-system-backend.web.controllers.exam-staff-assignment :as staff-assignment]
    [zhaoyul.exam-system-backend.web.controllers.files :as files-ctrl]
    [zhaoyul.exam-system-backend.web.controllers.filing :as filing]
    [zhaoyul.exam-system-backend.web.controllers.numbering :as numbering]
@@ -436,6 +437,35 @@
     ["/:id/password-hint"
      {:get {:summary "获取密码提示 (身份证后六位)"
             :handler (partial exam-staff/get-password-hint ctx)}}]]
+   ;; 考务人员安排 — 督导/考务/监考/考评分配
+   ["/staff-assignment"
+    {:swagger {:tags ["人员安排"]}}
+    ["/list"
+     {:get {:summary "安排列表 (支持 planId/sessionId/examRoomId/assignmentRole/staffType 筛选)"
+            :handler (partial staff-assignment/list-assignments ctx)}}]
+    ["/assignable-staff"
+     {:get {:summary "可安排人员列表 (带安排状态)"
+            :handler (partial staff-assignment/get-assignable-staff ctx)}}]
+    ["/plan-occupations"
+     {:get {:summary "计划职业列表 (用于考评人员职业筛选)"
+            :handler (partial staff-assignment/get-plan-occupations ctx)}}]
+    ["/plan-sessions"
+     {:get {:summary "计划场次列表"
+            :handler (partial staff-assignment/get-plan-sessions ctx)}}]
+    ["/exam-rooms"
+     {:get {:summary "可用考场列表"
+            :handler (partial staff-assignment/get-plan-exam-rooms ctx)}}]
+    ["/batch"
+     {:post {:summary "批量安排人员"
+             :handler (partial staff-assignment/batch-assign ctx)}}]
+    ["/:id"
+     {:get {:summary "查看安排详情"
+            :handler (partial staff-assignment/get-assignment ctx)}
+      :delete {:summary "取消安排"
+               :handler (partial staff-assignment/cancel-assignment ctx)}}]
+    ["/:id/history"
+     {:get {:summary "人员安排历史"
+            :handler (partial staff-assignment/get-staff-assignment-history ctx)}}]]
    ;; 身份证解析
    ["/utils/parse-id-card"
     {:get {:summary "解析身份证号 (返回性别和出生日期)"

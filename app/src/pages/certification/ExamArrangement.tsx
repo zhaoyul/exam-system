@@ -7,7 +7,7 @@ import {
 import { toast } from 'sonner'
 import {
   MapPin, Users, Plus, Clock, CheckCircle, Trash2, Eye,
-  Printer, Ticket, FileSpreadsheet, LayoutGrid, ArrowRight,
+  Printer, Ticket, FileSpreadsheet, LayoutGrid,
   ArrowLeft, Calendar, Shuffle, RefreshCw,
 } from 'lucide-react'
 import { apiRequest } from '@/lib/api'
@@ -99,12 +99,6 @@ async function fetchPlans(): Promise<ArrangementPlan[]> {
   return res?.items || []
 }
 
-async function fetchSessions(planId: string, type?: string): Promise<ExamSession[]> {
-  const params = type ? `?type=${type}` : ''
-  const res = await apiRequest<{ sessions: ExamSession[] }>(`/exam-arrangement/sessions${params}`)
-  return res?.sessions || []
-}
-
 async function fetchCandidates(planId: string): Promise<{ candidates: CandidateItem[]; assignedCount: number; totalCount: number }> {
   const res = await apiRequest<{ candidates: CandidateItem[]; assignedCount: number; totalCount: number }>(
     `/exam-arrangement/plans/${planId}/sites/site-001/rooms/room-001/candidates`,
@@ -152,7 +146,6 @@ export default function ExamArrangement() {
   const [sessionDate, setSessionDate] = useState('')
   const [sessionStart, setSessionStart] = useState('')
   const [sessionEnd, setSessionEnd] = useState('')
-  const [sessionType, setSessionType] = useState<'theory' | 'skill'>('theory')
 
   // Cycle days form
   const [cycleStartDate, setCycleStartDate] = useState('')
@@ -677,7 +670,6 @@ export default function ExamArrangement() {
               </Button>
             )}
             <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => {
-              setSessionType(activeStep)
               setShowAddSession(true)
             }}>
               <Plus className="w-3.5 h-3.5 mr-1" />添加场次

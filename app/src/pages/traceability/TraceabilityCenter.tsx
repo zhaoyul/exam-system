@@ -178,7 +178,7 @@ export default function TraceabilityCenter() {
                 ))}
               </tbody>
             </table>
-            <div className="border-t border-gray-100 px-4 py-3 text-sm text-gray-500">共计{filtered.length}条数据　1　20 条/页</div>
+            <div className="border-t border-gray-100 px-4 py-3 text-sm text-gray-500">共计{filtered.length}条数据 1 20 条/页</div>
           </div>
         </div>
       </section>

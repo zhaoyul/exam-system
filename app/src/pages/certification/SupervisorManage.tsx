@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
+import { useMemo, useState, type ChangeEvent } from 'react'
 import { Download, Edit3, KeyRound, Plus, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -176,6 +176,7 @@ export default function SupervisorManage() {
       </div>
 
       <SupervisorDialog
+        key={editing?.id ?? (adding ? 'new' : 'closed')}
         open={adding || !!editing}
         title={editing ? '编辑监考人员' : '新增监考人员'}
         initial={editing}
@@ -187,6 +188,7 @@ export default function SupervisorManage() {
       />
 
       <PasswordDialog
+        key={resetTarget?.id ?? 'closed'}
         open={!!resetTarget}
         loginName={resetTarget?.loginName || ''}
         defaultPassword={resetTarget ? getDefaultPasswordFromIdCard(resetTarget.idCard) : '123456'}
@@ -219,18 +221,6 @@ function SupervisorDialog({
   const [photoName, setPhotoName] = useState(initial?.photoName || '')
   const [photoValidated, setPhotoValidated] = useState(initial?.photoValidated || false)
   const [photoMessage, setPhotoMessage] = useState(initial?.photoValidated ? '照片校验通过' : '请上传 1 寸标准照')
-
-  useEffect(() => {
-    const nextSite = SITE_OPTIONS.find(item => item.siteName === (initial?.site || '大亚湾基地考点')) || SITE_OPTIONS[0]
-    setIdCard(initial?.idCard || '')
-    setName(initial?.name || '')
-    setPhone(initial?.phone || '')
-    setWorkUnit(initial?.workUnit || '')
-    setSiteId(nextSite.id)
-    setPhotoName(initial?.photoName || '')
-    setPhotoValidated(initial?.photoValidated || false)
-    setPhotoMessage(initial?.photoValidated ? '照片校验通过' : '请上传 1 寸标准照')
-  }, [initial, open])
 
   const gender = extractGenderFromIdCard(idCard) || initial?.gender || ''
   const selectedSite = SITE_OPTIONS.find(item => item.id === siteId) || SITE_OPTIONS[0]
@@ -322,10 +312,6 @@ function PasswordDialog({
   onSave: (password: string) => void
 }) {
   const [password, setPassword] = useState(defaultPassword)
-
-  useEffect(() => {
-    setPassword(defaultPassword)
-  }, [defaultPassword, open])
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

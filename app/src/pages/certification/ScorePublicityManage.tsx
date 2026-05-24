@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -83,6 +83,12 @@ const statusMap: Record<string, { label: string; color: string }> = {
   done: { label: '已结束', color: 'bg-green-100 text-green-700' },
 }
 
+function calcPublicityEnd(startDate: string, publicityDays: number) {
+  const endDate = new Date(`${startDate}T00:00:00`)
+  endDate.setDate(endDate.getDate() + publicityDays)
+  return endDate.toISOString().split('T')[0]
+}
+
 export default function ScorePublicityManage() {
   const [batches, setBatches] = useBackendListState<PublicityBatch>(mockBatches)
   const [publicityDays, setPublicityDays] = useState(7)
@@ -99,7 +105,7 @@ export default function ScorePublicityManage() {
 
   const handleStartPublicity = (id: number) => {
     const start = new Date().toISOString().split('T')[0]
-    const end = new Date(Date.now() + publicityDays * 86400000).toISOString().split('T')[0]
+    const end = calcPublicityEnd(start, publicityDays)
     setBatches(prev => prev.map(b => b.id === id ? { ...b, status: 'publicizing', publicityStart: start, publicityEnd: end } : b))
     toast.success('成绩公示已开始')
   }
@@ -347,6 +353,7 @@ export default function ScorePublicityManage() {
       </Dialog>
 
       <EditScoreDialog
+        key={editingCandidate ? `${editingCandidate.batchId}-${editingCandidate.candidate.id}` : 'closed'}
         open={!!editingCandidate}
         candidate={editingCandidate?.candidate || null}
         onClose={() => setEditingCandidate(null)}
@@ -370,12 +377,6 @@ function EditScoreDialog({
   const [theoryScore, setTheoryScore] = useState(String(candidate?.theoryScore || 0))
   const [skillScore, setSkillScore] = useState(String(candidate?.skillScore || 0))
   const [reason, setReason] = useState('')
-
-  useEffect(() => {
-    setTheoryScore(String(candidate?.theoryScore || 0))
-    setSkillScore(String(candidate?.skillScore || 0))
-    setReason('')
-  }, [candidate, open])
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

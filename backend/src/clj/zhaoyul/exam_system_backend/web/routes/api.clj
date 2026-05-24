@@ -7,6 +7,7 @@
    [zhaoyul.exam-system-backend.web.controllers.auth :as auth]
    [zhaoyul.exam-system-backend.web.controllers.candidates :as candidates]
    [zhaoyul.exam-system-backend.web.controllers.catalog :as catalog]
+   [zhaoyul.exam-system-backend.web.controllers.exam-staff :as exam-staff]
    [zhaoyul.exam-system-backend.web.controllers.files :as files-ctrl]
    [zhaoyul.exam-system-backend.web.controllers.filing :as filing]
    [zhaoyul.exam-system-backend.web.controllers.health :as health]
@@ -291,6 +292,28 @@
     (resource-endpoint ctx "/exam-staff" "exam-staff" "机构端等级认定" "考务人员")
     (resource-endpoint ctx "/supervisors" "supervisors" "机构端等级认定" "监考人员")
     (resource-endpoint ctx "/marking-leads" "marking-leads" "机构端等级认定" "阅卷负责人")]
+   ;; 人员管理统一 API - 共用 cgn_exam_staff 表
+   ["/staff"
+    {:swagger {:tags ["人员管理"]}}
+    [""
+     {:get {:summary "人员列表 (支持 staffType 筛选)"
+            :handler (partial exam-staff/list-staff ctx)}
+      :post {:summary "新增人员"
+             :handler (partial exam-staff/create-staff ctx)}}]
+    ["/:id"
+     {:get {:summary "查看人员详情"
+            :handler (partial exam-staff/get-staff ctx)}
+      :put {:summary "更新人员信息"
+            :handler (partial exam-staff/update-staff ctx)}
+      :delete {:summary "删除人员"
+               :handler (partial exam-staff/delete-staff ctx)}}]
+    ["/:id/password-hint"
+     {:get {:summary "获取密码提示 (身份证后六位)"
+            :handler (partial exam-staff/get-password-hint ctx)}}]]
+   ;; 身份证解析
+   ["/utils/parse-id-card"
+    {:get {:summary "解析身份证号 (返回性别和出生日期)"
+           :handler exam-staff/parse-id-card}}]
    ["/question-bank"
     {:swagger {:tags ["题库"]}}
     (resource-endpoint ctx "/subject-categories" "subject-categories" "题库" "科目分类")

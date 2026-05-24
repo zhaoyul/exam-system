@@ -61,6 +61,7 @@ import ExamArrangement from '@/pages/certification/ExamArrangement'
 import ExamSessionArrange from '@/pages/certification/ExamSessionArrange'
 import CertDeclaration from '@/pages/certification/CertDeclaration'
 import EvaluatorStaff from '@/pages/certification/EvaluatorStaff'
+import StaffManage from '@/pages/certification/StaffManage'
 import MarkingLeadPage from '@/pages/certification/MarkingLeadPage'
 import EnrollModifyPage from '@/pages/certification/EnrollModifyPage'
 import FinanceWorkbench from '@/pages/finance/FinanceWorkbench'
@@ -230,10 +231,10 @@ export default function App() {
           <Route path="/cert/exam-arrangement" element={<ExamArrangement />} />
           <Route path="/cert/exam-session" element={<ExamSessionArrange />} />
           <Route path="/cert/score-publicity-manage" element={<ScorePublicityManage />} />
-          <Route path="/cert/supervisors" element={<SupervisorManage />} />
+          <Route path="/cert/supervisors" element={<StaffManage staffType="proctor" title="监考人员" />} />
           <Route path="/cert/registration-orgs" element={<RegistrationOrgManage />} />
-          <Route path="/cert/exam-staff" element={<ExamStaffManage />} />
-          <Route path="/cert/evaluator-staff" element={<EvaluatorStaff />} />
+          <Route path="/cert/exam-staff" element={<StaffManage staffType="exam_staff" title="考务人员" />} />
+          <Route path="/cert/evaluator-staff" element={<StaffManage staffType="evaluator" title="考评人员" />} />
           <Route path="/cert/marking-lead" element={<MarkingLeadPage />} />
           <Route path="/cert/enroll-modify" element={<EnrollModifyPage />} />
           <Route path="/cert/declaration" element={<CertDeclaration />} />

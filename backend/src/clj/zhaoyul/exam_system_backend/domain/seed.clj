@@ -370,6 +370,13 @@
 (def domain-doc-receives
   [{:id "doc-receive-001" :org_id "org-csyxgs" :code "RCV20260001" :distribution_id "doc-dist-001" :name "2026年认定工作通知接收" :sender_org "集团中心" :receive_date "2026-05-20" :status "received"}])
 
+(def domain-exam-staff
+  [{:id "exam-staff-001" :org_id "org-csyxgs" :code "ES20260001" :name "李考务" :login_name "440301198201011234" :phone "13800138111" :gender "男" :staff_type "exam_staff" :unit_name "测试有限公司" :id_card "440301198201011234" :photo_url nil :position "考务主管" :status "active"}
+   {:id "exam-staff-002" :org_id "org-csyxgs" :code "ES20260002" :name "王监考" :login_name "440301199005152345" :phone "13800138112" :gender "女" :staff_type "proctor" :unit_name "测试有限公司" :id_card "440301199005152345" :photo_url nil :position "主监考" :status "active"}
+   {:id "exam-staff-003" :org_id "org-csyxgs" :code "ES20260003" :name "张专家" :login_name "440301197805154321" :phone "13800138001" :gender "男" :staff_type "evaluator" :unit_name "中广核研究院" :id_card "440301197805154321" :photo_url nil :position "高级考评员" :status "active"}
+   {:id "exam-staff-004" :org_id "org-dayawan" :code "ES20260004" :name "赵监考" :login_name "440301198803204567" :phone "13800138113" :gender "男" :staff_type "proctor" :unit_name "大亚湾核电" :id_card "440301198803204567" :photo_url nil :position "监考员" :status "active"}
+   {:id "exam-staff-005" :org_id "org-yangjiang" :code "ES20260005" :name "刘考评" :login_name "441700199207015678" :phone "13800138114" :gender "女" :staff_type "evaluator" :unit_name "阳江核电" :id_card "441700199207015678" :photo_url nil :position "考评员" :status "active"}])
+
 ;; Domain table seed helpers
 
 (defn- ensure-domain-row! [ds table id-col row]
@@ -424,6 +431,8 @@
     (ensure-domain-row! ds 'cgn_doc_distribution "id" row))
   (doseq [row domain-doc-receives]
     (ensure-domain-row! ds 'cgn_doc_receive "id" row))
+  (doseq [row domain-exam-staff]
+    (ensure-domain-row! ds 'cgn_exam_staff "id" row))
   {:status :domain-seeded})
 
 (defn- ensure-user! [ds {:keys [id username password display_name role org_id phone]}]

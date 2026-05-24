@@ -11,6 +11,7 @@
    [zhaoyul.exam-system-backend.web.controllers.exam-staff :as exam-staff]
    [zhaoyul.exam-system-backend.web.controllers.files :as files-ctrl]
    [zhaoyul.exam-system-backend.web.controllers.filing :as filing]
+   [zhaoyul.exam-system-backend.web.controllers.exam-registration :as exam-registration]
    [zhaoyul.exam-system-backend.web.controllers.numbering :as numbering]
    [zhaoyul.exam-system-backend.web.controllers.registration-orgs :as registration-orgs]
    [zhaoyul.exam-system-backend.web.controllers.scores :as score-controller]
@@ -335,7 +336,35 @@
     (resource-endpoint ctx "/certificates-group" "certificates" "等级认定" "集团证书" false)
     (resource-endpoint ctx "/certificates-print" "certificate-print-jobs" "等级认定" "证书打印")
     (resource-endpoint ctx "/public-query" "certificates" "等级认定" "公共证书查询" false)
-    (resource-endpoint ctx "/exam-registration" "exam-registration" "等级认定" "报名管理")
+    ["/exam-registration"
+     {:swagger {:tags ["等级认定"]}}
+     [""
+      {:get {:summary "报名计划列表(含报名统计)"
+             :handler (partial exam-registration/list-plans ctx)}
+       :post {:summary "新增报名批次"
+              :handler (partial exam-registration/create-batch ctx)}}]
+     ["/:plan-id"
+      {:get {:summary "报名计划详情(含批次+统计)"
+             :handler (partial exam-registration/get-plan ctx)}}]
+     ["/:plan-id/batches"
+      {:get {:summary "报名计划下的批次列表"
+             :handler (partial exam-registration/list-plan-batches ctx)}}]
+     ["/:plan-id/batches/:batch-id"
+      {:get {:summary "查看批次详情"
+             :handler (partial exam-registration/get-batch ctx)}
+       :put {:summary "更新批次"
+             :handler (partial exam-registration/update-batch ctx)}
+       :delete {:summary "删除批次"
+                :handler (partial exam-registration/delete-batch ctx)}}]
+     ["/:plan-id/batches/:batch-id/end"
+      {:post {:summary "结束报名"
+              :handler (partial exam-registration/end-batch ctx)}}]
+     ["/:plan-id/import"
+      {:post {:summary "导入考生Excel"
+              :handler (partial exam-registration/import-excel ctx)}}]
+     ["/:plan-id/photos"
+      {:post {:summary "批量导入照片"
+              :handler (partial exam-registration/import-photos ctx)}}]]
     (resource-endpoint ctx "/exam-arrangement" "exam-arrangement" "等级认定" "考场编排")
     (resource-endpoint ctx "/exam-session" "exam-sessions" "等级认定" "考试场次")
     (resource-endpoint ctx "/score-publicity-manage" "score-publicity-batches" "等级认定" "成绩公示批次")

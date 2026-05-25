@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { useBackendListState } from '@/hooks/useBackendListState'
+import { parseIdCard } from '@/lib/idCard'
 
 interface Supervisor {
   id: number
@@ -56,11 +57,12 @@ export default function SupervisorManage() {
     event.preventDefault()
     const fd = new FormData(event.currentTarget)
     const idCard = String(fd.get('idCard') || '')
+    const parsed = parseIdCard(idCard)
     const next = {
       loginName: String(fd.get('loginName') || idCard),
       password: String(fd.get('password') || idCard.slice(-6) || '123456'),
       name: String(fd.get('name') || ''),
-      gender: String(fd.get('gender') || '男'),
+      gender: parsed?.gender || String(fd.get('gender') || '男'),
       phone: String(fd.get('phone') || ''),
       idCard,
       org: String(fd.get('org') || '测试有限公司'),
@@ -96,6 +98,11 @@ export default function SupervisorManage() {
   const removeSupervisor = (id: number) => {
     setSupervisors(prev => prev.filter(item => item.id !== id))
     toast.success('监考人员已删除')
+  }
+
+  const toggleStatus = (id: number) => {
+    setSupervisors(prev => prev.map(item => item.id === id ? { ...item, status: item.status === 'active' ? 'inactive' : 'active' } : item))
+    toast.success('监考人员有效性已更新')
   }
 
   return (
@@ -151,6 +158,7 @@ export default function SupervisorManage() {
                   <th className="px-4 py-3 text-center font-medium">姓名</th>
                   <th className="w-24 px-4 py-3 text-center font-medium">性别</th>
                   <th className="px-4 py-3 text-center font-medium">联系电话</th>
+                  <th className="px-4 py-3 text-center font-medium">有效性</th>
                   <th className="w-56 px-4 py-3 text-center font-medium">操作</th>
                 </tr>
               </thead>
@@ -162,10 +170,12 @@ export default function SupervisorManage() {
                     <td className="px-4 py-3 text-center font-medium text-gray-900">{item.name}</td>
                     <td className="px-4 py-3 text-center text-gray-600">{item.gender}</td>
                     <td className="px-4 py-3 text-center text-gray-600">{item.phone}</td>
+                    <td className="px-4 py-3 text-center"><span className={`rounded px-2 py-0.5 text-xs ${item.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{item.status === 'active' ? '有效' : '无效'}</span></td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex justify-center gap-3">
                         <button onClick={() => setEditing(item)} className="text-xs text-[#1A56DB] hover:underline"><Edit3 className="mr-1 inline h-3.5 w-3.5" />编辑</button>
                         <button onClick={() => setResetTarget(item)} className="text-xs text-gray-600 hover:text-[#1A56DB]"><KeyRound className="mr-1 inline h-3.5 w-3.5" />重置密码</button>
+                        <button onClick={() => toggleStatus(item.id)} className="text-xs text-amber-600 hover:underline">{item.status === 'active' ? '设为无效' : '设为有效'}</button>
                         <button onClick={() => removeSupervisor(item.id)} className="text-xs text-red-600 hover:underline"><Trash2 className="mr-1 inline h-3.5 w-3.5" />删除</button>
                       </div>
                     </td>
@@ -173,7 +183,7 @@ export default function SupervisorManage() {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-16 text-center text-gray-400">暂无数据</td>
+                    <td colSpan={7} className="px-4 py-16 text-center text-gray-400">暂无数据</td>
                   </tr>
                 )}
               </tbody>

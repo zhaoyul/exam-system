@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 import {
   AlertTriangle, Camera, CheckCircle, ChevronDown, ChevronRight, Download,
   Edit3, Eye, FileArchive, FileText, FileUp, MoreHorizontal, Plus, Search,
-  Settings, Send, Trash2, Upload, Users, Info
+  Settings, Send, Trash2, Users, Info
 } from 'lucide-react'
 import { useBackendListState, useBackendResourceList, useBackendResourceState } from '@/hooks/useBackendListState'
 
@@ -176,7 +176,7 @@ export default function CertPlanManage() {
   const backendOccupationOptions = useBackendResourceList('/standard/evaluation-scope', occupationOptions)
   const [search, setSearch] = useState('')
   const [queryType, setQueryType] = useState('计划名称')
-  const [activeTab, setActiveTab] = useState<'待发布' | '已发布'>('待发布')
+  const [activeTab, setActiveTab] = useState<'待办' | '已办'>('待办')
   const [expandedId, setExpandedId] = useState<string | null>('1')
   const [showMoreMenu, setShowMoreMenu] = useState<string | null>(null)
   const [showPlanDialog, setShowPlanDialog] = useState(false)
@@ -195,7 +195,7 @@ export default function CertPlanManage() {
 
   const filtered = useMemo(() => {
     return plans.filter(plan => {
-      const tabMatch = activeTab === '待发布'
+      const tabMatch = activeTab === '待办'
         ? plan.status !== 'published' && plan.status !== 'done'
         : plan.status === 'published' || plan.status === 'done'
       const searchMatch = !search || plan.name.includes(search) || plan.planNo.includes(search)
@@ -234,12 +234,14 @@ export default function CertPlanManage() {
     const form = e.currentTarget
     const fd = new FormData(form)
     const now = new Date()
-    const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
+    const year = String(now.getFullYear())
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const seq = String(plans.length + 1).padStart(3, '0')
     const nextPlan: CertPlan = {
       id: editingPlan?.id || Date.now().toString(),
-      planNo: editingPlan?.planNo || `${dateStr}${String(Date.now()).slice(-4)}`,
+      planNo: editingPlan?.planNo || `Y0041GD000001/${year}/${month}/${seq}`,
       name: String(fd.get('name') || ''),
-      issueType: String(fd.get('issueType') || '职业技能等级证书'),
+      issueType: '职业技能等级证书',
       site: String(fd.get('site') || '中国原子能科学研究院'),
       filingOrg: String(fd.get('filingOrg') || '北京市'),
       examDate: String(fd.get('examDate') || ''),
@@ -436,8 +438,8 @@ export default function CertPlanManage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">发证申请</h1>
-          <p className="text-sm text-gray-500 mt-1">制定计划，上传计划材料，维护职业工种并发布后进入考试报名</p>
+          <h1 className="text-xl font-bold text-gray-900">制定计划</h1>
+          <p className="text-sm text-gray-500 mt-1">按备案站点创建认定计划，维护职业工种与等级，发布后进入考试报名</p>
         </div>
         <Button onClick={() => openPlanDialog()}><Plus className="w-4 h-4 mr-2" />添加计划</Button>
       </div>
@@ -460,7 +462,7 @@ export default function CertPlanManage() {
           <Button variant="outline" onClick={() => toast.success('查询完成')}>查询</Button>
         </div>
         <div className="flex rounded-md border border-gray-200 bg-gray-50 p-0.5">
-          {(['待发布', '已发布'] as const).map(tab => (
+          {(['待办', '已办'] as const).map(tab => (
             <button
               key={tab}
               className={`px-4 py-1.5 text-xs rounded ${activeTab === tab ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-white'}`}
@@ -472,49 +474,21 @@ export default function CertPlanManage() {
         </div>
       </div>
 
-      <div className="grid min-h-[560px] grid-cols-[300px_minmax(0,1fr)] gap-4">
-        <aside className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-          <div className="border-b border-gray-100 px-4 py-3 text-base font-medium text-[#4F73D9]">计划列表</div>
-          <div className="divide-y divide-gray-100">
-            {filtered.map((plan, index) => {
-              const isSelected = selectedPlan?.id === plan.id
-              return (
-                <button
-                  key={plan.id}
-                  onClick={() => {
-                    setSelectedPlanForAction(plan)
-                    setExpandedId(plan.id)
-                  }}
-                  className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-50 ${isSelected ? 'bg-blue-50 text-blue-700' : 'text-gray-700'}`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium">{plan.name}</span>
-                    <span className="text-xs text-gray-400">{index + 1}</span>
-                  </div>
-                  <div className="mt-1 text-xs text-gray-500">{plan.planNo}</div>
-                </button>
-              )
-            })}
-            {filtered.length === 0 && (
-              <div className="px-4 py-24 text-center text-sm text-gray-400">暂无数据</div>
-            )}
-          </div>
-        </aside>
-
+      <div className="min-h-[560px]">
         <div className="overflow-auto rounded-lg border border-gray-200 bg-white">
           <table className="w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-3 py-3 text-left font-medium text-gray-600 w-8"></th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">序号</th>
-              <th className="px-3 py-3 text-left font-medium text-gray-600">计划材料</th>
+              <th className="px-3 py-3 text-left font-medium text-gray-600">预警</th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">计划编号</th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">计划名称</th>
-              <th className="px-3 py-3 text-left font-medium text-gray-600">发证类型</th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">备案地</th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">站点名称</th>
-              <th className="px-3 py-3 text-left font-medium text-gray-600">评价日期</th>
-              <th className="px-3 py-3 text-left font-medium text-gray-600">报名截止</th>
+              <th className="px-3 py-3 text-left font-medium text-gray-600">拟考月份</th>
+              <th className="px-3 py-3 text-left font-medium text-gray-600">拟考日期</th>
+              <th className="px-3 py-3 text-left font-medium text-gray-600">报名截至</th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">状态</th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">操作</th>
             </tr>
@@ -530,21 +504,15 @@ export default function CertPlanManage() {
                   </td>
                   <td className="px-3 py-3 text-gray-600">{idx + 1}</td>
                   <td className="px-3 py-3">
-                    <div className="flex items-center gap-1">
-                      <span className={`rounded px-2 py-0.5 text-xs ${plan.materialStatus === '已上传' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
-                        {plan.materialStatus}
-                      </span>
-                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => openAction(plan, 'material')}>
-                        <Upload className="w-3 h-3 mr-1" />上传
-                      </Button>
-                      {plan.materialStatus === '已上传' && <Download className="w-3.5 h-3.5 text-blue-600" />}
-                    </div>
+	                    <span className={`rounded px-2 py-0.5 text-xs ${plan.materialStatus === '已上传' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+	                      {plan.materialStatus === '已上传' ? '材料完整' : '待补材料'}
+	                    </span>
                   </td>
                   <td className="px-3 py-3 font-mono text-xs text-gray-600">{plan.planNo}</td>
                   <td className="px-3 py-3 font-medium text-gray-900 min-w-48">{plan.name}</td>
-                  <td className="px-3 py-3 text-gray-600">{plan.issueType}</td>
                   <td className="px-3 py-3 text-gray-600">{plan.filingOrg}</td>
                   <td className="px-3 py-3 text-gray-600">{plan.site}</td>
+                  <td className="px-3 py-3 text-gray-600">{plan.examMonth}</td>
                   <td className="px-3 py-3 text-gray-600">{plan.examDate}</td>
                   <td className="px-3 py-3 text-gray-600">{plan.regDeadline}</td>
                   <td className="px-3 py-3">
@@ -577,7 +545,7 @@ export default function CertPlanManage() {
                 </tr>
                 {expandedId === plan.id && (
                   <tr className="bg-gray-50">
-                    <td colSpan={12} className="px-4 py-4">
+                    <td colSpan={11} className="px-4 py-4">
                       <div className="mb-2 flex items-center justify-between">
                         <div className="text-xs text-gray-500 font-medium">职业工种 / 技能等级 / 考试设置</div>
                         <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => openAction(plan, 'occupation')}>
@@ -642,15 +610,9 @@ export default function CertPlanManage() {
         <DialogContent className="max-w-3xl">
           <DialogHeader><DialogTitle>{editingPlan ? '编辑计划信息' : '新增计划信息'}</DialogTitle></DialogHeader>
           <form onSubmit={handleSavePlan} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label>发证类型：</Label>
-                <select name="issueType" defaultValue={editingPlan?.issueType || '职业技能等级证书'} className="h-9 w-full rounded-md border border-gray-200 px-3 text-sm">
-                  <option>职业技能等级证书</option>
-                  <option>专项职业能力证书</option>
-                </select>
-              </div>
-              <div className="space-y-1"><Label>计划名称：</Label><Input name="name" required defaultValue={editingPlan?.name} placeholder="输入计划名称" /></div>
+	            <div className="grid grid-cols-2 gap-4">
+	              <div className="space-y-1"><Label>计划编号：</Label><Input value={editingPlan?.planNo || '保存后按 企业备案编号/年份/月/顺序号 自动生成'} disabled /></div>
+	              <div className="space-y-1"><Label>计划名称：</Label><Input name="name" required defaultValue={editingPlan?.name} placeholder="输入计划名称" /></div>
               <div className="space-y-1"><Label>评价日期</Label><Input name="examDate" type="date" required defaultValue={editingPlan?.examDate} /></div>
               <div className="space-y-1"><Label>认定月份</Label><Input name="examMonth" required defaultValue={editingPlan?.examMonth} placeholder="如：2026年05月" /></div>
               <div className="space-y-1"><Label>报名截止日期</Label><Input name="regDeadline" type="date" required defaultValue={editingPlan?.regDeadline} /></div>
@@ -823,7 +785,6 @@ export default function CertPlanManage() {
                 <div className="grid grid-cols-3 gap-x-6 gap-y-2 text-sm">
                   <div><span className="text-gray-500">计划名称：</span><span className="text-gray-900 font-medium">{selectedPlanForAction.name || '—'}</span></div>
                   <div><span className="text-gray-500">计划编号：</span><span className="text-gray-900">{selectedPlanForAction.planNo || '—'}</span></div>
-                  <div><span className="text-gray-500">发证类型：</span><span className="text-gray-900">{selectedPlanForAction.issueType}</span></div>
                   <div><span className="text-gray-500">评价日期：</span><span className="text-gray-900">{selectedPlanForAction.examDate || '—'}</span></div>
                   <div><span className="text-gray-500">认定月份：</span><span className="text-gray-900">{selectedPlanForAction.examMonth || '—'}</span></div>
                   <div><span className="text-gray-500">站点名称：</span><span className="text-gray-900">{selectedPlanForAction.site}</span></div>

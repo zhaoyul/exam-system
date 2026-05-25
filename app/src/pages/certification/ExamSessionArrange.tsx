@@ -51,7 +51,7 @@ export default function ExamSessionArrange() {
   const [showPaperRequirement, setShowPaperRequirement] = useState(false)
   const [workTab, setWorkTab] = useState<'待办' | '已办'>('待办')
   const [selectedPaper, setSelectedPaper] = useState<PaperItem | null>(null)
-  const [paperMode, setPaperMode] = useState<'题库组卷' | '非题库组卷' | '不传试卷'>('题库组卷')
+  const [paperMode, setPaperMode] = useState<'题库组卷' | '卷库' | '非题库组卷' | '不传试卷'>('题库组卷')
   const [uploadName, setUploadName] = useState('')
   const [activeType, setActiveType] = useState<'理论考试' | '技能考试'>('理论考试')
 
@@ -125,7 +125,7 @@ export default function ExamSessionArrange() {
 
   const handleSavePaperConfig = () => {
     if (!selectedPaper) return
-    setPapers(prev => prev.map(p => p.id === selectedPaper.id ? { ...p, status: 'drawn' as const, type: paperMode === '不传试卷' ? '不传试卷' : p.type } : p))
+    setPapers(prev => prev.map(p => p.id === selectedPaper.id ? { ...p, status: 'drawn' as const, type: paperMode === '不传试卷' ? '不传试卷' : paperMode === '卷库' ? '卷库统一卷' : p.type } : p))
     setShowPaperConfig(false)
     toast.success(paperMode === '题库组卷' ? '试卷已抽取' : '试卷配置已保存')
   }
@@ -617,7 +617,7 @@ export default function ExamSessionArrange() {
               </div>
               <div className="space-y-2">
                 <div className="text-sm font-medium text-gray-700">组卷方式</div>
-                {(['题库组卷', '非题库组卷', '不传试卷'] as const).map(mode => (
+                {(['题库组卷', '卷库', '非题库组卷', '不传试卷'] as const).map(mode => (
                   <label key={mode} className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm">
                     <input type="radio" checked={paperMode === mode} onChange={() => setPaperMode(mode)} />
                     <span>{mode}</span>
@@ -626,7 +626,12 @@ export default function ExamSessionArrange() {
               </div>
               {paperMode === '题库组卷' && (
                 <div className="rounded-md border border-blue-100 bg-blue-50 p-3 text-sm text-blue-700">
-                  点击保存后执行抽取，本计划试卷状态更新为“已抽卷”。
+                  千人千卷，点击保存后依托题库按考生生成差异化试卷。
+                </div>
+              )}
+              {paperMode === '卷库' && (
+                <div className="rounded-md border border-purple-100 bg-purple-50 p-3 text-sm text-purple-700">
+                  按组卷规则提前抽取一份统一卷，所有考生使用同一份试卷。
                 </div>
               )}
               {paperMode === '非题库组卷' && (

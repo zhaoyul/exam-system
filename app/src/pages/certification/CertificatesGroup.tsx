@@ -10,6 +10,7 @@ import {
   Search, Award, FileText, MoreHorizontal, CheckCircle
 } from 'lucide-react'
 import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
+import { admissionTicketNo, certificateNo } from '@/lib/numbering'
 
 interface CertPlan {
   id: string
@@ -65,9 +66,9 @@ const mockPlans: CertPlan[] = [
 ]
 
 const mockCandidateCerts: CandidateCert[] = [
-  { id: '1', profession: '秘书', name: '张三', idCard: '460321191001015633', ticketNo: '2104271199996600001', certNo: 'Y001011999966215000001', issueDate: '2021-04-27', theoryScore: 100.0, skillScore: 100.0 },
-  { id: '2', profession: '秘书', name: '李四', idCard: '460321191001016572', ticketNo: '2104271199996600002', certNo: 'Y001011999966215000002', issueDate: '2021-04-27', theoryScore: 100.0, skillScore: 100.0 },
-  { id: '3', profession: '秘书', name: '王五', idCard: '460321191001015414', ticketNo: '2104271199996600003', certNo: 'Y001011999966215000003', issueDate: '2021-04-27', theoryScore: 100.0, skillScore: 100.0 },
+  { id: '1', profession: '秘书', name: '张三', idCard: '460321191001015633', ticketNo: admissionTicketNo('2026-04-27', 'Y0041GD000001', 'P000001'), certNo: certificateNo('Y0041GD000001', 2026, '五级/初级工', 1), issueDate: '2026-04-27', theoryScore: 100.0, skillScore: 100.0 },
+  { id: '2', profession: '秘书', name: '李四', idCard: '460321191001016572', ticketNo: admissionTicketNo('2026-04-27', 'Y0041GD000001', 'P000002'), certNo: certificateNo('Y0041GD000001', 2026, '五级/初级工', 2), issueDate: '2026-04-27', theoryScore: 100.0, skillScore: 100.0 },
+  { id: '3', profession: '秘书', name: '王五', idCard: '460321191001015414', ticketNo: admissionTicketNo('2026-04-27', 'Y0041GD000001', 'P000003'), certNo: certificateNo('Y0041GD000001', 2026, '五级/初级工', 3), issueDate: '2026-04-27', theoryScore: 100.0, skillScore: 100.0 },
 ]
 
 export default function CertificatesGroup() {
@@ -175,6 +176,7 @@ export default function CertificatesGroup() {
           <div className="space-y-3">
             <div className="rounded-md bg-gray-50 p-3 text-sm text-gray-600">
               {selectedPlan ? `当前计划：${selectedPlan.name}` : '批量生成当前筛选范围内的证书'}
+              <div className="mt-1 text-xs text-gray-500">编号规则：站点代码 + 2位年度 + 认定等级编码 + 6位自然顺序号，不允许重复。</div>
             </div>
             <div className="space-y-1">
               <Label><span className="text-red-500">*</span> 发证日期</Label>

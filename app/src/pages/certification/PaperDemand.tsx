@@ -13,6 +13,7 @@ interface PaperDemandItem {
   id: string
   orgId: string
   code: string
+  name?: string
   planId: string
   planItemId?: string
   sessionId?: string
@@ -22,6 +23,10 @@ interface PaperDemandItem {
   assemblyMethod: string
   quantity: number
   paperType: string
+  examType?: string
+  remark?: string
+  paperNo?: string
+  attachmentName?: string
   status: string
   pushStatus: string
   pushTime?: string
@@ -143,10 +148,15 @@ export default function PaperDemand() {
       sessionId: active?.sessionId || undefined,
       paperRuleId: active?.paperRuleId || undefined,
       occupation,
+      name: String(fd.get('name') || `${occupation}${String(fd.get('level') || '')}试卷需求`),
       level: String(fd.get('level') || ''),
       assemblyMethod: String(fd.get('assemblyMethod') || active?.assemblyMethod || 'question_bank_random'),
       quantity: Number(fd.get('quantity') || 1),
       paperType: String(fd.get('paperType') || active?.paperType || 'A'),
+      examType: String(fd.get('examType') || active?.examType || '认定考试'),
+      remark: String(fd.get('remark') || active?.remark || ''),
+      paperNo: String(fd.get('paperNo') || active?.paperNo || ''),
+      attachmentName: String(fd.get('attachmentName') || active?.attachmentName || ''),
       status: active?.status || 'draft',
       pushStatus: active?.pushStatus || 'pending',
       assignedCount: active?.assignedCount || 0,
@@ -265,6 +275,7 @@ export default function PaperDemand() {
               <tr>
                 <th className="px-4 py-3 text-left font-medium">序号</th>
                 <th className="px-4 py-3 text-left font-medium">状态</th>
+                <th className="px-4 py-3 text-left font-medium">名称</th>
                 <th className="px-4 py-3 text-left font-medium">工种</th>
                 <th className="px-4 py-3 text-left font-medium">等级</th>
                 <th className="px-4 py-3 text-left font-medium">组卷方式</th>
@@ -283,6 +294,7 @@ export default function PaperDemand() {
                   <td className="px-4 py-3">
                     <Badge className={statusColor(item.status)}>{STATUS_LABELS[item.status] || item.status}</Badge>
                   </td>
+                  <td className="px-4 py-3 font-medium text-gray-900">{item.name || '-'}</td>
                   <td className="px-4 py-3 font-medium text-gray-900">
                     <FileText className="mr-1.5 inline h-4 w-4 text-[#1A56DB]" />
                     {item.occupation}
@@ -332,7 +344,7 @@ export default function PaperDemand() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="px-4 py-12 text-center text-sm text-gray-400">
+                    <td colSpan={12} className="px-4 py-12 text-center text-sm text-gray-400">
                     暂无数据，点击「添加需求项」创建第一条试卷需求
                   </td>
                 </tr>
@@ -353,6 +365,10 @@ export default function PaperDemand() {
               <label className="block">
                 <span className="font-medium text-gray-700">工种名称 *</span>
                 <input name="occupation" defaultValue={active?.occupation} required className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3 focus:border-[#1A56DB] focus:outline-none" placeholder="如：核反应堆操作员" />
+              </label>
+              <label className="block">
+                <span className="font-medium text-gray-700">需求名称</span>
+                <input name="name" defaultValue={active?.name} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3 focus:border-[#1A56DB] focus:outline-none" placeholder="如：三级理论千人千卷需求" />
               </label>
               <label className="block">
                 <span className="font-medium text-gray-700">技能等级</span>
@@ -381,6 +397,14 @@ export default function PaperDemand() {
                   <option value="C">C卷</option>
                 </select>
               </label>
+              <label className="block">
+                <span className="font-medium text-gray-700">考试类型</span>
+                <select name="examType" defaultValue={active?.examType || '认定考试'} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-2 focus:border-[#1A56DB] focus:outline-none">
+                  <option>认定考试</option>
+                  <option>补考</option>
+                  <option>模拟考试</option>
+                </select>
+              </label>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
@@ -392,6 +416,20 @@ export default function PaperDemand() {
                 <input name="planId" defaultValue={active?.planId} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3 focus:border-[#1A56DB] focus:outline-none" placeholder="计划ID（可选）" />
               </label>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="font-medium text-gray-700">非题库试卷编号</span>
+                <input name="paperNo" defaultValue={active?.paperNo} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3 focus:border-[#1A56DB] focus:outline-none" placeholder="非题库组卷时填写" />
+              </label>
+              <label className="block">
+                <span className="font-medium text-gray-700">上传试题附件</span>
+                <input name="attachmentName" defaultValue={active?.attachmentName} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3 focus:border-[#1A56DB] focus:outline-none" placeholder="附件名称或上传记录" />
+              </label>
+            </div>
+            <label className="block">
+              <span className="font-medium text-gray-700">备注</span>
+              <textarea name="remark" defaultValue={active?.remark} className="mt-1 h-20 w-full rounded-md border border-gray-200 px-3 py-2 focus:border-[#1A56DB] focus:outline-none" placeholder="记录组卷特殊要求、卷库规则或不传试卷原因" />
+            </label>
             <DialogFooter className="pt-2">
               <Button type="button" variant="outline" onClick={() => { setDialogMode(null); setActive(null) }}>取消</Button>
               <Button type="submit" className="bg-[#1A56DB]">{active ? '保存修改' : '创建需求项'}</Button>
@@ -407,9 +445,13 @@ export default function PaperDemand() {
           {active && (
             <div className="space-y-3 text-sm">
               <Info label="工种" value={active.occupation} />
+              <Info label="名称" value={active.name || '-'} />
               <Info label="等级" value={active.level} />
               <Info label="组卷方式" value={ASSEMBLY_LABELS[active.assemblyMethod] || active.assemblyMethod} />
               <Info label="试卷类型" value={active.paperType} />
+              <Info label="考试类型" value={active.examType || '-'} />
+              <Info label="试卷编号/附件" value={[active.paperNo, active.attachmentName].filter(Boolean).join(' / ') || '-'} />
+              <Info label="备注" value={active.remark || '-'} />
               <Info label="考生数量" value={String(active.quantity)} />
               <Info label="状态" value={STATUS_LABELS[active.status] || active.status} />
               <Info label="推送状态" value={PUSH_STATUS_LABELS[active.pushStatus] || active.pushStatus} />

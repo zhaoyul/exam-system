@@ -108,6 +108,13 @@ export function loginRequest(username: string, password: string) {
   })
 }
 
+export function fourALoginRequest(username: string) {
+  return apiRequest<LoginResponse>('/auth/4a-login', {
+    method: 'POST',
+    body: JSON.stringify({ username }),
+  })
+}
+
 export function getPageSampleData<T = unknown>(endpoint: string) {
   return apiRequest<T>(endpoint)
 }

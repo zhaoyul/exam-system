@@ -19,6 +19,7 @@ import {
 function BuildingIcon(props: any) { return <FileText {...props} /> }
 function EyeIcon(props: any) { return <Award {...props} /> }
 function EditIcon(props: any) { return <PenTool {...props} /> }
+function QuestionReviewIcon(props: any) { return <FileCheck {...props} /> }
 
 const groupModuleGroups = [
   {
@@ -41,6 +42,23 @@ const groupModuleGroups = [
       { label: '预警违规', path: '/cert/violations', icon: AlertTriangle },
       { label: '特办申请', path: '/cert/special', icon: Receipt },
       { label: '试卷需求', path: '/cert/paper-demand', icon: FileText },
+    ],
+  },
+  {
+    key: 'standard-bank',
+    label: '标准题库',
+    path: '/standard/settings',
+    icon: BookOpen,
+    children: [
+      { label: '管理设置', path: '/standard/settings', icon: LayoutDashboard },
+      { label: '开发专家', path: '/standard/experts', icon: Users },
+      { label: '标准规范', path: '/standard/templates', icon: FileText },
+      { label: '标准计划', path: '/standard/plans', icon: ClipboardCheck },
+      { label: '标准安排', path: '/standard/assignment', icon: UserCheck },
+      { label: '标准过程', path: '/standard/process', icon: Clock },
+      { label: '职业标准', path: '/standard/library', icon: BookOpen },
+      { label: '题库征集', path: '/standard/question-bank-collection', icon: QuestionReviewIcon },
+      { label: '评价范围', path: '/standard/evaluation-scope', icon: Globe },
     ],
   },
   {

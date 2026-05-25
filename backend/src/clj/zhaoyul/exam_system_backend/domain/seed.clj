@@ -87,13 +87,44 @@
    "standard-templates"
    [{:id "standard-template-001" :name "认定方案模板" :status "active" :templateType "方案"}]
    "standard-plans"
-   [{:id "standard-plan-001" :name "2026年度标准编制计划" :status "processing" :owner "集团中心"}]
+   [{:id "standard-plan-001" :name "2026年度标准编制计划" :status "processing" :type "标准编制" :scopeLevel "集团级" :subject "职业标准" :subjectType "标准文本" :owner "集团标准委员会"}
+    {:id "standard-plan-002" :name "核电机械检修工理论题库编审计划" :status "draft" :type "题库编审" :scopeLevel "集团级" :subject "理论知识" :subjectType "理论题库" :owner "集团题库中心"}]
    "standard-assignments"
    [{:id "standard-assignment-001" :name "题库编制任务" :status "assigned" :expertId "expert-001"}]
    "standard-processes"
-   [{:id "standard-process-001" :name "标准编制流程" :status "active" :stepCount 5}]
+   [{:id "std-process-001" :name "核电厂运行值班员国家职业标准修订过程" :status "审核中" :type "标准编审" :occupation "核电厂运行值班员" :level "三级/二级" :subject "职业标准" :owner "集团标准委员会" :compileExperts ["陈立" "周敏" "韩睿"] :reviewExperts ["王明" "刘芳"] :compileProgress 100 :reviewProgress 70 :round 2 :logs ["2026-04-02 完成立项" "2026-04-16 提交修订稿" "2026-05-08 专家审核提出 5 条修改意见"]}
+    {:id "std-process-002" :name "核电机械检修工理论题库编审过程" :status "编制中" :type "题库编审" :occupation "核电机械检修工" :level "四级/三级" :subject "理论知识" :owner "集团题库中心" :compileExperts ["赵鹏" "许青"] :reviewExperts ["孙浩" "李倩" "郑磊"] :compileProgress 82 :reviewProgress 45 :round 1 :logs ["2026-04-12 导入 320 道初稿试题" "2026-04-24 完成重复题检查" "2026-05-10 进入第一轮专家审核"]}]
    "standard-library"
    [{:id "standard-library-001" :name "核反应堆运行值班员国家职业标准" :status "active" :version "2026"}]
+   "question-bank-collections"
+   [{:id "qb-collection-001"
+     :name "核电机械检修工理论题库编审"
+     :status "退回修改"
+     :occupation "核电机械检修工"
+     :level "四级/三级"
+     :subject "理论知识"
+     :leader "赵鹏"
+     :compileExperts ["许青" "周工"]
+     :reviewExperts ["孙浩" "李倩"]
+     :structureRows 46
+     :questionRows 328
+     :returnedRows 12
+     :dueDate "2026-06-15"
+     :logs ["项目负责人已分配编写专家和审核专家" "细目表导入 46 条" "审核专家退回 12 道试题，要求修改知识点匹配关系"]}
+    {:id "qb-collection-002"
+     :name "核反应堆运行值班员技能题库编审"
+     :status "待审核"
+     :occupation "核反应堆运行值班员"
+     :level "三级"
+     :subject "技能操作"
+     :leader "陈立"
+     :compileExperts ["韩睿" "冯雪"]
+     :reviewExperts ["郭强" "唐莉"]
+     :structureRows 28
+     :questionRows 96
+     :returnedRows 0
+     :dueDate "2026-06-20"
+     :logs ["结构表已人工维护鉴定范围和鉴定点" "编写专家完成实操试题录入" "等待审核专家逐题审核"]}]
    "certification-plans"
    [{:id "plan-2026-001" :code "Y0041GD0000012603001" :name "2026年第一批技能认定" :status "processing" :orgId "org-csyxgs" :occupation "核反应堆运行值班员" :level "三级" :plannedMonth "2026-06" :registrationDeadline "2026-06-15" :candidateCount 45}
     {:id "plan-2026-002" :code "Y0041GD0000022603002" :name "2026年第二批技能认定" :status "pending" :orgId "org-yangjiang" :occupation "电气试验员" :level "四级" :plannedMonth "2026-07" :registrationDeadline "2026-07-15" :candidateCount 32}]
@@ -134,7 +165,8 @@
    "exam-sessions"
    [{:id "exam-session-001" :name "理论考试第一场" :status "scheduled" :planId "plan-2026-001" :startAt "2026-06-20 09:00"}]
    "score-publicity-batches"
-   [{:id "score-publicity-001" :name "2026年第一批成绩公示" :status "publicizing" :planId "plan-2026-001" :days 7}]
+   [{:id "score-publicity-001" :name "2026年第一批成绩公示" :planName "大亚湾核电2026年第1批认定" :status "publicizing" :planId "plan-2026-001" :profession "核反应堆操作员" :level "三级" :candidateCount 45 :publicityStart "2026-04-20" :publicityEnd "2026-04-27" :appealCount 0 :passCount 42 :failCount 3 :scoreChangeLogs [{:id "log-1" :candidateName "张三" :idCard "440301199001011234" :subject "技能操作" :before 87 :after 88 :reason "复核评分表后修正录入误差" :operator "成绩管理员" :time "2026-04-22 09:18"}]}
+    {:id "score-publicity-002" :name "2026年第二批成绩公示" :planName "阳江核电2026年第1批认定" :status "done" :planId "plan-2026-002" :profession "电气维修工" :level "四级" :candidateCount 32 :publicityStart "2026-04-15" :publicityEnd "2026-04-22" :appealCount 1 :passCount 29 :failCount 3 :scoreChangeLogs []}]
    "evaluator-staff"
    [{:id "evaluator-staff-001" :name "刘考评员" :status "active" :phone "13800138121" :occupation "核反应堆运行值班员"}]
    "cert-declarations"
@@ -365,9 +397,9 @@
    {:id "qa-form-002" :org_id "org-cgn" :code "FORM20260002" :name "考评质量评价表" :form_type "考评" :content_json "{\"items\":[\"评分一致性\",\"过程记录\"]}" :status "active"}])
 
 (def domain-filing-applications
-  [{:id "filing-001" :org_id "org-cgn" :code "FIL20260001" :name "中广核集团职业技能等级认定备案申请" :filing_type "group" :province "广东" :apply_org "中广核集团" :submit_date "2026-04-15" :status "approved"}
-   {:id "filing-002" :org_id "org-csyxgs" :code "FIL20260002" :name "测试有限公司职业技能等级认定考点备案" :filing_type "branch" :province "广东" :apply_org "测试有限公司" :submit_date "2026-04-20" :status "approved"}
-   {:id "filing-003" :org_id "org-yangjiang" :code "FIL20260003" :name "阳江核电职业技能等级认定考点备案" :filing_type "branch" :province "广东" :apply_org "阳江核电有限公司" :submit_date "2026-05-10" :status "pending"}])
+  [{:id "filing-001" :org_id "org-cgn" :code "FIL20260001" :name "中广核集团职业技能等级认定备案申请" :filing_type "group" :province "广东" :apply_org "中广核集团" :org_type "全国性用人单位" :filing_place "广东省" :filing_mode "初次备案" :submit_date "2026-04-15" :site_count 3 :project_count 8 :staff_count 16 :supervisor_count 5 :assessor_count 18 :exam_room_count 6 :status "approved"}
+   {:id "filing-002" :org_id "org-csyxgs" :code "FIL20260002" :name "测试有限公司职业技能等级认定考点备案" :filing_type "branch" :province "广东" :apply_org "测试有限公司" :org_type "全国性用人单位分支机构" :filing_place "广东省" :filing_mode "初次备案" :submit_date "2026-04-20" :site_count 1 :project_count 5 :staff_count 12 :supervisor_count 3 :assessor_count 8 :exam_room_count 2 :status "approved"}
+   {:id "filing-003" :org_id "org-yangjiang" :code "FIL20260003" :name "阳江核电职业技能等级认定考点备案" :filing_type "branch" :province "广东" :apply_org "阳江核电有限公司" :org_type "全国性用人单位分支机构" :filing_place "广东省" :filing_mode "变更备案" :submit_date "2026-05-10" :site_count 1 :project_count 6 :staff_count 9 :supervisor_count 3 :assessor_count 10 :exam_room_count 3 :status "pending"}])
 
 (def domain-eval-scopes
   [{:id "eval-scope-001" :org_id "org-cgn" :code "EVS20260001" :name "核反应堆运行值班员三级评价范围" :occupation "核反应堆运行值班员" :level "三级" :scope_type "技能等级认定" :status "active"}
@@ -398,9 +430,14 @@
 (def domain-exam-staff
   [{:id "exam-staff-001" :org_id "org-csyxgs" :code "ES20260001" :name "李考务" :login_name "440301198201011234" :phone "13800138111" :gender "男" :staff_type "exam_staff" :unit_name "测试有限公司" :id_card "440301198201011234" :photo_url nil :position "考务主管" :status "active"}
    {:id "exam-staff-002" :org_id "org-csyxgs" :code "ES20260002" :name "王监考" :login_name "440301199005152345" :phone "13800138112" :gender "女" :staff_type "proctor" :unit_name "测试有限公司" :id_card "440301199005152345" :photo_url nil :position "主监考" :status "active"}
-   {:id "exam-staff-003" :org_id "org-csyxgs" :code "ES20260003" :name "张专家" :login_name "440301197805154321" :phone "13800138001" :gender "男" :staff_type "evaluator" :unit_name "中广核研究院" :id_card "440301197805154321" :photo_url nil :position "高级考评员" :status "active"}
+   {:id "exam-staff-003" :org_id "org-csyxgs" :code "ES20260003" :name "张专家" :login_name "440301197805154321" :phone "13800138001" :gender "男" :staff_type "evaluator" :unit_name "中广核研究院" :id_card "440301197805154321" :photo_url nil :position "高级考评员" :eval_occupations "核反应堆运行值班员,核安全工程师" :status "active"}
    {:id "exam-staff-004" :org_id "org-dayawan" :code "ES20260004" :name "赵监考" :login_name "440301198803204567" :phone "13800138113" :gender "男" :staff_type "proctor" :unit_name "大亚湾核电" :id_card "440301198803204567" :photo_url nil :position "监考员" :status "active"}
-   {:id "exam-staff-005" :org_id "org-yangjiang" :code "ES20260005" :name "刘考评" :login_name "441700199207015678" :phone "13800138114" :gender "女" :staff_type "evaluator" :unit_name "阳江核电" :id_card "441700199207015678" :photo_url nil :position "考评员" :status "active"}])
+   {:id "exam-staff-005" :org_id "org-yangjiang" :code "ES20260005" :name "刘考评" :login_name "441700199207015678" :phone "13800138114" :gender "女" :staff_type "evaluator" :unit_name "阳江核电" :id_card "441700199207015678" :photo_url nil :position "考评员" :eval_occupations "电气试验员,机械设备检修工" :status "active"}])
+
+(def domain-paper-demands
+  [{:id "paper-demand-001" :org_id "org-csyxgs" :code "PAP20260001" :plan_id "recog-plan-001" :occupation "核反应堆运行值班员" :level "三级" :name "核反应堆运行值班员三级理论千人千卷需求" :assembly_method "question_bank_random" :quantity 45 :paper_type "A" :exam_type "认定考试" :remark "题库组卷，按考生一人一卷随机抽取" :status "confirmed" :push_status "pending" :assigned_count 0 :returned_count 0}
+   {:id "paper-demand-002" :org_id "org-csyxgs" :code "PAP20260002" :plan_id "recog-plan-001" :occupation "电气试验员" :level "四级" :name "电气试验员四级卷库统一卷需求" :assembly_method "paper_library_uniform" :quantity 32 :paper_type "B" :exam_type "认定考试" :remark "从卷库预抽一套统一试卷" :status "assigned" :push_status "processing" :assigned_count 32 :returned_count 12}
+   {:id "paper-demand-003" :org_id "org-yangjiang" :code "PAP20260003" :plan_id "recog-plan-002" :occupation "机械设备检修工" :level "三级" :name "机械设备检修工三级非题库组卷需求" :assembly_method "manual_upload" :quantity 24 :paper_type "A" :exam_type "补考" :paper_no "NTK-2026-003" :attachment_name "机械设备检修工三级补考试卷.pdf" :remark "非题库组卷，需上传试卷编号和附件" :status "submitted" :push_status "pending" :assigned_count 0 :returned_count 0}])
 
 ;; Domain table seed helpers
 
@@ -462,6 +499,8 @@
     (ensure-domain-row! ds 'cgn_score_publicity "id" row))
   (doseq [row domain-exam-staff]
     (ensure-domain-row! ds 'cgn_exam_staff "id" row))
+  (doseq [row domain-paper-demands]
+    (ensure-domain-row! ds 'cgn_paper_demand_item "id" row))
   (doseq [row domain-plan-items]
     (ensure-domain-row! ds 'cgn_plan_item "id" row))
   (doseq [row domain-exam-staff-assignments]

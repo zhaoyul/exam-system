@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>v3.0 修改验收报告 - 中广核职业技能等级认定管理系统</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif; background: #f5f7fb; color: #182230; line-height: 1.6; }
+.hero { background: #0f4c81; color: #fff; padding: 2.4rem 2rem; }
+.hero h1 { font-size: 1.8rem; line-height: 1.25; margin-bottom: .55rem; font-weight: 700; letter-spacing: 0; }
+.hero p { color: #dbeafe; font-size: .96rem; }
+.hero .meta { margin-top: .8rem; color: #bfdbfe; font-size: .84rem; display: flex; flex-wrap: wrap; gap: .45rem 1rem; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .8rem; padding: 1rem 2rem; background: #fff; border-bottom: 1px solid #e5e7eb; }
+.stat { border: 1px solid #e5e7eb; border-radius: 8px; padding: .85rem 1rem; background: #fff; }
+.stat .num { display: block; font-size: 1.45rem; font-weight: 700; color: #047857; }
+.stat .label { font-size: .82rem; color: #667085; }
+.container { max-width: 1180px; margin: 0 auto; padding: 1.5rem; }
+.notice { background: #ecfdf3; border: 1px solid #abefc6; color: #067647; border-radius: 8px; padding: .9rem 1rem; margin-bottom: 1.2rem; font-size: .9rem; }
+.module { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; margin-bottom: 1.2rem; }
+.module-head { padding: .95rem 1.1rem; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; gap: 1rem; align-items: center; }
+.module-head h2 { font-size: 1rem; font-weight: 700; letter-spacing: 0; }
+.badge { font-size: .74rem; color: #067647; background: #dcfae6; border: 1px solid #abefc6; border-radius: 999px; padding: .12rem .55rem; white-space: nowrap; }
+.req { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr); gap: .75rem; padding: 1rem 1.1rem; border-bottom: 1px solid #f1f5f9; }
+.req:last-child { border-bottom: 0; }
+.idx { width: 2.25rem; height: 1.55rem; border-radius: 5px; background: #dcfae6; color: #067647; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .78rem; }
+.text { font-size: .92rem; font-weight: 600; color: #182230; }
+.route { display: inline-flex; margin-top: .3rem; color: #475467; font-size: .78rem; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 4px; padding: .08rem .4rem; }
+.proof-links { margin-top: .55rem; display: flex; flex-wrap: wrap; gap: .4rem; }
+.proof-links a { color: #175cd3; border: 1px solid #b2ddff; background: #eff8ff; border-radius: 5px; padding: .14rem .48rem; text-decoration: none; font-size: .76rem; }
+.shot { margin-top: .7rem; max-width: 720px; }
+.shot img { width: 100%; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; cursor: pointer; display: block; }
+.shot .cap { color: #667085; font-size: .76rem; text-align: center; margin-top: .25rem; }
+footer { color: #98a2b3; text-align: center; font-size: .82rem; padding: 2rem 1rem; }
+.modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, .82); align-items: center; justify-content: center; z-index: 1000; padding: 2vw; }
+.modal.show { display: flex; }
+.modal img { max-width: 96vw; max-height: 94vh; border-radius: 6px; background: #fff; }
+@media (max-width: 720px) {
+  .hero { padding: 1.8rem 1rem; }
+  .stats { padding: .8rem 1rem; }
+  .container { padding: 1rem; }
+  .req { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<section class="hero">
+  <h1>v3.0 修改验收报告</h1>
+  <p>中广核职业技能等级认定管理系统 - 功能修改对照与截图证明</p>
+  <div class="meta">
+    <span>文档对照：v3.0修改.docx</span>
+    <span>验收时间：2026-05-25 20:08</span>
+    <span>服务器：http://106.12.6.24:29527/</span>
+  </div>
+</section>
+<section class="stats">
+  <div class="stat"><span class="num">22</span><span class="label">截图证明点</span></div>
+  <div class="stat"><span class="num">7</span><span class="label">覆盖模块</span></div>
+  <div class="stat"><span class="num">100%</span><span class="label">证明清单完成率</span></div>
+  <div class="stat"><span class="num">200</span><span class="label">远端健康检查</span></div>
+</section>
+<main class="container">
+  <div class="notice">本页由 v3.0 证明目录自动生成，覆盖标准题库、机构备案、等级认定、个人端、溯源中心、4A/MDM 对接等修改点。点击截图可放大查看。</div>
+  <section class="module">
+    <div class="module-head"><h2>登录认证</h2><span class="badge">1 项已完成</span></div>
+    <article class="req">
+    <div class="idx">1</div>
+    <div>
+      <div class="text">已完成：登录页：4A统一认证入口</div>
+      <div class="route">/login</div>
+      <div class="proof-links"><a href="01-login-4a.png" target="_blank">截图：01-login-4a.png</a></div>
+      <div class="shot"><img src="01-login-4a.png" alt="登录页：4A统一认证入口" loading="lazy" onclick="showModal(this.src)"><div class="cap">01-login-4a.png</div></div>
+    </div>
+  </article>
+  </section>
+<section class="module">
+    <div class="module-head"><h2>标准题库</h2><span class="badge">7 项已完成</span></div>
+    <article class="req">
+    <div class="idx">2</div>
+    <div>
+      <div class="text">已完成：标准题库菜单：标准/题库计划入口</div>
+      <div class="route">/standard/plans</div>
+      <div class="proof-links"><a href="02-standard-menu.png" target="_blank">截图：02-standard-menu.png</a></div>
+      <div class="shot"><img src="02-standard-menu.png" alt="标准题库菜单：标准/题库计划入口" loading="lazy" onclick="showModal(this.src)"><div class="cap">02-standard-menu.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">3</div>
+    <div>
+      <div class="text">已完成：标准计划：题库编审、鉴定范围层级、科目/类型</div>
+      <div class="route">/standard/plans</div>
+      <div class="proof-links"><a href="03-standard-plans.png" target="_blank">截图：03-standard-plans.png</a></div>
+      <div class="shot"><img src="03-standard-plans.png" alt="标准计划：题库编审、鉴定范围层级、科目/类型" loading="lazy" onclick="showModal(this.src)"><div class="cap">03-standard-plans.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">4</div>
+    <div>
+      <div class="text">已完成：标准过程：标准/题库编审进度、专家、日志</div>
+      <div class="route">/standard/process</div>
+      <div class="proof-links"><a href="04-standard-process.png" target="_blank">截图：04-standard-process.png</a></div>
+      <div class="shot"><img src="04-standard-process.png" alt="标准过程：标准/题库编审进度、专家、日志" loading="lazy" onclick="showModal(this.src)"><div class="cap">04-standard-process.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">5</div>
+    <div>
+      <div class="text">已完成：开发专家：4A账号同步、无本地密码</div>
+      <div class="route">/standard/experts</div>
+      <div class="proof-links"><a href="05-standard-experts-4a.png" target="_blank">截图：05-standard-experts-4a.png</a></div>
+      <div class="shot"><img src="05-standard-experts-4a.png" alt="开发专家：4A账号同步、无本地密码" loading="lazy" onclick="showModal(this.src)"><div class="cap">05-standard-experts-4a.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">6</div>
+    <div>
+      <div class="text">已完成：标准规范模板：一级/二级内容项类型、增加子项和发布模板</div>
+      <div class="route">/standard/templates</div>
+      <div class="proof-links"><a href="06-standard-templates.png" target="_blank">截图：06-standard-templates.png</a></div>
+      <div class="shot"><img src="06-standard-templates.png" alt="标准规范模板：一级/二级内容项类型、增加子项和发布模板" loading="lazy" onclick="showModal(this.src)"><div class="cap">06-standard-templates.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">7</div>
+    <div>
+      <div class="text">已完成：题库征集编审：计划、细目表、试题编写、审核退回和再提交</div>
+      <div class="route">/standard/question-bank-collection</div>
+      <div class="proof-links"><a href="07-question-bank-collection.png" target="_blank">截图：07-question-bank-collection.png</a></div>
+      <div class="shot"><img src="07-question-bank-collection.png" alt="题库征集编审：计划、细目表、试题编写、审核退回和再提交" loading="lazy" onclick="showModal(this.src)"><div class="cap">07-question-bank-collection.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">8</div>
+    <div>
+      <div class="text">已完成：评价范围授权：机构树、职业等级勾选、批量授权和授权状态</div>
+      <div class="route">/standard/evaluation-scope</div>
+      <div class="proof-links"><a href="08-evaluation-scope.png" target="_blank">截图：08-evaluation-scope.png</a></div>
+      <div class="shot"><img src="08-evaluation-scope.png" alt="评价范围授权：机构树、职业等级勾选、批量授权和授权状态" loading="lazy" onclick="showModal(this.src)"><div class="cap">08-evaluation-scope.png</div></div>
+    </div>
+  </article>
+  </section>
+<section class="module">
+    <div class="module-head"><h2>机构备案</h2><span class="badge">2 项已完成</span></div>
+    <article class="req">
+    <div class="idx">9</div>
+    <div>
+      <div class="text">已完成：集团备案审核：通过/退回和退回原因</div>
+      <div class="route">/filing/branch</div>
+      <div class="proof-links"><a href="09-branch-filing-audit.png" target="_blank">截图：09-branch-filing-audit.png</a></div>
+      <div class="shot"><img src="09-branch-filing-audit.png" alt="集团备案审核：通过/退回和退回原因" loading="lazy" onclick="showModal(this.src)"><div class="cap">09-branch-filing-audit.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">10</div>
+    <div>
+      <div class="text">已完成：机构备案基础数据：备案地、子站点、认定项目、考场类型</div>
+      <div class="route">/system/filing-branch</div>
+      <div class="proof-links"><a href="10-system-filing-branch.png" target="_blank">截图：10-system-filing-branch.png</a></div>
+      <div class="shot"><img src="10-system-filing-branch.png" alt="机构备案基础数据：备案地、子站点、认定项目、考场类型" loading="lazy" onclick="showModal(this.src)"><div class="cap">10-system-filing-branch.png</div></div>
+    </div>
+  </article>
+  </section>
+<section class="module">
+    <div class="module-head"><h2>等级认定</h2><span class="badge">9 项已完成</span></div>
+    <article class="req">
+    <div class="idx">11</div>
+    <div>
+      <div class="text">已完成：制定计划：待办/已办、计划编号规则</div>
+      <div class="route">/cert/exec/plans</div>
+      <div class="proof-links"><a href="11-cert-plan-manage.png" target="_blank">截图：11-cert-plan-manage.png</a></div>
+      <div class="shot"><img src="11-cert-plan-manage.png" alt="制定计划：待办/已办、计划编号规则" loading="lazy" onclick="showModal(this.src)"><div class="cap">11-cert-plan-manage.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">12</div>
+    <div>
+      <div class="text">已完成：认定流程：由环节发布/结束推进</div>
+      <div class="route">/cert/exec/plans</div>
+      <div class="proof-links"><a href="12-cert-execution.png" target="_blank">截图：12-cert-execution.png</a></div>
+      <div class="shot"><img src="12-cert-execution.png" alt="认定流程：由环节发布/结束推进" loading="lazy" onclick="showModal(this.src)"><div class="cap">12-cert-execution.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">13</div>
+    <div>
+      <div class="text">已完成：考务人员：身份证自动性别/生日、默认密码、一寸照</div>
+      <div class="route">/cert/exam-staff</div>
+      <div class="proof-links"><a href="13-exam-staff.png" target="_blank">截图：13-exam-staff.png</a></div>
+      <div class="shot"><img src="13-exam-staff.png" alt="考务人员：身份证自动性别/生日、默认密码、一寸照" loading="lazy" onclick="showModal(this.src)"><div class="cap">13-exam-staff.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">14</div>
+    <div>
+      <div class="text">已完成：试卷需求：四类组卷方式、非题库试卷编号、附件和回调状态</div>
+      <div class="route">/cert/paper-demand</div>
+      <div class="proof-links"><a href="14-paper-demand.png" target="_blank">截图：14-paper-demand.png</a></div>
+      <div class="shot"><img src="14-paper-demand.png" alt="试卷需求：四类组卷方式、非题库试卷编号、附件和回调状态" loading="lazy" onclick="showModal(this.src)"><div class="cap">14-paper-demand.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">15</div>
+    <div>
+      <div class="text">已完成：考务安排：卷库组卷方式和人员安排入口</div>
+      <div class="route">/cert/exam-session</div>
+      <div class="proof-links"><a href="15-exam-session.png" target="_blank">截图：15-exam-session.png</a></div>
+      <div class="shot"><img src="15-exam-session.png" alt="考务安排：卷库组卷方式和人员安排入口" loading="lazy" onclick="showModal(this.src)"><div class="cap">15-exam-session.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">16</div>
+    <div>
+      <div class="text">已完成：成绩公示：申诉处理和成绩修改留痕</div>
+      <div class="route">/cert/score-publicity-manage</div>
+      <div class="proof-links"><a href="16-score-publicity.png" target="_blank">截图：16-score-publicity.png</a></div>
+      <div class="shot"><img src="16-score-publicity.png" alt="成绩公示：申诉处理和成绩修改留痕" loading="lazy" onclick="showModal(this.src)"><div class="cap">16-score-publicity.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">17</div>
+    <div>
+      <div class="text">已完成：证书管理：证书号规则</div>
+      <div class="route">/cert/certificates-group</div>
+      <div class="proof-links"><a href="17-certificates-group.png" target="_blank">截图：17-certificates-group.png</a></div>
+      <div class="shot"><img src="17-certificates-group.png" alt="证书管理：证书号规则" loading="lazy" onclick="showModal(this.src)"><div class="cap">17-certificates-group.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">18</div>
+    <div>
+      <div class="text">已完成：证书打印：证书号规则展示</div>
+      <div class="route">/cert/certificates-print</div>
+      <div class="proof-links"><a href="18-certificates-print.png" target="_blank">截图：18-certificates-print.png</a></div>
+      <div class="shot"><img src="18-certificates-print.png" alt="证书打印：证书号规则展示" loading="lazy" onclick="showModal(this.src)"><div class="cap">18-certificates-print.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">21</div>
+    <div>
+      <div class="text">已完成：历次认定：按计划和备案地区聚合历史档案</div>
+      <div class="route">/cert/historical</div>
+      <div class="proof-links"><a href="21-historical.png" target="_blank">截图：21-historical.png</a></div>
+      <div class="shot"><img src="21-historical.png" alt="历次认定：按计划和备案地区聚合历史档案" loading="lazy" onclick="showModal(this.src)"><div class="cap">21-historical.png</div></div>
+    </div>
+  </article>
+  </section>
+<section class="module">
+    <div class="module-head"><h2>个人端</h2><span class="badge">1 项已完成</span></div>
+    <article class="req">
+    <div class="idx">19</div>
+    <div>
+      <div class="text">已完成：准考证：准考证编号与员工号规则</div>
+      <div class="route">/personal/ticket</div>
+      <div class="proof-links"><a href="19-admission-ticket.png" target="_blank">截图：19-admission-ticket.png</a></div>
+      <div class="shot"><img src="19-admission-ticket.png" alt="准考证：准考证编号与员工号规则" loading="lazy" onclick="showModal(this.src)"><div class="cap">19-admission-ticket.png</div></div>
+    </div>
+  </article>
+  </section>
+<section class="module">
+    <div class="module-head"><h2>溯源中心</h2><span class="badge">1 项已完成</span></div>
+    <article class="req">
+    <div class="idx">20</div>
+    <div>
+      <div class="text">已完成：溯源中心：认定过程、地区筛选和修改成绩记录禁用态</div>
+      <div class="route">/traceability</div>
+      <div class="proof-links"><a href="20-traceability.png" target="_blank">截图：20-traceability.png</a></div>
+      <div class="shot"><img src="20-traceability.png" alt="溯源中心：认定过程、地区筛选和修改成绩记录禁用态" loading="lazy" onclick="showModal(this.src)"><div class="cap">20-traceability.png</div></div>
+    </div>
+  </article>
+  </section>
+<section class="module">
+    <div class="module-head"><h2>集团对接</h2><span class="badge">1 项已完成</span></div>
+    <article class="req">
+    <div class="idx">22</div>
+    <div>
+      <div class="text">已完成：数据中心：MDM同步入口和配置适配</div>
+      <div class="route">/data/center</div>
+      <div class="proof-links"><a href="22-data-center-mdm.png" target="_blank">截图：22-data-center-mdm.png</a></div>
+      <div class="shot"><img src="22-data-center-mdm.png" alt="数据中心：MDM同步入口和配置适配" loading="lazy" onclick="showModal(this.src)"><div class="cap">22-data-center-mdm.png</div></div>
+    </div>
+  </article>
+  </section>
+</main>
+<footer>v3.0 修改验收报告 - 生成于 2026-05-25 20:08</footer>
+<div class="modal" id="modal" onclick="this.classList.remove('show')"><img id="modalImg" alt=""></div>
+<script>
+function showModal(src) {
+  document.getElementById('modalImg').src = src;
+  document.getElementById('modal').classList.add('show');
+}
+</script>
+</body>
+</html>

@@ -33,6 +33,13 @@ const standards = [
   { id: 's3', name: '机械设备检修工三级标准', code: 'CGN-S-003', version: 'V1.0', status: 'draft', nodeId: '3-1' },
 ]
 
+const standardSections = [
+  { title: '职业概况', type: '仅标题', rows: ['职业名称：核反应堆运行值班员', '职业编码：6-31-03-01', '职业定义：从事核反应堆运行监控、状态判断和异常处置的人员'] },
+  { title: '基本要求', type: '基本要求', rows: ['职业道德：遵守核安全文化和运行纪律', '基础知识：核反应堆物理、热工水力、辐射防护'] },
+  { title: '工作要求', type: '工作要求', rows: ['三级：能完成运行监视、参数记录和常规操作', '二级：能组织异常工况判断和班组协同处置'] },
+  { title: '权重表', type: '权重表', rows: ['理论知识：基础知识 30%、专业知识 50%、安全要求 20%', '技能操作：运行监视 35%、异常处置 45%、记录报告 20%'] },
+]
+
 function TreeItem({ node, expanded, toggle, selected, onSelect }: {
   node: TreeNode; expanded: Set<string>; toggle: (id: string) => void; selected: string; onSelect: (id: string) => void
 }) {
@@ -90,7 +97,7 @@ export default function StandardLibrary() {
           <h2 className="text-sm font-semibold text-gray-900 mb-2">标准分类</h2>
           <div className="space-y-0.5">{backendTreeData.map(n => <TreeItem key={n.id} node={n} expanded={expanded} toggle={toggle} selected={selected} onSelect={setSelected} />)}</div>
         </div>
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between mb-3">
             <div className="relative"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="搜索标准..." className="h-9 pl-9 pr-4 border border-gray-200 rounded-md text-sm w-64 focus:outline-none focus:border-[#1A56DB]" /></div>
             <Button onClick={openAdd} className="h-9 px-4 bg-[#1A56DB] text-white rounded-md text-sm flex items-center gap-1.5 hover:bg-[#1748B5]"><Plus className="w-4 h-4" /> 添加标准</Button>
@@ -110,6 +117,26 @@ export default function StandardLibrary() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="rounded-lg border border-gray-200 bg-white">
+            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-900">标准正文结构</h2>
+                <p className="mt-1 text-xs text-gray-500">按已发布模板维护职业概况、基本要求、工作要求和权重表，标准征集审核通过后自动入库。</p>
+              </div>
+              <Button variant="outline" size="sm"><Plus className="mr-1 h-4 w-4" />新增章节</Button>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {standardSections.map(section => (
+                <div key={section.title} className="grid gap-3 px-4 py-3 md:grid-cols-[150px_110px_1fr_80px]">
+                  <div className="font-medium text-gray-900">{section.title}</div>
+                  <div><span className="rounded bg-blue-50 px-2 py-1 text-xs text-blue-700">{section.type}</span></div>
+                  <div className="space-y-1 text-sm text-gray-600">{section.rows.map(row => <div key={row}>{row}</div>)}</div>
+                  <div className="text-right"><button className="text-xs text-[#1A56DB] hover:underline">编辑</button></div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

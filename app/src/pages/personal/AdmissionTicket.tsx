@@ -3,10 +3,11 @@ import { Search, Ticket, Printer, Eye, MapPin, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useBackendListState } from '@/hooks/useBackendListState'
+import { admissionTicketNo } from '@/lib/numbering'
 
 const ticketData = [
-  { id: '1', name: '张三', idCard: '440301199001011234', occupation: '核反应堆运行值班员', level: '三级', examRoom: '第一考场', location: '培训中心A栋301', seatNo: '15', theoryDate: '2026-05-20', theoryTime: '09:00-11:00', practicalDate: '2026-05-20', practicalTime: '14:00-16:00' },
-  { id: '2', name: '李四', idCard: '440301199002022345', occupation: '电气试验员', level: '四级', examRoom: '第二考场', location: '培训中心A栋302', seatNo: '08', theoryDate: '2026-05-20', theoryTime: '09:00-11:00', practicalDate: '2026-05-20', practicalTime: '14:00-16:00' },
+  { id: '1', name: '张三', idCard: '440301199001011234', employeeNo: 'P000001', ticketNo: admissionTicketNo('2026-05-20', 'Y0041GD000001', 'P000001'), occupation: '核反应堆运行值班员', level: '三级', examRoom: '第一考场', location: '培训中心A栋301', seatNo: '15', theoryDate: '2026-05-20', theoryTime: '09:00-11:00', practicalDate: '2026-05-20', practicalTime: '14:00-16:00' },
+  { id: '2', name: '李四', idCard: '440301199002022345', employeeNo: 'P000002', ticketNo: admissionTicketNo('2026-05-20', 'Y0041GD000001', 'P000002'), occupation: '电气试验员', level: '四级', examRoom: '第二考场', location: '培训中心A栋302', seatNo: '08', theoryDate: '2026-05-20', theoryTime: '09:00-11:00', practicalDate: '2026-05-20', practicalTime: '14:00-16:00' },
 ]
 
 export default function AdmissionTicket() {
@@ -56,6 +57,8 @@ export default function AdmissionTicket() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="p-3 bg-gray-50 rounded-lg text-center"><div className="text-xs text-gray-500">姓名</div><div className="font-medium">{result.name}</div></div>
+            <div className="p-3 bg-gray-50 rounded-lg text-center"><div className="text-xs text-gray-500">准考证编号</div><div className="font-medium font-mono text-xs">{result.ticketNo}</div></div>
+            <div className="p-3 bg-gray-50 rounded-lg text-center"><div className="text-xs text-gray-500">员工号</div><div className="font-medium">{result.employeeNo}</div></div>
             <div className="p-3 bg-gray-50 rounded-lg text-center"><div className="text-xs text-gray-500">职业(工种)</div><div className="font-medium">{result.occupation}</div></div>
             <div className="p-3 bg-gray-50 rounded-lg text-center"><div className="text-xs text-gray-500">等级</div><div className="font-medium">{result.level}</div></div>
             <div className="p-3 bg-gray-50 rounded-lg text-center"><div className="text-xs text-gray-500">座位号</div><div className="font-medium">{result.seatNo}</div></div>
@@ -97,6 +100,8 @@ export default function AdmissionTicket() {
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">姓名</span><span>{result.name}</span></div>
+                <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">准考证编号</span><span className="font-mono text-xs">{result.ticketNo}</span></div>
+                <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">员工号</span><span>{result.employeeNo}</span></div>
                 <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">身份证号</span><span>{result.idCard}</span></div>
                 <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">报考职业</span><span>{result.occupation}</span></div>
                 <div className="flex justify-between border-b border-gray-100 pb-1"><span className="text-gray-500">技能等级</span><span>{result.level}</span></div>

@@ -162,6 +162,7 @@ export default function HistoricalPage() {
   const [plans] = useBackendListState<HistoryPlan>(historyPlans)
   const [search, setSearch] = useState('')
   const [planType, setPlanType] = useState<PlanType>('等级认定')
+  const [activeArea, setActiveArea] = useState('全部')
   const [borderMode, setBorderMode] = useState<'不打印边框' | '打印边框' | '图文边框'>('打印边框')
   const [printPhoto, setPrintPhoto] = useState<'否' | '是'>('是')
   const [birthDisplayMode, setBirthDisplayMode] = useState<'不隐藏' | '隐藏'>('不隐藏')
@@ -174,10 +175,24 @@ export default function HistoricalPage() {
   const filtered = useMemo(() => {
     return plans.filter(plan => {
       const byType = plan.type === planType
+      const byArea = activeArea === '全部' || plan.filingArea === activeArea
       const bySearch = !search || plan.title.includes(search) || plan.code.includes(search)
-      return byType && bySearch
+      return byType && byArea && bySearch
     })
-  }, [plans, planType, search])
+  }, [activeArea, plans, planType, search])
+
+  const areaStats = useMemo(() => {
+    const areas = ['全部', ...Array.from(new Set(plans.map(plan => plan.filingArea)))]
+    return areas.map(area => {
+      const rows = area === '全部' ? plans : plans.filter(plan => plan.filingArea === area)
+      return {
+        area,
+        planCount: rows.length,
+        candidateCount: rows.reduce((sum, plan) => sum + plan.total, 0),
+        certCount: rows.reduce((sum, plan) => sum + plan.certCount, 0),
+      }
+    })
+  }, [plans])
 
   const exportSinglePlan = (plan: HistoryPlan, isReport: boolean) => {
     toast.success(isReport ? `${plan.title} 报表已开始下载` : `${plan.title} 证书上报数据压缩包已开始下载`)
@@ -236,6 +251,23 @@ export default function HistoricalPage() {
             </button>
           ))}
         </div>
+      </section>
+
+      <section className="grid gap-3 md:grid-cols-4">
+        {areaStats.map(item => (
+          <button
+            key={item.area}
+            onClick={() => setActiveArea(item.area)}
+            className={`rounded-lg border p-4 text-left ${activeArea === item.area ? 'border-[#1A56DB] bg-blue-50' : 'border-gray-200 bg-white hover:bg-gray-50'}`}
+          >
+            <div className="text-sm font-medium text-gray-900">{item.area}</div>
+            <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-gray-600">
+              <span>计划 {item.planCount}</span>
+              <span>考生 {item.candidateCount}</span>
+              <span>证书 {item.certCount}</span>
+            </div>
+          </button>
+        ))}
       </section>
 
       <section className="overflow-hidden rounded-lg border border-gray-200 bg-white">

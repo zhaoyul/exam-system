@@ -21,6 +21,7 @@ import StandardPlans from '@/pages/standard/StandardPlans'
 import StandardAssignment from '@/pages/standard/StandardAssignment'
 import StandardProcess from '@/pages/standard/StandardProcess'
 import StandardLibrary from '@/pages/standard/StandardLibrary'
+import QuestionBankCollection from '@/pages/standard/QuestionBankCollection'
 
 // Question Bank
 import TheoryQB from '@/pages/questionBank/TheoryQB'
@@ -202,6 +203,7 @@ export default function App() {
           <Route path="/standard/assignment" element={<StandardAssignment />} />
           <Route path="/standard/process" element={<StandardProcess />} />
           <Route path="/standard/library" element={<StandardLibrary />} />
+          <Route path="/standard/question-bank-collection" element={<QuestionBankCollection />} />
           {/* Question Bank */}
           <Route path="/question/theory" element={<TheoryQB />} />
           <Route path="/question/skill" element={<SkillQB />} />

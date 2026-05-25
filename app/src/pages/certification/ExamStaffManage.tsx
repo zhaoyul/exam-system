@@ -5,6 +5,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner'
 import { useBackendListState } from '@/hooks/useBackendListState'
 import StaffAssignDialog from './StaffAssignDialog'
+import { PhotoUpload } from '@/components/shared/PhotoUpload'
+import { getDefaultPassword, parseIdCard } from '@/lib/idCard'
 
 interface ExamStaff {
   id: number
@@ -77,11 +79,12 @@ export default function ExamStaffManage() {
     event.preventDefault()
     const fd = new FormData(event.currentTarget)
     const idCard = String(fd.get('idCard') || '')
+    const parsedIdCard = parseIdCard(idCard)
     const next = {
       loginName: String(fd.get('loginName') || idCard),
-      password: String(fd.get('password') || idCard.slice(-6) || '123456'),
+      password: String(fd.get('password') || getDefaultPassword(idCard)),
       name: String(fd.get('name') || ''),
-      gender: String(fd.get('gender') || '男'),
+      gender: parsedIdCard?.gender || String(fd.get('gender') || '男'),
       phone: String(fd.get('phone') || ''),
       idCard,
       role: String(fd.get('role') || '考务人员'),
@@ -256,27 +259,41 @@ function StaffDialog({
   onClose: () => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
 }) {
+  const [idCard, setIdCard] = useState(initial.idCard || '')
+  const parsed = parseIdCard(idCard)
+  const defaultPassword = getDefaultPassword(idCard)
+  const [photoValid, setPhotoValid] = useState(false)
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
         <form onSubmit={onSubmit} className="space-y-3 text-sm">
           <div className="grid grid-cols-2 gap-3">
-            <Field label="登录名：" name="loginName" defaultValue={initial.loginName} placeholder="默认使用身份证号" />
-            <Field label="登录密码：" name="password" defaultValue={initial.password} placeholder="默认身份证后六位" />
+            <Field label="登录名：" name="loginName" defaultValue={initial.loginName || idCard} placeholder="默认使用身份证号" />
+            <Field label="登录密码：" name="password" defaultValue={initial.password || defaultPassword} placeholder="默认身份证后六位" />
             <Field label="姓名：" name="name" defaultValue={initial.name} required placeholder="请输入姓名" />
             <label className="block">
               <span className="font-medium text-gray-700">性别：</span>
-              <select name="gender" defaultValue={initial.gender || '男'} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3">
+              <select name="gender" value={parsed?.gender || initial.gender || '男'} onChange={() => undefined} className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3 bg-gray-50">
                 <option>男</option>
                 <option>女</option>
               </select>
             </label>
             <Field label="联系电话：" name="phone" defaultValue={initial.phone} required placeholder="请输入联系电话" />
-            <Field label="身份证号：" name="idCard" defaultValue={initial.idCard} placeholder="请输入身份证号" />
+            <label className="block">
+              <span className="font-medium text-gray-700">身份证号：</span>
+              <input name="idCard" value={idCard} onChange={event => setIdCard(event.target.value)} placeholder="请输入身份证号" className="mt-1 h-9 w-full rounded-md border border-gray-200 px-3 focus:border-[#1A56DB] focus:outline-none" />
+              {parsed && <span className="mt-1 block text-xs text-gray-500">出生日期 {parsed.birthDate}，性别已自动填充</span>}
+            </label>
             <Field label="所属单位：" name="org" defaultValue={initial.org} placeholder="请输入所属单位" />
             <Field label="考点：" name="site" defaultValue={initial.site} placeholder="请输入考点" />
             <input type="hidden" name="role" defaultValue={initial.role || '考务人员'} />
+          </div>
+          <div className="rounded-md border border-gray-200 p-3">
+            <div className="mb-2 text-sm font-medium text-gray-700">一寸照片</div>
+            <PhotoUpload minWidth={300} maxWidth={500} onValidate={result => setPhotoValid(result.valid)} />
+            <div className="mt-2 text-xs text-gray-500">标准一寸照，照片宽度需在 300-500px 之间。{photoValid ? '照片校验已通过。' : ''}</div>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>返回</Button>

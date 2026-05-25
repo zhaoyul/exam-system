@@ -5,15 +5,36 @@
 
 ;; ─── row → camelCase ───
 
+(defn- ui-status [status]
+  (case status
+    "pending" "reviewing"
+    status))
+
 (defn- row->filing [row]
   (when row
     (-> row
         (assoc :filingType (:filing_type row)
                :applyOrg (:apply_org row)
+               :org (:apply_org row)
+               :orgType (:org_type row)
+               :filingPlace (:filing_place row)
+               :filingMode (:filing_mode row)
                :submitDate (:submit_date row)
+               :submitTime (:submit_date row)
+               :siteCount (:site_count row)
+               :projectCount (:project_count row)
+               :staffCount (:staff_count row)
+               :supervisorCount (:supervisor_count row)
+               :assessorCount (:assessor_count row)
+               :examRoomCount (:exam_room_count row)
+               :rejectReason (:reject_reason row)
+               :status (ui-status (:status row))
                :createdAt (:created_at row)
                :updatedAt (:updated_at row))
-        (dissoc :filing_type :apply_org :submit_date :created_at :updated_at))))
+        (dissoc :filing_type :apply_org :org_type :filing_place :filing_mode
+                :submit_date :site_count :project_count :staff_count
+                :supervisor_count :assessor_count :exam_room_count
+                :reject_reason :created_at :updated_at))))
 
 (defn- row->site [row]
   (when row
@@ -50,11 +71,19 @@
   (let [id (or (:id body) (db/uuid))]
     (db/execute!
      ds
-     ["INSERT INTO cgn_filing_application (id, org_id, code, name, filing_type, province, apply_org, submit_date, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+     ["INSERT INTO cgn_filing_application
+       (id, org_id, code, name, filing_type, province, apply_org, org_type,
+        filing_place, filing_mode, submit_date, site_count, project_count,
+        staff_count, supervisor_count, assessor_count, exam_room_count, reject_reason, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
       id (or (:orgId body) "") (:code body) (:name body)
-      (:filingType body) (:province body) (:applyOrg body)
-      (:submitDate body) (or (:status body) "pending")])
+      (:filingType body) (:province body) (or (:applyOrg body) (:org body))
+      (:orgType body) (or (:filingPlace body) (:province body)) (:filingMode body)
+      (or (:submitDate body) (:submitTime body))
+      (or (:siteCount body) 0) (or (:projectCount body) 0)
+      (or (:staffCount body) 0) (or (:supervisorCount body) 0)
+      (or (:assessorCount body) 0) (or (:examRoomCount body) 0)
+      (:rejectReason body) (or (:status body) "pending")])
     (get-filing ds id)))
 
 (defn update-filing! [ds id body]
@@ -64,14 +93,27 @@
        ds
        ["UPDATE cgn_filing_application
          SET code = ?, name = ?, filing_type = ?, province = ?, apply_org = ?,
-             submit_date = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+             org_type = ?, filing_place = ?, filing_mode = ?, submit_date = ?,
+             site_count = ?, project_count = ?, staff_count = ?, supervisor_count = ?,
+             assessor_count = ?, exam_room_count = ?, reject_reason = ?,
+             status = ?, updated_at = CURRENT_TIMESTAMP
          WHERE id = ?"
         (or (:code body) (:code current))
         (or (:name body) (:name current))
         (or (:filingType body) (:filing_type current))
         (or (:province body) (:province current))
-        (or (:applyOrg body) (:apply_org current))
-        (or (:submitDate body) (:submit_date current))
+        (or (:applyOrg body) (:org body) (:apply_org current))
+        (or (:orgType body) (:org_type current))
+        (or (:filingPlace body) (:filing_place current))
+        (or (:filingMode body) (:filing_mode current))
+        (or (:submitDate body) (:submitTime body) (:submit_date current))
+        (or (:siteCount body) (:site_count current))
+        (or (:projectCount body) (:project_count current))
+        (or (:staffCount body) (:staff_count current))
+        (or (:supervisorCount body) (:supervisor_count current))
+        (or (:assessorCount body) (:assessor_count current))
+        (or (:examRoomCount body) (:exam_room_count current))
+        (if (contains? body :rejectReason) (:rejectReason body) (:reject_reason current))
         (or (:status body) (:status current))
         id])
       (get-filing ds id))))

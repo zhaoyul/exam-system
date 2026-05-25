@@ -19,6 +19,7 @@ const endpoints: Record<string, string> = {
   '/standard/assignment': '/standard/assignment',
   '/standard/process': '/standard/process',
   '/standard/library': '/standard/library',
+  '/standard/question-bank-collection': '/standard/question-bank-collection',
   '/question/theory': '/question/theory',
   '/question/subject-sort': '/question/subject-sort',
   '/question/subjects': '/question/subjects',

@@ -5,7 +5,7 @@ import { Eye, EyeOff, MessageSquare, Lock, ChevronRight, ChevronLeft, Shield, Bo
 import { Button } from '@/components/ui/button'
 import type { UserRole } from '@/config/rolePermissions'
 import { ROLES, getRolePortal } from '@/config/rolePermissions'
-import { loginRequest, setAuthToken } from '@/lib/api'
+import { fourALoginRequest, loginRequest, setAuthToken } from '@/lib/api'
 
 const slides = [
   {
@@ -142,6 +142,34 @@ export default function Login() {
       navigate(getRolePortal(role), { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : '登录失败，请检查账号或密码')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleFourALogin = async () => {
+    setError('')
+    if (!username.trim()) {
+      setError('请输入4A账号')
+      return
+    }
+    if (!captcha.trim()) {
+      setError('请输入验证码')
+      return
+    }
+    setIsSubmitting(true)
+    try {
+      const result = await fourALoginRequest(username.trim())
+      const role = normalizeRole(result.user.role)
+      setAuthToken(result.token)
+      login({
+        name: result.user.displayName || result.user.username || username,
+        role,
+        org: getOrgName(role, result.user.orgId),
+      })
+      navigate(getRolePortal(role), { replace: true })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '4A认证失败')
     } finally {
       setIsSubmitting(false)
     }
@@ -364,6 +392,15 @@ export default function Login() {
                   className="w-full h-10 bg-[#1A56DB] hover:bg-[#1748B5] text-white font-medium rounded-lg transition-colors"
                 >
                   {isSubmitting ? '登录中...' : '登 录'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isSubmitting}
+                  onClick={handleFourALogin}
+                  className="w-full h-10"
+                >
+                  <Shield className="mr-2 h-4 w-4" />4A统一认证
                 </Button>
               </form>
 

@@ -69,6 +69,7 @@ interface AssignableStaff {
   loginName: string
   idCard: string
   position?: string
+  evalOccupations?: string
   assignmentId: string | null
   assignmentStatus: string | null
   assignedRoomId: string | null
@@ -150,7 +151,7 @@ export default function StaffAssignDialog({ open, onClose }: StaffAssignDialogPr
       setSelectedSession('')
       return
     }
-    apiRequest('/staff-assignment/plan-sessions', { query: { planId: selectedPlan } })
+    apiRequest('/certification/execution/staff-assignment/plan-sessions', { query: { planId: selectedPlan } })
       .then((data: unknown) => {
         setSessions((data as { items: SessionRecord[] })?.items || [])
       })
@@ -169,7 +170,7 @@ export default function StaffAssignDialog({ open, onClose }: StaffAssignDialogPr
   // Fetch rooms
   useEffect(() => {
     if (!open) return
-    apiRequest('/staff-assignment/exam-rooms')
+    apiRequest('/certification/execution/staff-assignment/exam-rooms')
       .then((data: unknown) => {
         setRooms((data as { items: ExamRoomRecord[] })?.items || [])
       })
@@ -190,7 +191,7 @@ export default function StaffAssignDialog({ open, onClose }: StaffAssignDialogPr
       setOccupationFilter('')
       return
     }
-    apiRequest('/staff-assignment/plan-occupations', { query: { planId: selectedPlan } })
+    apiRequest('/certification/execution/staff-assignment/plan-occupations', { query: { planId: selectedPlan } })
       .then((data: unknown) => {
         setOccupations((data as { items: string[] })?.items || [])
       })
@@ -214,10 +215,10 @@ export default function StaffAssignDialog({ open, onClose }: StaffAssignDialogPr
         : activeRole === 'invigilator' ? 'invigilator'
         : 'evaluator',
     }
-    if (activeRole === 'evaluator' && occupationFilter) {
+    if (activeRole === 'evaluator' && occupationFilter && occupationFilter !== '__all__') {
       query.occupation = occupationFilter
     }
-    apiRequest('/staff-assignment/assignable-staff', { query })
+    apiRequest('/certification/execution/staff-assignment/assignable-staff', { query })
       .then((data: unknown) => {
         setAssignableStaff((data as { items: AssignableStaff[] })?.items || [])
       })
@@ -234,7 +235,7 @@ export default function StaffAssignDialog({ open, onClose }: StaffAssignDialogPr
       .finally(() => setLoading(false))
 
     // Also fetch existing assignments for this plan+role
-    apiRequest('/staff-assignment/list', {
+    apiRequest('/certification/execution/staff-assignment/list', {
       query: {
         planId: selectedPlan,
         assignmentRole: activeRole === 'exam_staff' ? 'exam_staff'
@@ -268,12 +269,12 @@ export default function StaffAssignDialog({ open, onClose }: StaffAssignDialogPr
       return
     }
     try {
-      await apiRequest('/staff-assignment/batch', {
+      await apiRequest('/certification/execution/staff-assignment/batch', {
         method: 'POST',
         body: JSON.stringify({
           planId: selectedPlan,
-          sessionId: selectedSession || null,
-          examRoomId: selectedRoom || null,
+          sessionId: selectedSession && selectedSession !== '__all__' ? selectedSession : null,
+          examRoomId: selectedRoom && selectedRoom !== '__all__' ? selectedRoom : null,
           assignmentRole: activeRole === 'exam_staff' ? 'exam_staff'
             : activeRole === 'supervisor' ? 'supervisor'
             : activeRole === 'invigilator' ? 'invigilator'
@@ -289,7 +290,8 @@ export default function StaffAssignDialog({ open, onClose }: StaffAssignDialogPr
       setAssignableStaff(prev => prev.map(s =>
         s.id === staffId
           ? { ...s, assignmentId: 'assign-new', assignmentStatus: 'assigned',
-              assignedRoomId: selectedRoom, assignedSessionId: selectedSession,
+              assignedRoomId: selectedRoom && selectedRoom !== '__all__' ? selectedRoom : null,
+              assignedSessionId: selectedSession && selectedSession !== '__all__' ? selectedSession : null,
               assignedRoomName: rooms.find(r => r.id === selectedRoom)?.name || null,
               assignedSessionName: sessions.find(s => s.id === selectedSession)?.name || null }
           : s
@@ -301,7 +303,7 @@ export default function StaffAssignDialog({ open, onClose }: StaffAssignDialogPr
   // Handle cancel assignment
   const handleCancelAssignment = async (assignmentId: string) => {
     try {
-      await apiRequest(`/staff-assignment/${assignmentId}`, { method: 'DELETE' })
+      await apiRequest(`/certification/execution/staff-assignment/${assignmentId}`, { method: 'DELETE' })
       toast.success('已取消安排')
       fetchAssignableStaff()
     } catch {
@@ -324,12 +326,12 @@ export default function StaffAssignDialog({ open, onClose }: StaffAssignDialogPr
       return
     }
     try {
-      await apiRequest('/staff-assignment/batch', {
+      await apiRequest('/certification/execution/staff-assignment/batch', {
         method: 'POST',
         body: JSON.stringify({
           planId: selectedPlan,
-          sessionId: selectedSession || null,
-          examRoomId: selectedRoom || null,
+          sessionId: selectedSession && selectedSession !== '__all__' ? selectedSession : null,
+          examRoomId: selectedRoom && selectedRoom !== '__all__' ? selectedRoom : null,
           assignmentRole: activeRole === 'exam_staff' ? 'exam_staff'
             : activeRole === 'supervisor' ? 'supervisor'
             : activeRole === 'invigilator' ? 'invigilator'
@@ -363,7 +365,7 @@ export default function StaffAssignDialog({ open, onClose }: StaffAssignDialogPr
   const handleViewHistory = async (staffId: string) => {
     setHistoryStaffId(staffId)
     try {
-      const data = await apiRequest(`/staff-assignment/${staffId}/history`) as { items: AssignmentRecord[] }
+      const data = await apiRequest(`/certification/execution/staff-assignment/${staffId}/history`) as { items: AssignmentRecord[] }
       setHistoryRecords(data?.items || [])
     } catch {
       setHistoryRecords([
@@ -531,6 +533,7 @@ export default function StaffAssignDialog({ open, onClose }: StaffAssignDialogPr
                             <th className="px-3 py-2.5 text-left font-medium text-gray-600 text-xs">联系电话</th>
                             <th className="px-3 py-2.5 text-left font-medium text-gray-600 text-xs">工作单位</th>
                             <th className="px-3 py-2.5 text-left font-medium text-gray-600 text-xs">职务</th>
+                            {tab.value === 'evaluator' && <th className="px-3 py-2.5 text-left font-medium text-gray-600 text-xs">考评职业</th>}
                             <th className="px-3 py-2.5 text-center font-medium text-gray-600 text-xs">安排状态</th>
                             <th className="px-3 py-2.5 text-center font-medium text-gray-600 text-xs">操作</th>
                           </tr>
@@ -543,6 +546,7 @@ export default function StaffAssignDialog({ open, onClose }: StaffAssignDialogPr
                               <td className="px-3 py-2.5 text-gray-600 font-mono text-xs">{staff.phone}</td>
                               <td className="px-3 py-2.5 text-gray-600">{staff.unitName}</td>
                               <td className="px-3 py-2.5 text-gray-600">{staff.position || '-'}</td>
+                              {tab.value === 'evaluator' && <td className="px-3 py-2.5 text-xs text-gray-600">{staff.evalOccupations || '-'}</td>}
                               <td className="px-3 py-2.5 text-center">
                                 {staff.assignmentId ? (
                                   <div className="inline-flex flex-col items-center gap-0.5">

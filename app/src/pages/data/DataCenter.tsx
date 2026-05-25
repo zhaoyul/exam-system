@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Upload, Download, FileText, CheckCircle, Database, Users, Award, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useBackendListState } from '@/hooks/useBackendListState'
+import { apiRequest } from '@/lib/api'
 
 const importTasks = [
   { id: '1', name: '考生信息导入', type: '导入', records: 156, status: 'completed', date: '2026-05-18' },
@@ -17,15 +18,37 @@ const exportTasks = [
 export default function DataCenter() {
   const [dragOver, setDragOver] = useState(false)
   const [activeTab, setActiveTab] = useState<'import' | 'export'>('import')
+  const [mdmSyncing, setMdmSyncing] = useState(false)
+  const [mdmSummary, setMdmSummary] = useState('上次同步：2026-05-25 08:30')
   const [imports, setImports] = useBackendListState(importTasks)
   const [exports, setExports] = useBackendListState(exportTasks)
 
   const runImport = (id: string) => { setImports(prev => prev.map(i => i.id === id ? { ...i, status: 'completed', records: 156, date: new Date().toISOString().slice(0,10) } : i)) }
   const runExport = (id: string) => { setExports(prev => prev.map(i => i.id === id ? { ...i, status: 'completed', records: Math.floor(Math.random()*500)+100, date: new Date().toISOString().slice(0,10) } : i)) }
+  const syncMdm = async () => {
+    setMdmSyncing(true)
+    try {
+      const result = await apiRequest<{ created: number; updated: number; skipped: number; finishedAt: string }>('/integrations/mdm/sync', {
+        method: 'POST',
+        body: JSON.stringify({ scope: 'org-personnel-position' }),
+      })
+      setMdmSummary(`本次同步：新增 ${result.created}，更新 ${result.updated}，跳过 ${result.skipped}；${result.finishedAt}`)
+    } finally {
+      setMdmSyncing(false)
+    }
+  }
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2"><Database className="w-6 h-6 text-[#1A56DB]" />数据导入导出中心</h1>
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Database className="w-6 h-6 text-[#1A56DB]" />数据导入导出中心</h1>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-gray-500">{mdmSummary}</span>
+          <Button onClick={syncMdm} disabled={mdmSyncing} className="h-9 bg-[#1A56DB]">
+            <Database className="mr-2 h-4 w-4" />{mdmSyncing ? '同步中...' : 'MDM同步'}
+          </Button>
+        </div>
+      </div>
 
       {/* 统计 */}
       <div className="grid grid-cols-4 gap-3 mb-4">

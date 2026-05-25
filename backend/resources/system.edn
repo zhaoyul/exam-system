@@ -43,6 +43,13 @@
   :datasource #ig/ref :zhaoyul.exam-system-backend.infra.datasource/datasource
   :auth {:token-secret #or [#env AUTH_TOKEN_SECRET "dev-secret-change-before-production"]
          :token-ttl-seconds #long #or [#env AUTH_TOKEN_TTL_SECONDS 28800]}
+  :integrations {:four-a {:base-url #or [#env FOUR_A_BASE_URL ""]
+                          :app-id #or [#env FOUR_A_APP_ID ""]
+                          :redirect-uri #or [#env FOUR_A_REDIRECT_URI ""]}
+                 :mdm {:base-url #or [#env MDM_BASE_URL ""]
+                       :app-key #or [#env MDM_APP_KEY ""]
+                       :org-endpoint #or [#env MDM_ORG_ENDPOINT "/organizations"]
+                       :person-endpoint #or [#env MDM_PERSON_ENDPOINT "/persons"]}}
   :cors {:allowed-origins #or [#env CORS_ALLOWED_ORIGINS "*"]}}
 
  :zhaoyul.exam-system-backend.infra.datasource/datasource

@@ -13,7 +13,10 @@
    "004-numbering.up.sql"
    "004-scores.up.sql"
    "005-certificates.up.sql"
-   "005-paper-demand.up.sql"])
+   "005-paper-demand.up.sql"
+   "006-v3.0-core.up.sql"
+   "007-paper-demand-v3-fields.up.sql"
+   "008-exam-staff-eval-occupations.up.sql"])
 
 (defn- split-statements [sql]
   (->> (str/split sql #"(?m)^\s*--;;\s*$")

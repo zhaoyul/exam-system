@@ -15,9 +15,10 @@
                :staffType (:staff_type row)
                :unitName (:unit_name row)
                :photoUrl (:photo_url row)
+               :evalOccupations (:eval_occupations row)
                :createdAt (:created_at row)
                :updatedAt (:updated_at row))
-        (dissoc :login_name :id_card :staff_type :unit_name :photo_url :created_at :updated_at))))
+        (dissoc :login_name :id_card :staff_type :unit_name :photo_url :eval_occupations :created_at :updated_at))))
 
 ;; ─── ID card parsing ───
 
@@ -33,11 +34,13 @@
 
 ;; ─── CRUD ───
 
-(defn list-staff [ds {:keys [q staff-type status org-id]}]
-  (let [q (some-> q str str/trim)
-        staff-type (some-> staff-type str/trim)
-        status (some-> status str/trim)
-        org-id (some-> org-id str/trim)
+(defn list-staff [ds params]
+  (let [q (some-> (or (:q params) (get params "q")) str str/trim)
+        staff-type (some-> (or (:staff-type params) (:staffType params)
+                              (get params "staff-type") (get params "staffType")) str/trim)
+        status (some-> (or (:status params) (get params "status")) str/trim)
+        org-id (some-> (or (:org-id params) (:orgId params)
+                            (get params "org-id") (get params "orgId")) str/trim)
         filters (cond-> ["1 = 1"]
                   (seq q) (conj "(name LIKE ? OR login_name LIKE ? OR id_card LIKE ? OR phone LIKE ?)")
                   (seq staff-type) (conj "staff_type = ?")
@@ -67,11 +70,11 @@
         org-id (or (:orgId body) (:org_id body) "")]
     (db/execute-one!
      ds
-     ["INSERT INTO cgn_exam_staff (id, org_id, code, name, login_name, phone, gender, staff_type, unit_name, id_card, photo_url, position, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+     ["INSERT INTO cgn_exam_staff (id, org_id, code, name, login_name, phone, gender, staff_type, unit_name, id_card, photo_url, position, eval_occupations, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
       id org-id (or (:code body) "") name login-name
       (:phone body) gender staff-type (:unitName body)
-      id-card (:photoUrl body) (:position body) status])
+      id-card (:photoUrl body) (:position body) (:evalOccupations body) status])
     (get-staff ds id)))
 
 (defn update-staff! [ds id body]
@@ -84,7 +87,7 @@
          ["UPDATE cgn_exam_staff
            SET code = ?, name = ?, login_name = ?, phone = ?, gender = ?,
                staff_type = ?, unit_name = ?, id_card = ?, photo_url = ?, position = ?,
-               status = ?, updated_at = CURRENT_TIMESTAMP
+               eval_occupations = ?, status = ?, updated_at = CURRENT_TIMESTAMP
            WHERE id = ?"
           (or (:code body) (:code current))
           (or (:name body) (:name current))
@@ -96,6 +99,7 @@
           id-card
           (or (:photoUrl body) (:photo_url current))
           (or (:position body) (:position current))
+          (or (:evalOccupations body) (:eval_occupations current))
           (or (:status body) (:status current))
           id])
         (get-staff ds id)))))

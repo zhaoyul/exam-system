@@ -132,9 +132,9 @@
    Returns staff records with an extra :assigned field containing assignment details."
   [ds {:keys [staff-type plan-id assignment-role occupation]}]
   (let [filters (cond-> ["staff_type = ? AND s.status = 'active'"]
-                  (seq occupation) (conj "EXISTS (SELECT 1 FROM cgn_plan_item pi WHERE pi.plan_id = ? AND pi.occupation = ?)"))
+                  (seq occupation) (conj "(s.eval_occupations LIKE ? OR s.position LIKE ?)"))
         args (cond-> [staff-type]
-               (seq occupation) (into [plan-id occupation]))
+               (seq occupation) (into [(str "%" occupation "%") (str "%" occupation "%")]))
         sql (str "SELECT s.*, "
                  "a.id AS assignment_id, a.status AS assignment_status, "
                  "a.exam_room_id AS assigned_room_id, a.session_id AS assigned_session_id, "
@@ -154,13 +154,14 @@
                          :staffType (:staff_type row)
                          :unitName (:unit_name row)
                          :photoUrl (:photo_url row)
+                         :evalOccupations (:eval_occupations row)
                          :assignmentId (:assignment_id row)
                          :assignmentStatus (:assignment_status row)
                          :assignedRoomId (:assigned_room_id row)
                          :assignedSessionId (:assigned_session_id row)
                          :assignedRoomName (:assigned_room_name row)
                          :assignedSessionName (:assigned_session_name row))
-                  (dissoc :login_name :id_card :staff_type :unit_name :photo_url
+                  (dissoc :login_name :id_card :staff_type :unit_name :photo_url :eval_occupations
                           :assignment_id :assignment_status
                           :assigned_room_id :assigned_session_id
                           :assigned_room_name :assigned_session_name)))
@@ -232,4 +233,3 @@
                            :status "assigned"}))
     {:success true
      :assignedCount (count staff-ids)}))
-

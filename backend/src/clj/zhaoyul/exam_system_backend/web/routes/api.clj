@@ -17,6 +17,7 @@
    [zhaoyul.exam-system-backend.web.controllers.registration-orgs :as registration-orgs]
    [zhaoyul.exam-system-backend.web.controllers.scores :as score-controller]
    [zhaoyul.exam-system-backend.web.controllers.health :as health]
+   [zhaoyul.exam-system-backend.web.controllers.integrations :as integrations]
    [zhaoyul.exam-system-backend.web.controllers.organizations :as organizations]
    [zhaoyul.exam-system-backend.web.controllers.paper-demand :as paper-demand]
    [zhaoyul.exam-system-backend.web.controllers.personal :as personal]
@@ -99,6 +100,58 @@
     (resource-endpoint ctx "/config" "system-config" "基础数据" "系统配置")]
    ["/data"
     (resource-endpoint ctx "/center" "data-center" "基础数据" "数据管理")]
+   ["/question-bank"
+    {:swagger {:tags ["题库"]}}
+    (resource-endpoint ctx "/subject-categories" "subject-categories" "题库" "科目分类")
+    (resource-endpoint ctx "/theory-subjects" "theory-subjects" "题库" "理论科目")
+    (resource-endpoint ctx "/knowledge-structures" "knowledge-structures" "题库" "知识结构")
+    (resource-endpoint ctx "/theory-questions" "theory-questions" "题库" "理论试题")
+    (resource-endpoint ctx "/structure-ratios" "structure-ratios" "题库" "结构比重")
+    (resource-endpoint ctx "/theory-paper-rules" "theory-paper-rules" "题库" "理论组卷规则")
+    (resource-endpoint ctx "/theory-paper-requirements" "theory-paper-requirements" "题库" "理论试卷需求")
+    (resource-endpoint ctx "/skill-subjects" "skill-subjects" "题库" "技能科目")
+    (resource-endpoint ctx "/skill-modules" "skill-modules" "题库" "技能模块")
+    (resource-endpoint ctx "/skill-questions" "skill-questions" "题库" "技能试题")
+    (resource-endpoint ctx "/skill-paper-rules" "skill-paper-rules" "题库" "技能组卷规则")
+    (resource-endpoint ctx "/skill-paper-requirements" "skill-paper-requirements" "题库" "技能试卷需求")
+    (resource-endpoint ctx "/paper-library" "paper-library" "题库" "卷库")]
+   ["/question"
+    {:swagger {:tags ["题库兼容路径"]}}
+    (resource-endpoint ctx "/subject-sort" "subject-categories" "题库兼容路径" "科目分类")
+    (resource-endpoint ctx "/subjects" "theory-subjects" "题库兼容路径" "科目管理")
+    (resource-endpoint ctx "/knowledge" "knowledge-structures" "题库兼容路径" "知识结构")
+    (resource-endpoint ctx "/ratio" "structure-ratios" "题库兼容路径" "结构比重")
+    (resource-endpoint ctx "/theory" "theory-questions" "题库兼容路径" "理论试题")
+    (resource-endpoint ctx "/paper-rules" "theory-paper-rules" "题库兼容路径" "理论组卷规则")
+    (resource-endpoint ctx "/paper-require" "theory-paper-requirements" "题库兼容路径" "理论试卷需求")
+    (resource-endpoint ctx "/paper-library" "paper-library" "题库兼容路径" "卷库")
+    (resource-endpoint ctx "/skill-subject-sort" "skill-subject-categories" "题库兼容路径" "技能科目分类")
+    (resource-endpoint ctx "/skill-subjects" "skill-subjects" "题库兼容路径" "技能科目")
+    (resource-endpoint ctx "/skill-modules" "skill-modules" "题库兼容路径" "技能模块")
+    (resource-endpoint ctx "/skill" "skill-questions" "题库兼容路径" "技能试题")
+    (resource-endpoint ctx "/skill-rules" "skill-paper-rules" "题库兼容路径" "技能组卷规则")
+    (resource-endpoint ctx "/skill-require" "skill-paper-requirements" "题库兼容路径" "技能试卷需求")]
+   ["/supervision"
+    {:swagger {:tags ["督导专家"]}}
+    (resource-endpoint ctx "/forms" "expert-forms" "督导专家" "表单")
+    (resource-endpoint ctx "/personnel-statistics" "expert-statistics" "督导专家" "人员统计" false)]
+   ["/staff"
+    {:swagger {:tags ["人员管理"]}}
+    [""
+     {:get {:summary "人员列表 (支持 staff-type/staffType 筛选)"
+            :handler (partial exam-staff/list-staff ctx)}
+      :post {:summary "新增人员"
+             :handler (partial exam-staff/create-staff ctx)}}]
+    ["/:id"
+     {:get {:summary "查看人员详情"
+            :handler (partial exam-staff/get-staff ctx)}
+      :put {:summary "更新人员信息"
+            :handler (partial exam-staff/update-staff ctx)}
+      :delete {:summary "删除人员"
+               :handler (partial exam-staff/delete-staff ctx)}}]
+    ["/:id/password-hint"
+     {:get {:summary "获取密码提示 (身份证后六位)"
+            :handler (partial exam-staff/get-password-hint ctx)}}]]
    ["/filing"
     {:swagger {:tags ["机构备案"]}}
     ["/group"
@@ -133,7 +186,8 @@
     (resource-endpoint ctx "/plans" "standard-plans" "职业标准" "标准计划")
     (resource-endpoint ctx "/assignment" "standard-assignments" "职业标准" "任务分配")
     (resource-endpoint ctx "/process" "standard-processes" "职业标准" "标准流程")
-    (resource-endpoint ctx "/library" "standard-library" "职业标准" "职业标准库")]
+    (resource-endpoint ctx "/library" "standard-library" "职业标准" "职业标准库")
+    (resource-endpoint ctx "/question-bank-collection" "question-bank-collections" "职业标准" "题库征集编审")]
    ["/finance"
     (resource-endpoint ctx "/workbench" "finance-ledgers" "财务系统" "财务工作台" false)
     (resource-endpoint ctx "/charge" "finance-charges" "财务系统" "收费")
@@ -623,7 +677,8 @@
 
 (defn api-routes [opts]
   (let [ctx {:datasource (:datasource opts)
-             :config {:auth (:auth opts)}}]
+             :config {:auth (:auth opts)
+                      :integrations (:integrations opts)}}]
     (vec
      (concat
       [["/swagger.json"
@@ -641,12 +696,26 @@
        ["/health" {:get #'health/healthcheck!}]
        ["/auth"
         {:swagger {:tags ["认证"]}}
-        ["/login"
+       ["/login"
          {:post {:summary "登录"
                  :handler (partial auth/login ctx)}}]
+        ["/4a-login"
+         {:post {:summary "4A统一认证登录"
+                 :handler (partial auth/login-4a ctx)}}]
         ["/me"
          {:get {:summary "当前用户"
                 :handler (partial auth/me ctx)}}]]
+       ["/integrations"
+        {:swagger {:tags ["外部集成"]}}
+        ["/4a/users"
+         {:get {:summary "4A账号同步结果"
+                :handler (partial integrations/four-a-users ctx)}}]
+        ["/mdm/status"
+         {:get {:summary "MDM连接状态"
+                :handler (partial integrations/mdm-status ctx)}}]
+        ["/mdm/sync"
+         {:post {:summary "触发MDM主数据同步"
+                 :handler (partial integrations/mdm-sync ctx)}}]]
        ["/catalog"
         {:swagger {:tags ["基础字典"]}}
         ["/menus" {:get {:summary "菜单结构" :handler catalog/list-menus}}]

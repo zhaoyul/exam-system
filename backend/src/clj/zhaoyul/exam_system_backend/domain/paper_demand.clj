@@ -26,6 +26,7 @@
     {:id (:id row)
      :orgId (:org_id row)
      :code (:code row)
+     :name (:name row)
      :planId (:plan_id row)
      :planItemId (:plan_item_id row)
      :sessionId (:session_id row)
@@ -35,6 +36,10 @@
      :assemblyMethod (:assembly_method row)
      :quantity (:quantity row)
      :paperType (:paper_type row)
+     :examType (:exam_type row)
+     :remark (:remark row)
+     :paperNo (:paper_no row)
+     :attachmentName (:attachment_name row)
      :status (:status row)
      :pushStatus (:push_status row)
      :pushTime (:push_time row)
@@ -107,9 +112,14 @@
         paper-rule-id (:paperRuleId body)
         occupation (:occupation body)
         level (:level body)
+        name (:name body)
         assembly-method (or (:assemblyMethod body) "question_bank_random")
         quantity (or (:quantity body) 1)
         paper-type (or (:paperType body) "A")
+        exam-type (:examType body)
+        remark (:remark body)
+        paper-no (:paperNo body)
+        attachment-name (:attachmentName body)
         status (or (:status body) "draft")
         org-id (or (:orgId body) "")]
     (when (and assembly-method (not (valid-assembly-methods assembly-method)))
@@ -119,10 +129,12 @@
      ds
      ["INSERT INTO cgn_paper_demand_item
        (id, org_id, code, plan_id, plan_item_id, session_id, paper_rule_id,
-        occupation, level, assembly_method, quantity, paper_type, status, push_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')"
+        occupation, level, name, assembly_method, quantity, paper_type,
+        exam_type, remark, paper_no, attachment_name, status, push_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')"
       id org-id code plan-id plan-item-id session-id paper-rule-id
-      occupation level assembly-method quantity paper-type status])
+      occupation level name assembly-method quantity paper-type
+      exam-type remark paper-no attachment-name status])
     (get-demand ds id)))
 
 (defn update-demand! [ds id body]
@@ -137,8 +149,13 @@
           paper-rule-id (:paperRuleId merged)
           occupation (:occupation merged)
           level (:level merged)
+          name (:name merged)
           quantity (:quantity merged)
           paper-type (:paperType merged)
+          exam-type (:examType merged)
+          remark (:remark merged)
+          paper-no (:paperNo merged)
+          attachment-name (:attachmentName merged)
           status (:status merged)
           org-id (:orgId merged)]
       (when (and assembly-method (not (valid-assembly-methods assembly-method)))
@@ -148,12 +165,14 @@
        ds
        ["UPDATE cgn_paper_demand_item
          SET plan_id = ?, plan_item_id = ?, session_id = ?, paper_rule_id = ?,
-             occupation = ?, level = ?, assembly_method = ?, quantity = ?,
-             paper_type = ?, status = ?, org_id = ?, updated_at = CURRENT_TIMESTAMP
+             occupation = ?, level = ?, name = ?, assembly_method = ?, quantity = ?,
+             paper_type = ?, exam_type = ?, remark = ?, paper_no = ?,
+             attachment_name = ?, status = ?, org_id = ?, updated_at = CURRENT_TIMESTAMP
          WHERE id = ?"
         plan-id plan-item-id session-id paper-rule-id
-        occupation level assembly-method quantity
-        paper-type status org-id id])
+        occupation level name assembly-method quantity
+        paper-type exam-type remark paper-no
+        attachment-name status org-id id])
       (get-demand ds id))))
 
 (defn delete-demand! [ds id]

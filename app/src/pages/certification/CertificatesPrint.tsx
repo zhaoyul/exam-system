@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useBackendResourceList, useBackendResourceState } from '@/hooks/useBackendListState'
 import { apiRequest } from '@/lib/api'
+import { certificateNo } from '@/lib/numbering'
 
 interface PrintPlan {
   id: string
@@ -66,9 +67,9 @@ const mockPlans: PrintPlan[] = [
 ]
 
 const mockCandidates: CandidatePrint[] = [
-  { id: '1', name: '张三', profession: '秘书', level: '五级', idCard: '460321191001015633', certNo: 'Y001011999966215000001', issueDate: '2021-04-27', status: 'pending' },
-  { id: '2', name: '李四', profession: '秘书', level: '五级', idCard: '460321191001016572', certNo: 'Y001011999966215000002', issueDate: '2021-04-27', status: 'pending' },
-  { id: '3', name: '王五', profession: '秘书', level: '五级', idCard: '460321191001015414', certNo: 'Y001011999966215000003', issueDate: '2021-04-27', status: 'pending' },
+  { id: '1', name: '张三', profession: '秘书', level: '五级', idCard: '460321191001015633', certNo: certificateNo('Y0041GD000001', 2026, '五级', 1), issueDate: '2026-04-27', status: 'pending' },
+  { id: '2', name: '李四', profession: '秘书', level: '五级', idCard: '460321191001016572', certNo: certificateNo('Y0041GD000001', 2026, '五级', 2), issueDate: '2026-04-27', status: 'pending' },
+  { id: '3', name: '王五', profession: '秘书', level: '五级', idCard: '460321191001015414', certNo: certificateNo('Y0041GD000001', 2026, '五级', 3), issueDate: '2026-04-27', status: 'pending' },
 ]
 
 export default function CertificatesPrint() {

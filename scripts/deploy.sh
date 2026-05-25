@@ -131,7 +131,8 @@ done
 
 # 验证前端
 sleep 2
-HEALTH=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:29527/ 2>/dev/null || echo '000')
+HEALTH=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:29527/ 2>/dev/null || true)
+HEALTH="${HEALTH:-000}"
 if [ "$HEALTH" = "200" ]; then
   echo "[INFO] 前端页面 200 OK"
 else
@@ -139,7 +140,8 @@ else
 fi
 
 # 验证 API
-API_CHECK=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:29527/api/question/subject-sort 2>/dev/null || echo '000')
+API_CHECK=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:29527/api/question/subject-sort 2>/dev/null || true)
+API_CHECK="${API_CHECK:-000}"
 if [ "$API_CHECK" = "200" ]; then
   echo "[INFO] API 接口 200 OK"
 else

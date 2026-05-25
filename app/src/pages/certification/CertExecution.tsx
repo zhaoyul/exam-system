@@ -10,7 +10,7 @@ import CertificatesGroup from './CertificatesGroup'
 import CertificatesPrint from './CertificatesPrint'
 import {
   ListChecks, Users, LayoutGrid, BookOpen, BarChart3, Eye, Award, Printer,
-  ChevronRight, CheckCircle, ArrowRight
+  ChevronRight, CheckCircle
 } from 'lucide-react'
 
 // 等级认定（机构）核心流程步骤
@@ -36,18 +36,6 @@ export default function CertExecution() {
 
   const handleStepClick = (index: number) => {
     navigate(flowSteps[index].path)
-  }
-
-  const handleNextStep = () => {
-    if (effectiveStep < flowSteps.length - 1) {
-      navigate(flowSteps[effectiveStep + 1].path)
-    }
-  }
-
-  const handlePrevStep = () => {
-    if (effectiveStep > 0) {
-      navigate(flowSteps[effectiveStep - 1].path)
-    }
   }
 
   return (
@@ -104,18 +92,7 @@ export default function CertExecution() {
             </span>
             <span className="text-xs text-gray-400 ml-2">{flowSteps[effectiveStep]?.desc}</span>
           </div>
-          <div className="flex gap-2">
-            {effectiveStep > 0 && (
-              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handlePrevStep}>
-                上一步
-              </Button>
-            )}
-            {effectiveStep < flowSteps.length - 1 && (
-              <Button size="sm" className="h-7 text-xs" onClick={handleNextStep}>
-                下一步 <ArrowRight className="w-3 h-3 ml-1" />
-              </Button>
-            )}
-          </div>
+          <div className="text-xs text-gray-500">流程状态由各环节的“发布 / 结束”操作推进</div>
         </div>
 
         {/* Step Content */}

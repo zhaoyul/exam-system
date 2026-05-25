@@ -19,6 +19,8 @@ interface EvalProject {
   level: string
   examSubjects: string
   condition: string
+  authorized?: boolean
+  source?: string
 }
 
 const initialOrgs: ScopeOrg[] = [
@@ -32,15 +34,15 @@ const initialOrgs: ScopeOrg[] = [
 ]
 
 const initialProjects: EvalProject[] = [
-  { id: 'ep1', orgId: 'org0', professionName: '企业人力资源管理师', jobTypeName: '企业人力资源管理师', level: '四级', examSubjects: '理论+技能', condition: '累计从事本职业或相关职业工作满4年' },
-  { id: 'ep2', orgId: 'org0', professionName: '职业培训师', jobTypeName: '企业培训', level: '三级', examSubjects: '理论+技能+综合', condition: '取得四级证书后累计工作满5年' },
-  { id: 'ep3', orgId: 'org0', professionName: '仪器仪表维修工', jobTypeName: '核电仪控', level: '三级', examSubjects: '理论+技能', condition: '具备相关专业高级工基础' },
-  { id: 'ep4', orgId: 'org0', professionName: '起重工', jobTypeName: '起重装卸机械操作', level: '五级', examSubjects: '理论+技能', condition: '经本职业五级正规培训达到规定学时' },
-  { id: 'ep5', orgId: 'org0', professionName: '泵装配调试工', jobTypeName: '核级泵检修', level: '四级', examSubjects: '理论+技能', condition: '具备本职业初级技能证书' },
-  { id: 'ep6', orgId: 'org0', professionName: '光伏发电运维值班员', jobTypeName: '光伏电站运维', level: '四级', examSubjects: '理论+技能', condition: '累计从事相关职业工作满3年' },
-  { id: 'ep7', orgId: 'org1', professionName: '汽轮机和水轮机检修工', jobTypeName: '汽轮机检修', level: '三级', examSubjects: '理论+技能', condition: '取得四级证书后累计工作满5年' },
-  { id: 'ep8', orgId: 'org1', professionName: '电机检修工', jobTypeName: '发电机检修', level: '三级', examSubjects: '理论+技能', condition: '具备本职业中级技能证书' },
-  { id: 'ep9', orgId: 'org1', professionName: '内燃机装配调试工', jobTypeName: '柴油机调试', level: '四级', examSubjects: '理论+技能', condition: '累计从事相关职业工作满3年' },
+  { id: 'ep1', orgId: 'org0', professionName: '企业人力资源管理师', jobTypeName: '企业人力资源管理师', level: '四级', examSubjects: '理论+技能', condition: '累计从事本职业或相关职业工作满4年', authorized: true, source: '集团评价范围' },
+  { id: 'ep2', orgId: 'org0', professionName: '职业培训师', jobTypeName: '企业培训', level: '三级', examSubjects: '理论+技能+综合', condition: '取得四级证书后累计工作满5年', authorized: true, source: '集团评价范围' },
+  { id: 'ep3', orgId: 'org0', professionName: '仪器仪表维修工', jobTypeName: '核电仪控', level: '三级', examSubjects: '理论+技能', condition: '具备相关专业高级工基础', authorized: false, source: '集团评价范围' },
+  { id: 'ep4', orgId: 'org0', professionName: '起重工', jobTypeName: '起重装卸机械操作', level: '五级', examSubjects: '理论+技能', condition: '经本职业五级正规培训达到规定学时', authorized: false, source: '集团评价范围' },
+  { id: 'ep5', orgId: 'org0', professionName: '泵装配调试工', jobTypeName: '核级泵检修', level: '四级', examSubjects: '理论+技能', condition: '具备本职业初级技能证书', authorized: true, source: '集团评价范围' },
+  { id: 'ep6', orgId: 'org0', professionName: '光伏发电运维值班员', jobTypeName: '光伏电站运维', level: '四级', examSubjects: '理论+技能', condition: '累计从事相关职业工作满3年', authorized: false, source: '集团评价范围' },
+  { id: 'ep7', orgId: 'org1', professionName: '汽轮机和水轮机检修工', jobTypeName: '汽轮机检修', level: '三级', examSubjects: '理论+技能', condition: '取得四级证书后累计工作满5年', authorized: true, source: '集团授权' },
+  { id: 'ep8', orgId: 'org1', professionName: '电机检修工', jobTypeName: '发电机检修', level: '三级', examSubjects: '理论+技能', condition: '具备本职业中级技能证书', authorized: true, source: '集团授权' },
+  { id: 'ep9', orgId: 'org1', professionName: '内燃机装配调试工', jobTypeName: '柴油机调试', level: '四级', examSubjects: '理论+技能', condition: '累计从事相关职业工作满3年', authorized: false, source: '集团授权' },
 ]
 
 export default function EvaluationScope() {
@@ -52,6 +54,7 @@ export default function EvaluationScope() {
   const [keyword, setKeyword] = useState('')
   const [detail, setDetail] = useState<EvalProject | null>(null)
   const [addOpen, setAddOpen] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [form, setForm] = useState({ professionName: '', jobTypeName: '', level: '四级', examSubjects: '理论+技能', condition: '' })
 
   const selectedOrgData = orgs.find(org => org.id === selectedOrg) || orgs[0]
@@ -70,10 +73,23 @@ export default function EvaluationScope() {
       level: form.level,
       examSubjects: form.examSubjects,
       condition: form.condition || '按职业标准申报条件执行',
+      authorized: false,
+      source: '手工新增',
     }, ...prev])
     setForm({ professionName: '', jobTypeName: '', level: '四级', examSubjects: '理论+技能', condition: '' })
     setAddOpen(false)
     toast.success('新增职业级别成功')
+  }
+
+  const batchAuthorize = () => {
+    const targets = selectedIds.length ? selectedIds : filtered.map(item => item.id)
+    setProjects(prev => prev.map(item => targets.includes(item.id) ? { ...item, authorized: true, source: '集团批量授权' } : item))
+    setSelectedIds([])
+    toast.success(`已授权 ${targets.length} 个职业等级，分支备案认定项目将从授权范围带入`)
+  }
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id])
   }
 
   return (
@@ -82,7 +98,7 @@ export default function EvaluationScope() {
         <h1 className="text-xl font-bold text-gray-900">评价项目</h1>
         <div className="flex gap-2">
           <Button onClick={() => setAddOpen(true)} className="h-9 bg-[#1A56DB] hover:bg-[#1748B5]"><Plus className="mr-1 h-4 w-4" />添 加</Button>
-          <Button variant="outline" className="h-9" onClick={() => toast.success('批量授权已加入待处理队列')}><Award className="mr-1 h-4 w-4" />批量授权</Button>
+          <Button variant="outline" className="h-9" onClick={batchAuthorize}><Award className="mr-1 h-4 w-4" />批量授权</Button>
           <Button variant="outline" className="h-9" onClick={() => toast.success('导入任务已创建')}><Upload className="mr-1 h-4 w-4" />导入</Button>
           <Button variant="outline" className="h-9" onClick={() => toast.success('增加全职业申报条件')}><BookOpen className="mr-1 h-4 w-4" />增加全职业申报条件</Button>
         </div>
@@ -133,22 +149,26 @@ export default function EvaluationScope() {
             <table className="w-full text-sm">
               <thead className="bg-[#F9FAFB] text-gray-600">
                 <tr>
+                  <th className="px-4 py-3 text-left font-medium"><input type="checkbox" checked={filtered.length > 0 && filtered.every(item => selectedIds.includes(item.id))} onChange={event => setSelectedIds(event.target.checked ? filtered.map(item => item.id) : [])} /></th>
                   <th className="px-4 py-3 text-left font-medium">序号</th>
                   <th className="px-4 py-3 text-left font-medium">职业名称</th>
                   <th className="px-4 py-3 text-left font-medium">工种名称</th>
                   <th className="px-4 py-3 text-left font-medium">认定等级</th>
                   <th className="px-4 py-3 text-left font-medium">考试科目</th>
+                  <th className="px-4 py-3 text-left font-medium">授权状态</th>
                   <th className="px-4 py-3 text-left font-medium">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filtered.map((item, index) => (
                   <tr key={item.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3"><input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleSelected(item.id)} /></td>
                     <td className="px-4 py-3 text-gray-600">{index + 1}</td>
                     <td className="px-4 py-3 font-medium text-gray-900">{item.professionName}</td>
                     <td className="px-4 py-3 text-gray-600">{item.jobTypeName}</td>
                     <td className="px-4 py-3"><span className="rounded bg-blue-50 px-2 py-0.5 text-xs text-blue-700">{item.level}</span></td>
                     <td className="px-4 py-3 text-gray-600">{item.examSubjects}</td>
+                    <td className="px-4 py-3"><span className={`rounded px-2 py-0.5 text-xs ${item.authorized ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>{item.authorized ? '已授权' : '待授权'}</span></td>
                     <td className="px-4 py-3">
                       <button onClick={() => setDetail(item)} className="text-xs text-[#1A56DB] hover:underline">详情</button>
                     </td>
@@ -156,7 +176,7 @@ export default function EvaluationScope() {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-14 text-center text-sm text-gray-400">暂无数据</td>
+                    <td colSpan={8} className="px-4 py-14 text-center text-sm text-gray-400">暂无数据</td>
                   </tr>
                 )}
               </tbody>
@@ -179,6 +199,7 @@ export default function EvaluationScope() {
               <Info label="认定等级" value={detail.level} />
               <Info label="考试科目" value={detail.examSubjects} />
               <Info label="申报条件" value={detail.condition} />
+              <Info label="数据来源" value={detail.source || '集团评价范围'} />
             </div>
           )}
         </DialogContent>

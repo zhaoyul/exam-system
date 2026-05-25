@@ -122,12 +122,13 @@ export default function RegistrationOrgPage() {
 
   const handleResetPassword = async () => {
     if (!showReset) return
+    const defaultPassword = (showReset.loginName || showReset.orgCode || showReset.code || '123456').slice(-6)
     try {
       await apiRequest(`${API_BASE}/${showReset.id}/reset-password`, {
         method: 'POST',
-        body: JSON.stringify({ loginName: form.loginName, password: '123456' }),
+        body: JSON.stringify({ loginName: form.loginName, password: defaultPassword }),
       })
-      toast.success(`${showReset.name} 密码已重置为 123456`)
+      toast.success(`${showReset.name} 密码已重置为登录名后六位`)
       setShowReset(null)
     } catch {
       toast.error('重置密码失败')
@@ -314,7 +315,7 @@ export default function RegistrationOrgPage() {
               机构：<span className="font-medium text-gray-800">{showReset?.name}</span>
             </div>
             <div className="rounded bg-amber-50 px-3 py-2 text-amber-700">
-              密码将重置为默认密码：<span className="font-bold">123456</span>
+              密码将重置为默认密码：<span className="font-bold">登录名后六位</span>
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-3">

@@ -7,9 +7,21 @@ import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import {
-  Eye, Clock, CheckCircle, Calendar, AlertTriangle, Download, FileText, Search
+  Eye, Clock, CheckCircle, Calendar, AlertTriangle, Download, FileText, Search, History
 } from 'lucide-react'
 import { useBackendListState } from '@/hooks/useBackendListState'
+
+interface ScoreChangeLog {
+  id: string
+  candidateName: string
+  idCard: string
+  subject: string
+  before: number
+  after: number
+  reason: string
+  operator: string
+  time: string
+}
 
 interface PublicityBatch {
   id: number
@@ -23,12 +35,13 @@ interface PublicityBatch {
   appealCount: number
   passCount: number
   failCount: number
+  scoreChangeLogs: ScoreChangeLog[]
 }
 
 const mockBatches: PublicityBatch[] = [
-  { id: 1, planName: '大亚湾核电2026年第1批认定', profession: '核反应堆操作员', level: '三级', candidateCount: 45, publicityStart: '2026-04-20', publicityEnd: '2026-04-27', status: 'publicizing', appealCount: 0, passCount: 42, failCount: 3 },
-  { id: 2, planName: '阳江核电2026年第1批认定', profession: '电气维修工', level: '四级', candidateCount: 32, publicityStart: '2026-04-15', publicityEnd: '2026-04-22', status: 'done', appealCount: 1, passCount: 29, failCount: 3 },
-  { id: 3, planName: '台山核电2026年第2批认定', profession: '仪表维修工', level: '三级', candidateCount: 28, publicityStart: '2026-05-01', publicityEnd: '2026-05-08', status: 'pending', appealCount: 0, passCount: 0, failCount: 0 },
+  { id: 1, planName: '大亚湾核电2026年第1批认定', profession: '核反应堆操作员', level: '三级', candidateCount: 45, publicityStart: '2026-04-20', publicityEnd: '2026-04-27', status: 'publicizing', appealCount: 0, passCount: 42, failCount: 3, scoreChangeLogs: [{ id: 'log-1', candidateName: '张三', idCard: '440301199001011234', subject: '技能操作', before: 87, after: 88, reason: '复核评分表后修正录入误差', operator: '成绩管理员', time: '2026-04-22 09:18' }] },
+  { id: 2, planName: '阳江核电2026年第1批认定', profession: '电气维修工', level: '四级', candidateCount: 32, publicityStart: '2026-04-15', publicityEnd: '2026-04-22', status: 'done', appealCount: 1, passCount: 29, failCount: 3, scoreChangeLogs: [] },
+  { id: 3, planName: '台山核电2026年第2批认定', profession: '仪表维修工', level: '三级', candidateCount: 28, publicityStart: '2026-05-01', publicityEnd: '2026-05-08', status: 'pending', appealCount: 0, passCount: 0, failCount: 0, scoreChangeLogs: [] },
 ]
 
 const statusMap: Record<string, { label: string; color: string }> = {
@@ -44,6 +57,7 @@ export default function ScorePublicityManage() {
   const [statusFilter, setStatusFilter] = useState<'全部' | PublicityBatch['status']>('全部')
   const [selectedBatch, setSelectedBatch] = useState<PublicityBatch | null>(null)
   const [showAppeal, setShowAppeal] = useState<PublicityBatch | null>(null)
+  const [showLogs, setShowLogs] = useState<PublicityBatch | null>(null)
 
   const filtered = batches.filter(batch => {
     const bySearch = !search || batch.planName.includes(search) || batch.profession.includes(search)
@@ -64,9 +78,26 @@ export default function ScorePublicityManage() {
   }
 
   const handleResolveAppeal = (id: number) => {
-    setBatches(prev => prev.map(b => b.id === id ? { ...b, appealCount: 0 } : b))
+    setBatches(prev => prev.map(b => b.id === id ? {
+      ...b,
+      appealCount: 0,
+      scoreChangeLogs: [
+        ...b.scoreChangeLogs,
+        {
+          id: `log-${Date.now()}`,
+          candidateName: '李四',
+          idCard: '440301199002011234',
+          subject: '技能操作',
+          before: 76,
+          after: 78,
+          reason: '公示申诉复核后按原始评分表修正',
+          operator: '成绩管理员',
+          time: new Date().toISOString().slice(0, 16).replace('T', ' '),
+        },
+      ],
+    } : b))
     setShowAppeal(null)
-    toast.success('申诉已处理')
+    toast.success('申诉已处理，成绩修改记录已留痕')
   }
 
   return (
@@ -215,6 +246,9 @@ export default function ScorePublicityManage() {
                     <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => toast.success('公示表已导出')}>
                       <FileText className="w-3 h-3 mr-1" /> 公示表
                     </Button>
+                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setShowLogs(b)}>
+                      <History className="w-3 h-3 mr-1" /> 留痕
+                    </Button>
                     {b.appealCount > 0 && (
                       <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-red-600" onClick={() => setShowAppeal(b)}>
                         处理申诉
@@ -258,6 +292,29 @@ export default function ScorePublicityManage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!showLogs} onOpenChange={() => setShowLogs(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader><DialogTitle>成绩修改留痕 - {showLogs?.planName}</DialogTitle></DialogHeader>
+          <div className="space-y-3 text-sm">
+            {(showLogs?.scoreChangeLogs.length || 0) > 0 ? showLogs?.scoreChangeLogs.map(log => (
+              <div key={log.id} className="rounded-lg border border-gray-200 p-3">
+                <div className="flex items-center justify-between">
+                  <div className="font-medium text-gray-900">{log.candidateName} · {log.subject}</div>
+                  <div className="text-xs text-gray-500">{log.time}</div>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-gray-600">
+                  <span>证件号码：{log.idCard}</span>
+                  <span>操作人：{log.operator}</span>
+                  <span>修改前：{log.before}</span>
+                  <span>修改后：{log.after}</span>
+                </div>
+                <div className="mt-2 rounded-md bg-gray-50 px-3 py-2 text-gray-600">修改原因：{log.reason}</div>
+              </div>
+            )) : <div className="rounded-lg border border-gray-200 py-10 text-center text-gray-400">暂无成绩修改记录</div>}
           </div>
         </DialogContent>
       </Dialog>

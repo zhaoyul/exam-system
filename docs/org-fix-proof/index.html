@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>认定机构账号与评价范围修复证明</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif; background: #f5f7fb; color: #182230; }
+.hero { background: #0f4c81; color: #fff; padding: 32px; }
+.hero h1 { margin: 0 0 8px; font-size: 28px; }
+.hero p { margin: 0; color: #dbeafe; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 24px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 18px; }
+.card, .proof { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; }
+.card strong { display: block; font-size: 13px; color: #667085; margin-bottom: 4px; }
+.card span, code { overflow-wrap: anywhere; }
+.notice { background: #ecfdf3; border: 1px solid #abefc6; color: #067647; border-radius: 8px; padding: 14px 16px; margin-bottom: 18px; }
+.proof { margin-bottom: 18px; }
+.proof h2 { margin: 0 0 10px; font-size: 18px; }
+.proof img { width: 100%; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; }
+.fixes { display: grid; gap: 8px; margin-bottom: 18px; }
+.fixes div { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 14px; }
+</style>
+</head>
+<body>
+<section class="hero">
+  <h1>认定机构账号与评价范围修复证明</h1>
+  <p>新增机构自动创建登录账号、非内置账号可登录、评价范围显示新增分支机构</p>
+</section>
+<main class="wrap">
+  <div class="notice">本证明基于公网环境 http://106.12.6.24:29527 生成，已通过真实 API 创建新机构并使用新账号完成登录。</div>
+  <section class="grid">
+    <div class="card"><strong>生成时间</strong><span>2026/5/26 15:11:43</span></div>
+    <div class="card"><strong>证明机构</strong><span>修复证明机构071139</span></div>
+    <div class="card"><strong>登录账号</strong><code>fixorg071139</code></div>
+    <div class="card"><strong>登录密码</strong><code>Fix@071139</code></div>
+    <div class="card"><strong>创建接口</strong><code>POST /api/certification/organizations</code></div>
+    <div class="card"><strong>登录验证</strong><code>POST /api/auth/login → 200 / branch_admin</code></div>
+  </section>
+  <section class="fixes">
+    <div>修复 1：管理员新增认定机构时，后端同步创建或更新该机构的机构管理员账号。</div>
+    <div>修复 2：新建账号使用新增表单中填写的密码；历史已存在机构若只有登录名无账号，读取机构列表/详情时自动补账号，默认密码为登录名后六位。</div>
+    <div>修复 3：评价范围机构目录改为读取认定机构列表，新分支机构会出现在目录中，并可基于集团评价范围批量授权。</div>
+  </section>
+  <section class="proof"><h2>1. 新增认定机构后列表出现新分支机构</h2><img src="01-organization-list-new-branch.png" alt="新增认定机构后列表出现新分支机构"></section>
+<section class="proof"><h2>2. 机构详情显示注册登录名和已添加用户</h2><img src="02-organization-detail-user-created.png" alt="机构详情显示注册登录名和已添加用户"></section>
+<section class="proof"><h2>3. 评价范围机构目录出现新分支机构，可进入授权职业范围</h2><img src="03-evaluation-scope-shows-branch.png" alt="评价范围机构目录出现新分支机构，可进入授权职业范围"></section>
+<section class="proof"><h2>4. 新创建账号通过真实登录流程进入分支机构工作台</h2><img src="04-new-account-login-success.png" alt="新创建账号通过真实登录流程进入分支机构工作台"></section>
+</main>
+</body>
+</html>

@@ -11,6 +11,13 @@ interface ScopeOrg {
   certCount: number
 }
 
+interface BackendOrganization {
+  id: string
+  name: string
+  orgType?: string | null
+  scopes?: string[]
+}
+
 interface EvalProject {
   id: string
   orgId: string
@@ -46,10 +53,10 @@ const initialProjects: EvalProject[] = [
 ]
 
 export default function EvaluationScope() {
-  const backendOrgs = useBackendResourceList<ScopeOrg>('/filing/group', initialOrgs)
-  const orgs = useMemo(() => appendOrgs(initialOrgs, backendOrgs), [backendOrgs])
+  const backendOrganizations = useBackendResourceList<BackendOrganization>('/certification/organizations', [])
   const [backendProjects, setProjects] = useBackendResourceState<EvalProject>('/standard/evaluation-scope', initialProjects)
   const projects = useMemo(() => appendProjects(initialProjects, backendProjects), [backendProjects])
+  const orgs = useMemo(() => appendOrgs(initialOrgs, backendOrganizations, projects), [backendOrganizations, projects])
   const [selectedOrg, setSelectedOrg] = useState('org0')
   const [keyword, setKeyword] = useState('')
   const [detail, setDetail] = useState<EvalProject | null>(null)
@@ -58,10 +65,22 @@ export default function EvaluationScope() {
   const [form, setForm] = useState({ professionName: '', jobTypeName: '', level: '四级', examSubjects: '理论+技能', condition: '' })
 
   const selectedOrgData = orgs.find(org => org.id === selectedOrg) || orgs[0]
-  const filtered = useMemo(() => projects.filter(item => (
-    item.orgId === selectedOrg
-    && (!keyword || item.professionName.includes(keyword) || item.jobTypeName.includes(keyword))
-  )), [keyword, projects, selectedOrg])
+  const filtered = useMemo(() => {
+    const direct = projects.filter(item => item.orgId === selectedOrg)
+    const groupProjects = projects.filter(item => item.orgId === 'org0' || item.orgId === 'org-cgn')
+    const selectedProjects = direct.length || selectedOrg === 'org0' || selectedOrg === 'org-cgn'
+      ? direct
+      : groupProjects.map(item => ({
+        ...item,
+        id: `${selectedOrg}-${item.id}`,
+        orgId: selectedOrg,
+        authorized: false,
+        source: '集团评价范围待授权',
+      }))
+    return selectedProjects.filter(item => (
+      !keyword || item.professionName.includes(keyword) || item.jobTypeName.includes(keyword)
+    ))
+  }, [keyword, projects, selectedOrg])
 
   const saveProject = () => {
     if (!form.professionName) return
@@ -83,7 +102,16 @@ export default function EvaluationScope() {
 
   const batchAuthorize = () => {
     const targets = selectedIds.length ? selectedIds : filtered.map(item => item.id)
-    setProjects(prev => prev.map(item => targets.includes(item.id) ? { ...item, authorized: true, source: '集团批量授权' } : item))
+    setProjects(prev => {
+      const existing = new Set(prev.map(item => item.id))
+      const virtualItems = filtered
+        .filter(item => targets.includes(item.id) && !existing.has(item.id))
+        .map(item => ({ ...item, authorized: true, source: '集团批量授权' }))
+      return [
+        ...virtualItems,
+        ...prev.map(item => targets.includes(item.id) ? { ...item, authorized: true, source: '集团批量授权' } : item),
+      ]
+    })
     setSelectedIds([])
     toast.success(`已授权 ${targets.length} 个职业等级，分支备案认定项目将从授权范围带入`)
   }
@@ -243,10 +271,20 @@ function Info({ label, value }: { label: string; value: string }) {
   return <div className="rounded-md border border-gray-100 px-3 py-2"><span className="text-gray-500">{label}：</span><span className="font-medium text-gray-900">{value}</span></div>
 }
 
-function appendOrgs(base: ScopeOrg[], incoming: ScopeOrg[]) {
+function appendOrgs(base: ScopeOrg[], incoming: BackendOrganization[], projects: EvalProject[]) {
   const knownIds = new Set(base.map(item => item.id))
   const knownNames = new Set(base.map(item => item.name))
-  const extras = incoming.filter(item => item.id && item.name && !knownIds.has(item.id) && !knownNames.has(item.name))
+  const countByOrg = new Map<string, number>()
+  projects.forEach(item => {
+    countByOrg.set(item.orgId, (countByOrg.get(item.orgId) || 0) + 1)
+  })
+  const extras = incoming
+    .filter(item => item.id && item.name && !knownIds.has(item.id) && !knownNames.has(item.name))
+    .map(item => ({
+      id: item.id,
+      name: item.name,
+      certCount: countByOrg.get(item.id) || item.scopes?.length || 0,
+    }))
   return [...base, ...extras]
 }
 

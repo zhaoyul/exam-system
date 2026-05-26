@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { useBackendResourceState } from '@/hooks/useBackendListState'
+import { apiRequest } from '@/lib/api'
 
 interface OrgUnit {
   id: string
@@ -52,6 +53,10 @@ interface BackendOrganization {
   fax?: string | null
   postcode?: string | null
   loginName?: string | null
+  registerMobile?: string | null
+  password?: string | null
+  users?: OrgUser[]
+  scopes?: string[]
 }
 
 interface TreeNode {
@@ -184,6 +189,8 @@ function mapStatus(status?: string | null): OrgUnit['status'] {
 
 function mapBackendOrganization(item: BackendOrganization): OrgUnit {
   const extras = extraOrgData[item.name] || { scopes: [], users: [] }
+  const users = item.users?.length ? item.users : extras.users
+  const scopes = item.scopes?.length ? item.scopes : extras.scopes
   return {
     id: item.id,
     name: item.name,
@@ -200,9 +207,9 @@ function mapBackendOrganization(item: BackendOrganization): OrgUnit {
     fax: item.fax || '',
     postcode: item.postcode || '',
     loginName: item.loginName || '',
-    registerMobile: item.mobile || '',
-    scopes: extras.scopes,
-    users: extras.users,
+    registerMobile: item.registerMobile || item.mobile || item.contactPhone || '',
+    scopes,
+    users,
   }
 }
 
@@ -288,7 +295,7 @@ export default function Organizations() {
       orgType: String(fd.get('type') || 'branch'),
       name,
       creditCode,
-      status: 'pending',
+      status: 'active',
       contactName: String(fd.get('contact') || ''),
       contactPhone: String(fd.get('phone') || ''),
       mobile: String(fd.get('mobile') || ''),
@@ -298,6 +305,13 @@ export default function Organizations() {
       fax: String(fd.get('fax') || ''),
       postcode: String(fd.get('postcode') || ''),
       loginName: String(fd.get('loginName') || ''),
+      registerMobile: String(fd.get('registerMobile') || ''),
+      password: String(fd.get('password') || ''),
+      users: [{
+        id: `pending-user-${Date.now()}`,
+        loginName: String(fd.get('loginName') || ''),
+        phone: String(fd.get('registerMobile') || fd.get('mobile') || fd.get('phone') || ''),
+      }],
     }
     setOrganizations(prev => [newOrg, ...prev])
     setAddOpen(false)
@@ -338,7 +352,7 @@ export default function Organizations() {
     toast.success('机构状态已更新')
   }
 
-  const handleAddUser = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleAddUser = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!userItem) return
     const fd = new FormData(event.currentTarget)
@@ -349,10 +363,30 @@ export default function Organizations() {
       toast.error('请填写登录名、密码和联系电话')
       return
     }
-    const nextUser: OrgUser = { id: String(Date.now()), loginName, phone }
-    setViewItem(prev => prev && prev.id === userItem.id ? { ...prev, users: [...prev.users, nextUser] } : prev)
-    setUserItem(null)
-    toast.success(`已为 ${userItem.name} 新增用户：${loginName}`)
+    try {
+      const created = await apiRequest<{ id: string; username: string; phone?: string }>('/system/users', {
+        method: 'POST',
+        body: JSON.stringify({
+          username: loginName,
+          password,
+          name: `${userItem.name}管理员`,
+          phone,
+          orgId: userItem.id,
+          role: 'branch_admin',
+        }),
+      })
+      const nextUser: OrgUser = { id: created.id || String(Date.now()), loginName: created.username || loginName, phone: created.phone || phone }
+      setViewItem(prev => prev && prev.id === userItem.id ? { ...prev, users: [...prev.users, nextUser] } : prev)
+      setOrganizations(prev => prev.map(item => (
+        item.id === userItem.id
+          ? { ...item, users: [...(item.users || []), nextUser] }
+          : item
+      )))
+      setUserItem(null)
+      toast.success(`已为 ${userItem.name} 新增用户：${loginName}`)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '新增用户失败')
+    }
   }
 
   const statusClass: Record<OrgUnit['status'], string> = {

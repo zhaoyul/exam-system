@@ -78,11 +78,22 @@
                               {:name "接口测试机构"
                                :orgType "branch"
                                :creditCode "API-CREDIT-001"
-                               :contactName "测试联系人"}
+                               :contactName "测试联系人"
+                               :loginName "api-org-admin"
+                               :password "api-pass-001"
+                               :registerMobile "13900000001"}
                               headers)
         created (json/parse-string (:body create-response) true)
-        id (:id created)]
+        id (:id created)
+        login-response (POST handler
+                             "/api/auth/login"
+                             {:username "api-org-admin"
+                              :password "api-pass-001"}
+                             headers)
+        detail (json/parse-string (:body (GET handler (str "/api/certification/organizations/" id) {} headers)) true)]
     (is (= 201 (:status create-response)))
+    (is (= 200 (:status login-response)))
+    (is (= "api-org-admin" (get-in detail [:users 0 :loginName])))
     (is (= 200 (:status (GET handler (str "/api/certification/organizations/" id) {} headers))))
     (is (= 200 (:status (PUT handler (str "/api/certification/organizations/" id) {:email "api@example.com"} headers))))
     (is (= 204 (:status (DELETE handler (str "/api/certification/organizations/" id) headers))))

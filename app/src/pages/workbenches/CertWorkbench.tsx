@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -10,6 +10,21 @@ import {
   Building2, Award, ArrowRight, Calendar, FileCheck
 } from 'lucide-react'
 import { useBackendListState } from '@/hooks/useBackendListState'
+import { apiRequest } from '@/lib/api'
+
+interface WorkbenchItem {
+  id: string
+  title: string
+  module: string
+  status: string
+  updatedAt?: string
+}
+
+interface WorkbenchSummary {
+  stats: Array<{ label: string; value: number; unit: string }>
+  todos: WorkbenchItem[]
+  done: WorkbenchItem[]
+}
 
 const stats = [
   { label: '本年度认定计划', value: 24, unit: '个', icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -61,6 +76,31 @@ export default function CertWorkbench() {
   const [backendTodos] = useBackendListState(todos)
   const [backendMonthlyData] = useBackendListState(monthlyData)
   const [activeTab, setActiveTab] = useState('overview')
+  const [summary, setSummary] = useState<WorkbenchSummary | null>(null)
+
+  useEffect(() => {
+    apiRequest<WorkbenchSummary>('/certification/biz/workbench')
+      .then(setSummary)
+      .catch(() => undefined)
+  }, [])
+
+  const statCards = summary?.stats?.length
+    ? summary.stats.map((item, index) => ({
+        ...backendStats[index % backendStats.length],
+        label: item.label,
+        value: item.value,
+        unit: item.unit,
+      }))
+    : backendStats
+  const todoRows = summary?.todos?.length
+    ? summary.todos.map((item, index) => ({
+        id: item.id || index,
+        title: item.title,
+        type: item.module,
+        urgency: index < 2 ? 'high' : 'medium',
+        time: item.updatedAt?.slice(0, 10) || item.status,
+      }))
+    : backendTodos
 
   return (
     <div className="p-6 space-y-6">
@@ -80,7 +120,7 @@ export default function CertWorkbench() {
       </div>
 
       <div className="grid grid-cols-4 gap-4">
-        {backendStats.map((s, i) => (
+        {statCards.map((s, i) => (
           <Card key={i} className="border-0 shadow-sm">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -156,7 +196,7 @@ export default function CertWorkbench() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {backendTodos.map(t => (
+            {todoRows.map(t => (
               <div key={t.id} className="flex items-start gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
                 <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">

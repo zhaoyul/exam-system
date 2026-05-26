@@ -50,6 +50,7 @@
                        :app-key #or [#env MDM_APP_KEY ""]
                        :org-endpoint #or [#env MDM_ORG_ENDPOINT "/organizations"]
                        :person-endpoint #or [#env MDM_PERSON_ENDPOINT "/persons"]}}
+  :files {:upload-dir #or [#env FILE_UPLOAD_DIR "./data/uploads"]}
   :cors {:allowed-origins #or [#env CORS_ALLOWED_ORIGINS "*"]}}
 
  :zhaoyul.exam-system-backend.infra.datasource/datasource

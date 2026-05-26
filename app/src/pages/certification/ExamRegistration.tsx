@@ -17,11 +17,13 @@ import {
   Check, X, FileArchive, ArrowRight, MoreHorizontal
 } from 'lucide-react'
 import { useBackendResourceList, useBackendResourceState } from '@/hooks/useBackendListState'
+import { apiRequest } from '@/lib/api'
+import { downloadTextEndpoint } from '@/lib/download'
 
 // ─── Types ───
 
 interface RegistrationPlan {
-  id: number
+  id: string | number
   planNo: string
   planName: string
   examMonth: string
@@ -32,7 +34,7 @@ interface RegistrationPlan {
 }
 
 interface RegBatch {
-  id: number
+  id: string | number
   name: string
   orgName: string
   candidateCount: number
@@ -41,7 +43,7 @@ interface RegBatch {
 }
 
 interface Candidate {
-  id: number
+  id: string | number
   name: string
   gender: string
   idCard: string
@@ -62,7 +64,7 @@ interface Candidate {
   level: string
   type: 'normal' | 'makeup'
   orgName: string
-  batchId: number
+  batchId: string | number
   conditionNo: string
   photo: boolean
   materials: boolean
@@ -138,10 +140,10 @@ export default function ExamRegistration() {
   const [orgs] = useState<RegistrationOrg[]>(mockOrgs)
 
   // Navigation state
-  const [selectedPlan, setSelectedPlan] = useState<number | null>(null)
+  const [selectedPlan, setSelectedPlan] = useState<string | number | null>(null)
   const [registrationMode, setRegistrationMode] = useState<RegistrationMode>(null)
   const [activeTab, setActiveTab] = useState('todo')
-  const [moreMenuOpen, setMoreMenuOpen] = useState<number | null>(null)
+  const [moreMenuOpen, setMoreMenuOpen] = useState<string | number | null>(null)
 
   // Single registration wizard state
   const [singleStep, setSingleStep] = useState(1)
@@ -160,7 +162,7 @@ export default function ExamRegistration() {
   const [newBatchName, setNewBatchName] = useState('')
   const [selectedProfession, setSelectedProfession] = useState('核反应堆操作员')
   const [selectedLevel, setSelectedLevel] = useState('三级')
-  const [selectedBatchId, setSelectedBatchId] = useState<number>(1)
+  const [selectedBatchId, setSelectedBatchId] = useState<string | number>(1)
   const [importMode, setImportMode] = useState<'clear' | 'cover' | 'ignore'>('cover')
   const [importFile, setImportFile] = useState<File | null>(null)
   const [photoZipFile, setPhotoZipFile] = useState<File | null>(null)
@@ -170,7 +172,7 @@ export default function ExamRegistration() {
 
   // Shared batch ops
   const [photoFilter, setPhotoFilter] = useState<'全部' | '有照片' | '无照片'>('全部')
-  const [selectedBatch, setSelectedBatch] = useState<number>(1)
+  const [selectedBatch, setSelectedBatch] = useState<string | number>(1)
   const [candidateDetail, setCandidateDetail] = useState<Candidate | null>(null)
   const [registrationWindowMode, setRegistrationWindowMode] = useState<'window' | 'online'>('window')
   const [checkMultiCert, setCheckMultiCert] = useState(false)
@@ -188,7 +190,7 @@ export default function ExamRegistration() {
 
   // ─── Handlers: Plan List ───
 
-  const handleEnterRegistration = (planId: number, mode: RegistrationMode) => {
+  const handleEnterRegistration = (planId: string | number, mode: RegistrationMode) => {
     setSelectedPlan(planId)
     setRegistrationMode(mode)
     setMoreMenuOpen(null)
@@ -291,13 +293,13 @@ export default function ExamRegistration() {
     handleBatchStepNext()
   }
 
-  const handleDeleteCandidate = (id: number) => {
+  const handleDeleteCandidate = (id: string | number) => {
     setCandidates(prev => prev.filter(c => c.id !== id))
     setBatches(prev => prev.map(b => b.id === selectedBatch ? { ...b, candidateCount: Math.max(0, b.candidateCount - 1) } : b))
     toast.success('已删除考生')
   }
 
-  const handleCancelRegistration = (id: number) => {
+  const handleCancelRegistration = (id: string | number) => {
     setCandidates(prev => prev.filter(c => c.id !== id))
     setBatches(prev => prev.map(b => b.id === selectedBatch ? { ...b, candidateCount: Math.max(0, b.candidateCount - 1) } : b))
     toast.success('已取消报名')
@@ -330,7 +332,16 @@ export default function ExamRegistration() {
     toast.success('照片识别完成')
   }
 
-  const handlePhotoImportUpload = () => {
+  const handlePhotoImportUpload = async () => {
+    if (selectedPlan) {
+      await apiRequest(`/certification/exam-registration/${encodeURIComponent(String(selectedPlan))}/photos`, {
+        method: 'POST',
+        body: JSON.stringify({
+          batchId: selectedBatch,
+          candidateIds: candidates.filter(c => c.batchId === selectedBatch).map(c => c.id),
+        }),
+      }).catch(() => undefined)
+    }
     setCandidates(prev => prev.map(c => c.batchId === selectedBatch ? { ...c, photo: true } : c))
     setPhotoDialogOpen(false)
     setPhotoRecognized(false)
@@ -338,7 +349,19 @@ export default function ExamRegistration() {
     toast.success('照片批量导入完成')
   }
 
-  const handleExcelImportConfirm = () => {
+  const handleExcelImportConfirm = async () => {
+    if (selectedPlan && importFile) {
+      const content = await importFile.text()
+      const result = await apiRequest<{ imported: number; skipped: number; failed: number }>(`/certification/exam-registration/${encodeURIComponent(String(selectedPlan))}/import`, {
+        method: 'POST',
+        body: JSON.stringify({ batchId: selectedBatchId, mode: importMode, content }),
+      })
+      setImportDialogOpen(false)
+      setImportFile(null)
+      toast.success(`已导入 ${result.imported} 名考生，忽略 ${result.skipped} 条，失败 ${result.failed} 条`)
+      handleBatchStepNext()
+      return
+    }
     const newId = Date.now()
     const importedCandidates: Candidate[] = [
       { id: newId, name: '批量考生A', gender: '男', idCard: '440301199010101111', phone: '13800138010', email: 'batcha@cgnc.com', birthDate: '1990-10-10', ethnicity: '汉族', politicalStatus: '群众', education: '本科', graduationSchool: '哈尔滨工程大学', major: '核工程', graduationDate: '2013-06', workUnit: '大亚湾核电', department: '运行一部', position: '操作员', workYears: 7, profession: selectedProfession, level: selectedLevel, type: 'normal', orgName: orgs.find(o => o.id === selectedOrgId)?.name || '', batchId: selectedBatchId, conditionNo: '1', photo: false, materials: false },
@@ -812,7 +835,7 @@ export default function ExamRegistration() {
               <p className="text-sm text-gray-500">下载模板并按格式填写后上传导入</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button variant="outline" size="sm" onClick={() => toast.success('导入模板已下载')}>
+              <Button variant="outline" size="sm" onClick={() => downloadTextEndpoint('/certification/exam-registration/import-template', '考生导入模板.csv')}>
                 <Download className="w-4 h-4 mr-2" /> 导入模板下载
               </Button>
 
@@ -841,11 +864,11 @@ export default function ExamRegistration() {
 
               <label className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer block">
                 <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-                <p className="text-sm text-gray-600">点击或拖拽Excel文件到此处上传</p>
-                <p className="text-xs text-gray-400 mt-1">支持 .xlsx, .xls 格式</p>
+                <p className="text-sm text-gray-600">点击或拖拽CSV文件到此处上传</p>
+                <p className="text-xs text-gray-400 mt-1">支持标准模板 .csv 格式</p>
                 <input
                   type="file"
-                  accept=".xlsx,.xls"
+                  accept=".csv,text/csv"
                   className="hidden"
                   onChange={e => {
                     const file = e.target.files?.[0]
@@ -1118,7 +1141,7 @@ export default function ExamRegistration() {
                   <Button variant="outline" size="sm" className="text-xs h-8" onClick={() => toast.success('报名报表已导出')}>
                     <FileSpreadsheet className="w-3 h-3 mr-1" /> 报名报表
                   </Button>
-                  <Button variant="outline" size="sm" className="text-xs h-8" onClick={() => toast.success('导入模板已下载')}>
+                  <Button variant="outline" size="sm" className="text-xs h-8" onClick={() => downloadTextEndpoint('/certification/exam-registration/import-template', '考生导入模板.csv')}>
                     <Download className="w-3 h-3 mr-1" /> 下载模板
                   </Button>
                 </div>
@@ -1434,7 +1457,7 @@ export default function ExamRegistration() {
         <DialogContent>
           <DialogHeader><DialogTitle>批量导入考生</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <Button variant="outline" size="sm" onClick={() => toast.success('导入模板已下载')}>
+            <Button variant="outline" size="sm" onClick={() => downloadTextEndpoint('/certification/exam-registration/import-template', '考生导入模板.csv')}>
               <Download className="w-4 h-4 mr-2" /> 导入模板下载
             </Button>
             <div className="grid grid-cols-3 gap-2">
@@ -1456,9 +1479,9 @@ export default function ExamRegistration() {
             </div>
             <label className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer block">
               <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-              <p className="text-sm text-gray-600">点击或拖拽Excel文件到此处上传</p>
-              <p className="text-xs text-gray-400 mt-1">支持 .xlsx, .xls 格式</p>
-              <input type="file" accept=".xlsx,.xls" className="hidden" onChange={e => {
+              <p className="text-sm text-gray-600">点击或拖拽CSV文件到此处上传</p>
+              <p className="text-xs text-gray-400 mt-1">支持标准模板 .csv 格式</p>
+              <input type="file" accept=".csv,text/csv" className="hidden" onChange={e => {
                 const f = e.target.files?.[0]
                 if (f) { setImportFile(f); toast.success(`已选择：${f.name}`) }
               }} />

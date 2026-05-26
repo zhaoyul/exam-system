@@ -68,3 +68,6 @@
   (let [candidate-id (get-in request [:path-params :candidate-id])]
     (response/ok {:candidateId candidate-id
                   :items (trace/get-candidate-audit-logs datasource candidate-id)})))
+
+(defn list-audit-events [{:keys [datasource]} request]
+  (response/ok (trace/list-audit-events datasource (:query-params request))))

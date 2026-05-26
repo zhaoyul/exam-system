@@ -1,15 +1,30 @@
 import { useState } from 'react'
 import { Plus, Search, Edit, MoreHorizontal, Lock, Unlock, Key, Shield, ChevronRight, Trash2, X } from 'lucide-react'
 import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
+import { apiRequest } from '@/lib/api'
 
 interface User {
   id: string
   name: string
+  displayName?: string
   username: string
   phone: string
   org: string
+  orgId?: string
   role: string
+  roleLabel?: string
   status: 'active' | 'locked'
+  permissions?: { module: string; permissionType: string }[]
+}
+
+interface MdmPerson {
+  id: string
+  employeeNo: string
+  name: string
+  phone?: string
+  orgId?: string
+  orgName?: string
+  position?: string
 }
 
 const orgTree = [
@@ -41,6 +56,9 @@ export default function UsersPage() {
   const [showAuth, setShowAuth] = useState<User | null>(null)
   const [showReset, setShowReset] = useState<User | null>(null)
   const [showDelete, setShowDelete] = useState<string | null>(null)
+  const [showMdm, setShowMdm] = useState(false)
+  const [mdmPersons, setMdmPersons] = useState<MdmPerson[]>([])
+  const [mdmLoading, setMdmLoading] = useState(false)
   const [addForm, setAddForm] = useState({ name: '', username: '', password: '', phone: '', org: '大亚湾核电', role: '管理员' })
   const [editForm, setEditForm] = useState<Partial<User>>({})
   const [resetPwd, setResetPwd] = useState('')
@@ -50,9 +68,37 @@ export default function UsersPage() {
   const orgs = ['大亚湾核电', '阳江核电', '台山核电', '宁德核电', '红沿河核电', '防城港核电']
 
   const filtered = users.filter(u => {
-    if (search && !u.name.includes(search) && !u.username.includes(search) && !u.phone.includes(search)) return false
+    const name = u.name || u.displayName || ''
+    if (search && !name.includes(search) && !u.username.includes(search) && !(u.phone || '').includes(search)) return false
     return true
   })
+
+  const roleName = (user: User) => user.roleLabel || user.role
+  const userName = (user: User) => user.name || user.displayName || user.username
+
+  const loadMdmPersons = () => {
+    setShowMdm(true)
+    setMdmLoading(true)
+    apiRequest<{ items: MdmPerson[] }>('/system/users/mdm-persons')
+      .then(data => setMdmPersons(data.items || []))
+      .catch(() => setMdmPersons([]))
+      .finally(() => setMdmLoading(false))
+  }
+
+  const openFromMdm = (person: MdmPerson) => {
+    apiRequest<User>('/system/users', {
+      method: 'POST',
+      body: JSON.stringify({
+        mdmPersonId: person.id,
+        role: person.position?.includes('督导') ? '督导人员' : person.position?.includes('考务') ? '考务人员' : '机构管理员',
+      }),
+    })
+      .then(created => {
+        setUsers(prev => [created, ...prev.filter(u => u.id !== created.id)])
+        setShowMdm(false)
+      })
+      .catch(() => undefined)
+  }
 
   const doAdd = () => {
     const newUser: User = {
@@ -76,19 +122,32 @@ export default function UsersPage() {
   }
 
   const toggleStatus = (id: string) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, status: u.status === 'active' ? 'locked' : 'active' } : u))
+    const current = users.find(u => u.id === id)
+    const action = current?.status === 'active' ? 'lock' : 'unlock'
+    void apiRequest<User>(`/system/users/${encodeURIComponent(id)}/${action}`, { method: 'POST' })
+      .then(updated => setUsers(prev => prev.map(u => u.id === id ? updated : u)))
+      .catch(() => setUsers(prev => prev.map(u => u.id === id ? { ...u, status: u.status === 'active' ? 'locked' : 'active' } : u)))
     setMenuOpen(null)
   }
 
   const doResetPwd = () => {
     if (!showReset) return
-    setUsers(prev => prev.map(u => u.id === showReset.id ? u : u))
+    void apiRequest<User>(`/system/users/${encodeURIComponent(showReset.id)}/reset-password`, {
+      method: 'POST',
+      body: JSON.stringify({ password: resetPwd }),
+    }).catch(() => undefined)
     setShowReset(null)
     setResetPwd('')
   }
 
   const doAuth = () => {
     if (!showAuth) return
+    void apiRequest<User>(`/system/users/${encodeURIComponent(showAuth.id)}/authorize`, {
+      method: 'POST',
+      body: JSON.stringify({ modules: authRoles, permissionType: 'all' }),
+    })
+      .then(updated => setUsers(prev => prev.map(u => u.id === showAuth.id ? updated : u)))
+      .catch(() => undefined)
     setShowAuth(null)
     setAuthRoles([])
   }
@@ -129,9 +188,14 @@ export default function UsersPage() {
               <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="搜索姓名/账号/手机号..."
                 className="h-9 pl-9 pr-4 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-[#1A56DB] w-60" />
             </div>
-            <button onClick={() => setShowAdd(true)} className="h-9 px-4 bg-[#1A56DB] text-white rounded-md text-sm flex items-center gap-1.5 hover:bg-[#1748B5] transition-colors">
-              <Plus className="w-4 h-4" /> 添加用户
-            </button>
+            <div className="flex items-center gap-2">
+              <button onClick={loadMdmPersons} className="h-9 px-4 border border-[#1A56DB] text-[#1A56DB] rounded-md text-sm flex items-center gap-1.5 hover:bg-[#EFF6FF] transition-colors">
+                <Shield className="w-4 h-4" /> MDM开通
+              </button>
+              <button onClick={() => setShowAdd(true)} className="h-9 px-4 bg-[#1A56DB] text-white rounded-md text-sm flex items-center gap-1.5 hover:bg-[#1748B5] transition-colors">
+                <Plus className="w-4 h-4" /> 添加用户
+              </button>
+            </div>
           </div>
           <div className="flex-1 bg-white rounded-lg border border-gray-200 overflow-auto">
             <table className="w-full text-sm">
@@ -149,11 +213,11 @@ export default function UsersPage() {
               <tbody className="divide-y divide-gray-100">
                 {filtered.map(user => (
                   <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-900">{user.name}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900">{userName(user)}</td>
                     <td className="px-4 py-3 text-gray-600">{user.username}</td>
                     <td className="px-4 py-3 text-gray-600">{user.phone}</td>
                     <td className="px-4 py-3 text-gray-600">{user.org}</td>
-                    <td className="px-4 py-3 text-gray-600">{user.role}</td>
+                    <td className="px-4 py-3 text-gray-600">{roleName(user)}</td>
                     <td className="px-4 py-3">
                       <span onClick={() => toggleStatus(user.id)} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium cursor-pointer ${user.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'}`}>
                         {user.status === 'active' ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}{user.status === 'active' ? '正常' : '已锁定'}
@@ -167,7 +231,7 @@ export default function UsersPage() {
                           <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                             <button onClick={() => { setShowReset(user); setMenuOpen(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"><Key className="w-3.5 h-3.5" /> 重置密码</button>
                             <button onClick={() => toggleStatus(user.id)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">{user.status === 'active' ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}{user.status === 'active' ? '锁定账户' : '解锁账户'}</button>
-                            <button onClick={() => { setShowAuth(user); setAuthRoles([]); setMenuOpen(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"><Shield className="w-3.5 h-3.5" /> 功能授权</button>
+                            <button onClick={() => { setShowAuth(user); setAuthRoles((user.permissions || []).map(p => p.module)); setMenuOpen(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"><Shield className="w-3.5 h-3.5" /> 功能授权</button>
                             <button onClick={() => { setShowDelete(user.id); setMenuOpen(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"><Trash2 className="w-3.5 h-3.5" /> 删除</button>
                           </div>
                         )}
@@ -181,6 +245,51 @@ export default function UsersPage() {
           </div>
         </div>
       </div>
+
+      {/* MDM Candidate Modal */}
+      {showMdm && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setShowMdm(false)}>
+          <div className="bg-white rounded-lg shadow-xl w-[760px] max-h-[82vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">从 MDM 人员开通账户</h3>
+                <p className="text-xs text-gray-500 mt-1">用户名使用员工工号，姓名、手机号、所属机构来自 MDM 同步数据。</p>
+              </div>
+              <button onClick={() => setShowMdm(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="max-h-[58vh] overflow-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-[#F9FAFB] text-gray-600 font-medium sticky top-0">
+                  <tr>
+                    <th className="px-4 py-3 text-left">工号</th>
+                    <th className="px-4 py-3 text-left">姓名</th>
+                    <th className="px-4 py-3 text-left">手机号</th>
+                    <th className="px-4 py-3 text-left">所属机构</th>
+                    <th className="px-4 py-3 text-left">岗位</th>
+                    <th className="px-4 py-3 text-left">操作</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {mdmPersons.map(person => (
+                    <tr key={person.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 font-medium text-gray-900">{person.employeeNo}</td>
+                      <td className="px-4 py-3 text-gray-700">{person.name}</td>
+                      <td className="px-4 py-3 text-gray-600">{person.phone}</td>
+                      <td className="px-4 py-3 text-gray-600">{person.orgName}</td>
+                      <td className="px-4 py-3 text-gray-600">{person.position}</td>
+                      <td className="px-4 py-3">
+                        <button onClick={() => openFromMdm(person)} className="h-8 px-3 bg-[#1A56DB] text-white rounded-md text-xs hover:bg-[#1748B5]">开通</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {mdmLoading && <div className="py-10 text-center text-gray-400 text-sm">正在读取 MDM 人员...</div>}
+              {!mdmLoading && mdmPersons.length === 0 && <div className="py-10 text-center text-gray-400 text-sm">暂无 MDM 候选人员</div>}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Modal */}
       {showAdd && (

@@ -2,24 +2,70 @@ import { useState } from 'react'
 import { Search, Ticket, Printer, Eye, MapPin, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useBackendListState } from '@/hooks/useBackendListState'
 import { admissionTicketNo } from '@/lib/numbering'
+import { apiRequest } from '@/lib/api'
 
 const ticketData = [
   { id: '1', name: '张三', idCard: '440301199001011234', employeeNo: 'P000001', ticketNo: admissionTicketNo('2026-05-20', 'Y0041GD000001', 'P000001'), occupation: '核反应堆运行值班员', level: '三级', examRoom: '第一考场', location: '培训中心A栋301', seatNo: '15', theoryDate: '2026-05-20', theoryTime: '09:00-11:00', practicalDate: '2026-05-20', practicalTime: '14:00-16:00' },
   { id: '2', name: '李四', idCard: '440301199002022345', employeeNo: 'P000002', ticketNo: admissionTicketNo('2026-05-20', 'Y0041GD000001', 'P000002'), occupation: '电气试验员', level: '四级', examRoom: '第二考场', location: '培训中心A栋302', seatNo: '08', theoryDate: '2026-05-20', theoryTime: '09:00-11:00', practicalDate: '2026-05-20', practicalTime: '14:00-16:00' },
 ]
 
+type TicketResult = typeof ticketData[0]
+
+interface TicketApiItem {
+  id: string
+  candidateName: string
+  idCard: string
+  admissionTicketNo?: string
+  planName?: string
+  occupation?: string
+  level?: string
+  examRoom?: string
+  examAddress?: string
+  seatNo?: string
+  examAt?: string
+}
+
+interface TicketApiResponse {
+  items: TicketApiItem[]
+}
+
 export default function AdmissionTicket() {
-  const [tickets] = useBackendListState(ticketData)
   const [searchId, setSearchId] = useState('')
   const [searched, setSearched] = useState(false)
-  const [result, setResult] = useState<typeof ticketData[0] | null>(null)
+  const [result, setResult] = useState<TicketResult | null>(null)
   const [showPreview, setShowPreview] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     setSearched(true)
-    setResult(tickets.find(d => d.idCard === searchId) || null)
+    setLoading(true)
+    try {
+      const data = await apiRequest<TicketApiResponse>(`/personal/ticket?q=${encodeURIComponent(searchId)}`)
+      const item = data.items?.[0]
+      const date = (item?.examAt || '').slice(0, 10)
+      const time = (item?.examAt || '').slice(11, 16)
+      setResult(item ? {
+        id: item.id,
+        name: item.candidateName,
+        idCard: item.idCard,
+        employeeNo: item.id,
+        ticketNo: item.admissionTicketNo || admissionTicketNo(date || '2026-05-20', item.id, item.id),
+        occupation: item.occupation || '',
+        level: item.level || '',
+        examRoom: item.examRoom || '--',
+        location: item.examAddress || '--',
+        seatNo: item.seatNo || '--',
+        theoryDate: date || '--',
+        theoryTime: time ? `${time}开始` : '--',
+        practicalDate: date || '--',
+        practicalTime: time ? `${time}开始` : '--',
+      } : null)
+    } catch {
+      setResult(ticketData.find(d => d.idCard === searchId) || null)
+    } finally {
+      setLoading(false)
+    }
   }
   const reset = () => { setSearchId(''); setSearched(false); setResult(null) }
 
@@ -39,7 +85,7 @@ export default function AdmissionTicket() {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input value={searchId} onChange={e => setSearchId(e.target.value)} placeholder="请输入身份证号" className="w-full h-10 pl-9 pr-4 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#1A56DB]" />
             </div>
-            <Button onClick={handleSearch} className="h-10 px-6 bg-[#1A56DB] hover:bg-[#1748B5]">查询</Button>
+            <Button onClick={handleSearch} disabled={loading} className="h-10 px-6 bg-[#1A56DB] hover:bg-[#1748B5]">{loading ? '查询中' : '查询'}</Button>
             <Button onClick={reset} variant="outline" className="h-10">重置</Button>
           </div>
           <p className="text-xs text-gray-400 mt-2">示例身份证号：440301199001011234</p>

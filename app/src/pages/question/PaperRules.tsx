@@ -1,10 +1,11 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { Plus, Search } from 'lucide-react'
+import { FileSpreadsheet, Plus, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { theorySubjects } from './theoryData'
 import { useBackendListState } from '@/hooks/useBackendListState'
+import { apiRequest } from '@/lib/api'
 
 interface PaperRule {
   id: string
@@ -53,6 +54,14 @@ export default function PaperRules() {
     toast.success(editing ? '组卷规则已更新' : '组卷规则已添加')
   }
 
+  const generatePaper = async (rule: PaperRule) => {
+    const paper = await apiRequest<{ paperNo: string; questionCount: number }>(`/question/paper-rules/${encodeURIComponent(rule.id)}/generate`, {
+      method: 'POST',
+      body: JSON.stringify({ subjectId: selectedSubjectId || undefined, seed: Date.now() }),
+    })
+    toast.success(`已生成试卷 ${paper.paperNo}，共 ${paper.questionCount} 道题`)
+  }
+
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold text-gray-900">组卷规则</h1>
@@ -87,6 +96,7 @@ export default function PaperRules() {
                 <td className="px-4 py-3">
                   <div className="flex gap-2 text-xs">
                     <button className="text-[#1A56DB] hover:underline" onClick={() => { setEditing(rule); setDialog(true) }}>编辑</button>
+                    <button className="text-green-600 hover:underline" onClick={() => generatePaper(rule)}><FileSpreadsheet className="mr-0.5 inline h-3.5 w-3.5" />生成试卷</button>
                     <button className="text-red-600 hover:underline" onClick={() => setRules(prev => prev.filter(item => item.id !== rule.id))}>删除</button>
                   </div>
                 </td>

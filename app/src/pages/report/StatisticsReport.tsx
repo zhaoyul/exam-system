@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Search, BarChart3, TrendingUp, Users, Award, FileText, FileSpreadsheet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useBackendListState } from '@/hooks/useBackendListState'
+import { downloadTextEndpoint } from '@/lib/download'
 
 const data = [
   { id: '1', org: '大亚湾核电', total: 320, pass: 280, cert: 275, rate: '87.5%' },
@@ -37,12 +38,12 @@ export default function StatisticsReport() {
               <option>2025 年</option>
               <option>2024 年</option>
             </select>
-            <Button onClick={refresh} variant="outline" className="h-8 text-xs"><FileText className="w-3.5 h-3.5 mr-1" />下载PDF</Button>
-            <Button onClick={refresh} variant="outline" className="h-8 text-xs"><FileSpreadsheet className="w-3.5 h-3.5 mr-1" />下载XLS</Button>
+            <Button onClick={refresh} variant="outline" className="h-8 text-xs"><FileText className="w-3.5 h-3.5 mr-1" />刷新</Button>
+            <Button onClick={() => downloadTextEndpoint('/report/statistics/export', '统计报表.csv')} variant="outline" className="h-8 text-xs"><FileSpreadsheet className="w-3.5 h-3.5 mr-1" />导出CSV</Button>
           </div>
         </div>
         <div className="mb-4 rounded-lg border border-dashed border-blue-200 bg-blue-50/40 p-4 text-sm text-gray-600">
-          当前报表年度：<span className="font-semibold text-gray-900">{period}</span>。支持按真实系统入口导出年度统计报表 PDF 或 XLS。
+          当前报表年度：<span className="font-semibold text-gray-900">{period}</span>。支持按系统计算口径导出年度统计报表 CSV。
         </div>
         <div className="relative mb-3"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="搜索机构..." className="h-9 pl-9 pr-4 border border-gray-200 rounded-md text-sm w-64 focus:outline-none focus:border-[#1A56DB]" /></div>
         <table className="w-full text-sm">

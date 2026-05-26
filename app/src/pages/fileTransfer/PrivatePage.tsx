@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Search, Plus, Edit3, Trash2, Save, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useBackendListState } from '@/hooks/useBackendListState'
+import { useBackendResourceState } from '@/hooks/useBackendListState'
 
 const items_init = [
   { id: '1', title: '内部薪酬标准', level: '机密', category: '财务', date: '2026-01-01' },
@@ -11,7 +11,7 @@ const items_init = [
 ]
 
 export default function PrivatePage() {
-  const [items, setItems] = useBackendListState(items_init)
+  const [items, setItems] = useBackendResourceState('/file/private', items_init)
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showEdit, setShowEdit] = useState<any>(null)

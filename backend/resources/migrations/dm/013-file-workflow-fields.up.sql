@@ -1,0 +1,13 @@
+ALTER TABLE cgn_doc_distribution ADD COLUMN doc_type VARCHAR(64) DEFAULT '';
+--;;
+ALTER TABLE cgn_doc_distribution ADD COLUMN recipient_orgs VARCHAR(1000) DEFAULT '';
+--;;
+ALTER TABLE cgn_doc_distribution ADD COLUMN read_count INTEGER DEFAULT 0;
+--;;
+ALTER TABLE cgn_doc_distribution ADD COLUMN feedback_count INTEGER DEFAULT 0;
+--;;
+ALTER TABLE cgn_doc_receive ADD COLUMN feedback VARCHAR(2000) DEFAULT '';
+--;;
+ALTER TABLE cgn_doc_receive ADD COLUMN read_at VARCHAR(32) DEFAULT '';
+--;;
+CREATE INDEX IF NOT EXISTS idx_cgn_doc_receive_distribution ON cgn_doc_receive(distribution_id);

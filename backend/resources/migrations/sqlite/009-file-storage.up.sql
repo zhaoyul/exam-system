@@ -1,0 +1,10 @@
+ALTER TABLE cgn_doc_file ADD COLUMN storage_key TEXT;
+--;;
+ALTER TABLE cgn_doc_file ADD COLUMN mime_type TEXT;
+--;;
+ALTER TABLE cgn_doc_file ADD COLUMN category TEXT;
+--;;
+ALTER TABLE cgn_doc_file ADD COLUMN visibility TEXT NOT NULL DEFAULT 'org';
+--;;
+CREATE INDEX IF NOT EXISTS idx_cgn_doc_file_storage_key ON cgn_doc_file(storage_key);
+--;;

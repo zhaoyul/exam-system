@@ -33,6 +33,12 @@
    {:id "org-dayawan" :parent_id "org-cgn" :org_type "branch" :name "大亚湾核电" :contact_name "李经理" :contact_phone "13800138002" :status "active"}
    {:id "org-yangjiang" :parent_id "org-cgn" :org_type "branch" :name "阳江核电" :contact_name "王经理" :contact_phone "13800138003" :status "active"}])
 
+(def mdm-persons
+  [{:id "mdm-person-001" :employee_no "P100001" :name "张三" :phone "13800138001" :org_id "org-dayawan" :org_name "大亚湾核电" :position "机构管理员" :status "active"}
+   {:id "mdm-person-002" :employee_no "P100002" :name "李四" :phone "13800138002" :org_id "org-yangjiang" :org_name "阳江核电" :position "考务人员" :status "active"}
+   {:id "mdm-person-003" :employee_no "P100003" :name "王五" :phone "13800138003" :org_id "org-csyxgs" :org_name "测试有限公司" :position "督导人员" :status "active"}
+   {:id "mdm-person-004" :employee_no "P100004" :name "赵六" :phone "13800138004" :org_id "org-csyxgs" :org_name "测试有限公司" :position "评价专家" :status "active"}])
+
 (def resource-fixtures
   {"dashboard-summary"
    [{:id "dashboard-summary-main"
@@ -537,6 +543,8 @@
     (ensure-organization! ds org))
   (doseq [user users]
     (ensure-user! ds user))
+  (doseq [person mdm-persons]
+    (ensure-domain-row! ds 'mdm_person "id" person))
   (doseq [[resource items] resource-fixtures
           item items]
     (ensure-resource! ds resource item))

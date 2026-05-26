@@ -46,6 +46,22 @@ interface AuditLogResponse {
   items: AuditLogItem[]
 }
 
+interface AuditEvent {
+  id: string
+  time: string
+  operator: string
+  title: string
+  detail: string
+  action: string
+  resource: string
+  resourceId?: string
+}
+
+interface AuditEventResponse {
+  items: AuditEvent[]
+  total: number
+}
+
 const initialRecords: TraceRecord[] = [
   { id: 'candidate-001', name: '陈小明', idType: '居民身份证', idNo: '440301199001011234', certNo: 'Y0041GD0000012603001001', issuer: '中广核集团', generatedAt: '2026-07-15', occupation: '核反应堆运行值班员', level: '三级/高级工', province: '广东省' },
   { id: 'candidate-002', name: '赵小红', idType: '居民身份证', idNo: '440301199105152345', certNo: 'Y0041GD0000012603001002', issuer: '中广核集团', generatedAt: '2026-07-15', occupation: '核反应堆运行值班员', level: '三级/高级工', province: '广东省' },
@@ -78,6 +94,10 @@ export default function TraceabilityCenter() {
   const [timelineLoading, setTimelineLoading] = useState(false)
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([])
   const [auditHasData, setAuditHasData] = useState<Record<string, boolean>>({})
+  const [auditEventQuery, setAuditEventQuery] = useState('')
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([])
+  const [auditEventTotal, setAuditEventTotal] = useState(0)
+  const [auditEventLoading, setAuditEventLoading] = useState(false)
 
   const filtered = useMemo(() => records.filter(record => {
     const byProvince = activeProvince === '全部' || record.province === activeProvince
@@ -90,6 +110,22 @@ export default function TraceabilityCenter() {
     { label: '广东省', count: records.filter(item => item.province === '广东省').length },
     { label: '广西壮族自治区', count: records.filter(item => item.province === '广西壮族自治区').length },
   ]
+
+  const loadAuditEvents = useCallback(async () => {
+    setAuditEventLoading(true)
+    try {
+      const params = new URLSearchParams({ limit: '10' })
+      if (auditEventQuery.trim()) params.set('q', auditEventQuery.trim())
+      const data = await apiRequest<AuditEventResponse>(`/traceability/audit-events?${params.toString()}`)
+      setAuditEvents(data.items || [])
+      setAuditEventTotal(data.total || 0)
+    } catch {
+      setAuditEvents([])
+      setAuditEventTotal(0)
+    } finally {
+      setAuditEventLoading(false)
+    }
+  }, [auditEventQuery])
 
   const openProcessDialog = useCallback(async (record: TraceRecord) => {
     setActive(record)
@@ -134,6 +170,10 @@ export default function TraceabilityCenter() {
     }
     checkAuditLogs()
   }, [records])
+
+  useEffect(() => {
+    loadAuditEvents()
+  }, [loadAuditEvents])
 
   return (
     <div className="space-y-4">
@@ -208,6 +248,64 @@ export default function TraceabilityCenter() {
             </table>
             <div className="border-t border-gray-100 px-4 py-3 text-sm text-gray-500">共计{filtered.length}条数据　1　20 条/页</div>
           </div>
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-gray-200 bg-white">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 p-3">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">系统操作留痕</h2>
+            <p className="text-xs text-gray-500">共 {auditEventTotal} 条，覆盖资料维护、审核、上报、生成、打印等审计记录</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                value={auditEventQuery}
+                onChange={event => setAuditEventQuery(event.target.value)}
+                className="h-9 w-72 rounded-md border border-gray-200 pl-9 pr-3 text-sm focus:border-[#1A56DB] focus:outline-none"
+                placeholder="搜索资源、动作、对象或操作人"
+              />
+            </div>
+            <Button variant="outline" className="h-9" onClick={loadAuditEvents}>刷新</Button>
+          </div>
+        </div>
+        <div className="overflow-auto">
+          <table className="w-full min-w-[980px] text-sm">
+            <thead className="bg-[#F9FAFB] text-gray-600">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium">时间</th>
+                <th className="px-4 py-3 text-left font-medium">操作人</th>
+                <th className="px-4 py-3 text-left font-medium">资源</th>
+                <th className="px-4 py-3 text-left font-medium">动作</th>
+                <th className="px-4 py-3 text-left font-medium">详情</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {auditEventLoading ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-6">
+                    <Skeleton className="h-8 w-full" />
+                  </td>
+                </tr>
+              ) : auditEvents.length > 0 ? auditEvents.map(event => (
+                <tr key={event.id} className="hover:bg-gray-50">
+                  <td className="whitespace-nowrap px-4 py-3 text-gray-600">{event.time}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-gray-700">{event.operator}</td>
+                  <td className="px-4 py-3">
+                    <Badge variant="outline" className="font-mono text-xs">{event.resource}</Badge>
+                    {event.resourceId && <div className="mt-1 max-w-[180px] truncate font-mono text-xs text-gray-400">{event.resourceId}</div>}
+                  </td>
+                  <td className="px-4 py-3 text-gray-900">{event.title}</td>
+                  <td className="max-w-[420px] px-4 py-3 text-gray-600">{event.detail || '--'}</td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-400">暂无操作留痕</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </section>
 

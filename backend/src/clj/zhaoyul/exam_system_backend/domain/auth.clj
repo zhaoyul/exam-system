@@ -29,6 +29,34 @@
      WHERE lower(username) = lower(?)"
     username]))
 
+(defn- find-mdm-person [ds username]
+  (db/execute-one!
+   ds
+   ["SELECT * FROM mdm_person
+     WHERE lower(employee_no) = lower(?) OR phone = ?
+     LIMIT 1"
+    username username]))
+
+(defn ensure-4a-user!
+  "Map a 4A account to local app_user. If the account exists in MDM but not in app_user,
+   create a local externally-managed user so 4A can complete the login flow."
+  [ds username]
+  (or (find-user ds username)
+      (when-let [person (find-mdm-person ds username)]
+        (let [id (db/uuid)
+              display-name (:name person)
+              org-id (:org_id person)
+              role "user"]
+          (db/execute! ds
+                       ["INSERT INTO app_user (id, username, password_hash, display_name, role, org_id, phone, status)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, 'active')"
+                        id username (password-hash username (str "4A:" id)) display-name role org-id (:phone person)])
+          (db/execute! ds
+                       ["INSERT INTO audit_log (id, action, resource, resource_id, payload)
+                         VALUES (?, '4a-user-provision', 'app_user', ?, ?)"
+                        (db/uuid) id (db/json-str {:username username :mdmPersonId (:id person)})])
+          (find-user ds username)))))
+
 (defn public-user [user]
   (when user
     (-> user

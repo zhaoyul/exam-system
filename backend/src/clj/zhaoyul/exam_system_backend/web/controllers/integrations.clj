@@ -63,3 +63,19 @@
       :items [{:username "cgnzx001" :displayName "集团管理员" :role "group_admin" :orgId "org-cgn" :status "active"}
               {:username "Csyxgs001" :displayName "机构管理员" :role "branch_admin" :orgId "org-csyxgs" :status "active"}
               {:username "zhangsan" :displayName "张三" :role "user" :orgId "org-dayawan" :status "active"}]})))
+
+(defn four-a-status [ctx _request]
+  (let [cfg (integrations-config ctx :four-a)
+        external? (configured? (:base-url cfg))]
+    (response/ok
+     {:system "4A"
+      :mode (if external? "external" "mock")
+      :status (if external? "configured" "mock-connected")
+      :baseUrl (when external? (:base-url cfg))
+      :appId (:app-id cfg)
+      :redirectUri (:redirect-uri cfg)
+      :callbackPath "/api/auth/4a-callback"
+      :mockTicketFormat "mock:<username>"
+      :message (if external?
+                 "4A真实端点已配置，可按回调入口完成账号映射"
+                 "未配置真实4A端点，当前使用mock ticket和本地/MDM账号映射")})))

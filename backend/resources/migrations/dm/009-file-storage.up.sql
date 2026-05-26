@@ -1,0 +1,10 @@
+ALTER TABLE cgn_doc_file ADD storage_key VARCHAR(512);
+--;;
+ALTER TABLE cgn_doc_file ADD mime_type VARCHAR(128);
+--;;
+ALTER TABLE cgn_doc_file ADD category VARCHAR(64);
+--;;
+ALTER TABLE cgn_doc_file ADD visibility VARCHAR(32) DEFAULT 'org' NOT NULL;
+--;;
+CREATE INDEX idx_cgn_doc_file_storage_key ON cgn_doc_file(storage_key);
+--;;

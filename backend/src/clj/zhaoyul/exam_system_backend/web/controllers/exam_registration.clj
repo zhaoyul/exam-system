@@ -54,10 +54,16 @@
 
 ;; ─── Import / Photo ───
 
+(defn import-template [_ctx _request]
+  {:status 200
+   :headers {"Content-Type" "text/csv; charset=utf-8"
+             "Content-Disposition" "attachment; filename=\"candidate-import-template.csv\""}
+   :body (domain/candidate-template-csv)})
+
 (defn import-excel [{:keys [datasource]} request]
   (let [plan-id (get-in request [:path-params :plan-id])
         body (:body-params request)
-        batch-id (:batchId body)]
+        batch-id (or (:batchId body) (get body "batchId") (:batch-id body) (get body "batch-id"))]
     (if (and plan-id batch-id)
       (response/ok (domain/import-excel! datasource plan-id batch-id body))
       (response/bad-request "plan_id and batch_id are required"))))
@@ -65,7 +71,7 @@
 (defn import-photos [{:keys [datasource]} request]
   (let [plan-id (get-in request [:path-params :plan-id])
         body (:body-params request)
-        batch-id (:batchId body)]
+        batch-id (or (:batchId body) (get body "batchId") (:batch-id body) (get body "batch-id"))]
     (response/ok (domain/update-photo-status! datasource plan-id batch-id body))))
 
 ;; ─── Plan Status ───

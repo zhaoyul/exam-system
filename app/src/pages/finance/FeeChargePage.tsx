@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { Search, CheckCircle, AlertCircle } from 'lucide-react'
-import { useBackendListState } from '@/hooks/useBackendListState'
+import { apiRequest } from '@/lib/api'
 
 interface ChargeItem {
   id: string
@@ -37,10 +37,16 @@ const statusMap: Record<string, { label: string; color: string }> = {
 }
 
 export default function FeeChargePage() {
-  const [charges, setCharges] = useBackendListState<ChargeItem>(mockCharges)
+  const [charges, setCharges] = useState<ChargeItem[]>(mockCharges)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [planFilter, setPlanFilter] = useState('all')
+
+  useEffect(() => {
+    apiRequest<{ items: ChargeItem[] }>('/finance/charge')
+      .then(data => setCharges(data.items?.length ? data.items : mockCharges))
+      .catch(() => undefined)
+  }, [])
 
   const filtered = charges.filter(c => {
     const m = !search || c.candidateName.includes(search) || c.idCard.includes(search)
@@ -49,14 +55,27 @@ export default function FeeChargePage() {
     return m && s && p
   })
 
-  const handlePay = (id: string) => {
-    setCharges(prev => prev.map(c => c.id === id ? { ...c, status: 'paid' as const, payDate: new Date().toISOString().split('T')[0], payMethod: '线上支付' } : c))
-    toast.success('标记缴费成功')
+  const handlePay = async (id: string) => {
+    try {
+      const updated = await apiRequest<ChargeItem>(`/finance/charge/${encodeURIComponent(id)}/pay`, {
+        method: 'POST',
+        body: JSON.stringify({ payMethod: '线上支付' }),
+      })
+      setCharges(prev => prev.map(c => c.id === id ? updated : c))
+      toast.success('标记缴费成功')
+    } catch {
+      toast.error('缴费确认失败')
+    }
   }
 
-  const handleRefund = (id: string) => {
-    setCharges(prev => prev.map(c => c.id === id ? { ...c, status: 'refunded' as const } : c))
-    toast.success('已标记退款')
+  const handleRefund = async (id: string) => {
+    try {
+      const updated = await apiRequest<ChargeItem>(`/finance/charge/${encodeURIComponent(id)}/refund`, { method: 'POST' })
+      setCharges(prev => prev.map(c => c.id === id ? updated : c))
+      toast.success('已标记退款')
+    } catch {
+      toast.error('退款标记失败')
+    }
   }
 
   const stats = {

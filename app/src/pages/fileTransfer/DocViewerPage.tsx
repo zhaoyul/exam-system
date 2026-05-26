@@ -1,7 +1,10 @@
 import { useState } from 'react'
-import { Search, Eye, FileText, Trash2 } from 'lucide-react'
+import { Download, Eye, FileText, Search, Trash2, Upload } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useBackendListState } from '@/hooks/useBackendListState'
+import { apiRequest } from '@/lib/api'
+import { toast } from 'sonner'
 
 const docs = [
   { id: '1', name: '2026年认定工作计划.pdf', type: 'PDF', size: '2.5MB', date: '2026-01-15' },
@@ -18,12 +21,35 @@ export default function DocViewerPage() {
   const [viewItem, setViewItem] = useState<any>(null)
 
   const filtered = items.filter(i => !search || i.name.includes(search))
-  const del = (id: string) => { setItems(prev => prev.filter(i => i.id !== id)) }
+  const del = async (id: string) => {
+    await apiRequest(`/file/files/${encodeURIComponent(id)}`, { method: 'DELETE' })
+    setItems(prev => prev.filter(i => i.id !== id))
+    toast.success('文件已删除')
+  }
+  const uploadFile = async (file: File | null) => {
+    if (!file) return
+    const form = new FormData()
+    form.append('file', file)
+    form.append('category', 'viewer')
+    form.append('visibility', 'org')
+    await apiRequest('/file/files/upload', { method: 'POST', body: form })
+    toast.success('文件已上传')
+    window.setTimeout(() => window.location.reload(), 300)
+  }
+  const downloadFile = (id: string) => {
+    window.open(`/api/file/files/${encodeURIComponent(id)}/download`, '_blank')
+  }
 
   return (
     <div>
       <h1 className="text-xl font-bold text-gray-900 mb-4">文档阅览</h1>
-      <div className="relative mb-3"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="搜索文档..." className="h-9 pl-9 pr-4 border border-gray-200 rounded-md text-sm w-64 focus:outline-none focus:border-[#1A56DB]" /></div>
+      <div className="mb-3 flex items-center justify-between">
+        <div className="relative"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="搜索文档..." className="h-9 pl-9 pr-4 border border-gray-200 rounded-md text-sm w-64 focus:outline-none focus:border-[#1A56DB]" /></div>
+        <label>
+          <input type="file" className="hidden" onChange={event => uploadFile(event.target.files?.[0] || null)} />
+          <Button asChild className="h-9 bg-[#1A56DB] hover:bg-[#1748B5]"><span><Upload className="w-4 h-4 mr-1" />上传文档</span></Button>
+        </label>
+      </div>
       <div className="bg-white rounded-lg border border-gray-200 overflow-auto">
         <table className="w-full text-sm">
           <thead className="bg-[#F9FAFB] text-gray-600 font-medium"><tr><th className="px-4 py-3 text-left">文档名称</th><th className="px-4 py-3 text-left">类型</th><th className="px-4 py-3 text-right">大小</th><th className="px-4 py-3 text-left">日期</th><th className="px-4 py-3 text-left">操作</th></tr></thead>
@@ -34,7 +60,7 @@ export default function DocViewerPage() {
                 <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs ${typeColors[i.type]}`}>{i.type}</span></td>
                 <td className="px-4 py-3 text-right text-gray-600">{i.size}</td>
                 <td className="px-4 py-3 text-gray-600">{i.date}</td>
-                <td className="px-4 py-3"><div className="flex items-center gap-2"><button onClick={() => setViewItem(i)} className="text-[#1A56DB] hover:underline text-xs"><Eye className="w-3.5 h-3.5 inline mr-0.5" />预览</button><button onClick={() => del(i.id)} className="text-gray-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button></div></td>
+                <td className="px-4 py-3"><div className="flex items-center gap-2"><button onClick={() => setViewItem(i)} className="text-[#1A56DB] hover:underline text-xs"><Eye className="w-3.5 h-3.5 inline mr-0.5" />预览</button><button onClick={() => downloadFile(i.id)} className="text-[#1A56DB] hover:underline text-xs"><Download className="w-3.5 h-3.5 inline mr-0.5" />下载</button><button onClick={() => del(i.id)} className="text-gray-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button></div></td>
               </tr>
             ))}
           </tbody>

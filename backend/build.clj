@@ -6,7 +6,7 @@
 
 (def lib 'zhaoyul/exam-system-backend)
 (def main-cls (string/join "." (filter some? [(namespace lib) (name lib) "core"])))
-(def version (format "0.0.1-SNAPSHOT"))
+(def version "3.1.0")
 (def target-dir "target")
 (def class-dir (str target-dir "/" "classes"))
 (def uber-file (format "%s/%s-standalone.jar" target-dir (name lib)))

@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Search, Download } from 'lucide-react'
-import { useBackendListState } from '@/hooks/useBackendListState'
+import { useBackendResourceList } from '@/hooks/useBackendListState'
 
 interface FeeListItem {
   id: string
@@ -35,7 +35,7 @@ const statusMap: Record<string, { label: string; color: string }> = {
 }
 
 export default function FeeListPage() {
-  const [feeList] = useBackendListState<FeeListItem>(mockFeeList)
+  const feeList = useBackendResourceList<FeeListItem>('/finance/list', mockFeeList)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
 

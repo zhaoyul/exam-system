@@ -5,12 +5,14 @@
    [reitit.ring.middleware.parameters :as parameters]
    [reitit.swagger :as swagger]
    [zhaoyul.exam-system-backend.web.controllers.auth :as auth]
+   [zhaoyul.exam-system-backend.web.controllers.archive :as archive]
    [zhaoyul.exam-system-backend.web.controllers.candidates :as candidates]
    [zhaoyul.exam-system-backend.web.controllers.certificate :as certificate]
    [zhaoyul.exam-system-backend.web.controllers.catalog :as catalog]
    [zhaoyul.exam-system-backend.web.controllers.exam-staff :as exam-staff]
    [zhaoyul.exam-system-backend.web.controllers.exam-staff-assignment :as staff-assignment]
    [zhaoyul.exam-system-backend.web.controllers.files :as files-ctrl]
+   [zhaoyul.exam-system-backend.web.controllers.finance :as finance]
    [zhaoyul.exam-system-backend.web.controllers.filing :as filing]
    [zhaoyul.exam-system-backend.web.controllers.exam-registration :as exam-registration]
    [zhaoyul.exam-system-backend.web.controllers.numbering :as numbering]
@@ -21,8 +23,11 @@
    [zhaoyul.exam-system-backend.web.controllers.organizations :as organizations]
    [zhaoyul.exam-system-backend.web.controllers.paper-demand :as paper-demand]
    [zhaoyul.exam-system-backend.web.controllers.personal :as personal]
+   [zhaoyul.exam-system-backend.web.controllers.question-bank :as question-bank]
+   [zhaoyul.exam-system-backend.web.controllers.reports :as reports]
    [zhaoyul.exam-system-backend.web.controllers.resources :as resource-controller]
    [zhaoyul.exam-system-backend.web.controllers.supervision :as supervision]
+   [zhaoyul.exam-system-backend.web.controllers.system-users :as system-users]
    [zhaoyul.exam-system-backend.web.controllers.traceability :as traceability]
    [zhaoyul.exam-system-backend.web.middleware-auth :as auth-middleware]
    [zhaoyul.exam-system-backend.web.middleware.exception :as exception]
@@ -91,7 +96,36 @@
      ["/:id"
       {:get {:summary "模块工作台详情" :handler (resource-controller/get-alias ctx "workbench-cards")}}]]]
    ["/system"
-    (resource-endpoint ctx "/users" "system-users" "基础数据" "系统用户")
+    ["/users"
+     [""
+      {:swagger {:tags ["基础数据"]}
+       :get {:summary "机构用户列表" :handler (partial system-users/list-users ctx)}
+       :post {:summary "开通机构用户" :handler (partial system-users/create-user ctx)}}]
+     ["/mdm-persons"
+      {:get {:swagger {:tags ["基础数据"]}
+             :summary "MDM人员候选列表"
+             :handler (partial system-users/list-mdm-persons ctx)}}]
+     ["/:id"
+      {:swagger {:tags ["基础数据"]}
+       :get {:summary "查看机构用户" :handler (partial system-users/get-user ctx)}
+       :put {:summary "更新机构用户" :handler (partial system-users/update-user ctx)}
+       :delete {:summary "删除机构用户" :handler (partial system-users/delete-user ctx)}}]
+     ["/:id/lock"
+      {:post {:swagger {:tags ["基础数据"]}
+              :summary "锁定机构用户"
+              :handler (partial system-users/lock-user ctx)}}]
+     ["/:id/unlock"
+      {:post {:swagger {:tags ["基础数据"]}
+              :summary "解锁机构用户"
+              :handler (partial system-users/unlock-user ctx)}}]
+     ["/:id/reset-password"
+      {:post {:swagger {:tags ["基础数据"]}
+              :summary "重置机构用户密码"
+              :handler (partial system-users/reset-password ctx)}}]
+     ["/:id/authorize"
+      {:post {:swagger {:tags ["基础数据"]}
+              :summary "机构用户功能授权"
+              :handler (partial system-users/authorize ctx)}}]]
     (resource-endpoint ctx "/personnel" "personnel" "基础数据" "人员信息")
     (resource-endpoint ctx "/filing-group" "filing-group" "机构备案" "集团备案")
     (resource-endpoint ctx "/filing-branch" "filing-branch" "机构备案" "分支备案")
@@ -121,9 +155,24 @@
     (resource-endpoint ctx "/subjects" "theory-subjects" "题库兼容路径" "科目管理")
     (resource-endpoint ctx "/knowledge" "knowledge-structures" "题库兼容路径" "知识结构")
     (resource-endpoint ctx "/ratio" "structure-ratios" "题库兼容路径" "结构比重")
+    ["/theory/template"
+     {:get {:summary "理论试题标准导入模板"
+            :handler (partial question-bank/template ctx)}}]
+    ["/theory/import"
+     {:post {:summary "理论试题标准模板导入"
+             :handler (partial question-bank/import-theory-questions ctx)}}]
+    ["/theory/export"
+     {:get {:summary "理论试题标准模板导出"
+            :handler (partial question-bank/export-theory-questions ctx)}}]
     (resource-endpoint ctx "/theory" "theory-questions" "题库兼容路径" "理论试题")
+    ["/paper-rules/:id/generate"
+     {:post {:summary "按理论组卷规则生成试卷"
+             :handler (partial question-bank/generate-theory-paper ctx)}}]
     (resource-endpoint ctx "/paper-rules" "theory-paper-rules" "题库兼容路径" "理论组卷规则")
     (resource-endpoint ctx "/paper-require" "theory-paper-requirements" "题库兼容路径" "理论试卷需求")
+    ["/paper-library/:id/questions"
+     {:get {:summary "卷库试题清单"
+            :handler (partial question-bank/paper-questions ctx)}}]
     (resource-endpoint ctx "/paper-library" "paper-library" "题库兼容路径" "卷库")
     (resource-endpoint ctx "/skill-subject-sort" "skill-subject-categories" "题库兼容路径" "技能科目分类")
     (resource-endpoint ctx "/skill-subjects" "skill-subjects" "题库兼容路径" "技能科目")
@@ -190,10 +239,35 @@
     (resource-endpoint ctx "/question-bank-collection" "question-bank-collections" "职业标准" "题库征集编审")]
    ["/finance"
     (resource-endpoint ctx "/workbench" "finance-ledgers" "财务系统" "财务工作台" false)
-    (resource-endpoint ctx "/charge" "finance-charges" "财务系统" "收费")
-    (resource-endpoint ctx "/list" "finance-lists" "财务系统" "缴费清单")
+    ["/charge"
+     [""
+      {:swagger {:tags ["财务系统"]}
+       :get {:summary "财务收费列表" :handler (partial finance/list-charges ctx)}}]
+     ["/summary"
+      {:get {:swagger {:tags ["财务系统"]}
+             :summary "财务收费汇总"
+             :handler (partial finance/charge-summary ctx)}}]
+     ["/:id/pay"
+      {:post {:swagger {:tags ["财务系统"]}
+              :summary "确认缴费"
+              :handler (partial finance/pay-charge ctx)}}]
+     ["/:id/refund"
+      {:post {:swagger {:tags ["财务系统"]}
+              :summary "确认退款"
+              :handler (partial finance/refund-charge ctx)}}]]
+    ["/list"
+     {:swagger {:tags ["财务系统"]}
+      :get {:summary "收费清单"
+            :handler (partial finance/list-charge-items ctx)}}]
     (resource-endpoint ctx "/ledger" "finance-ledgers" "财务系统" "收费台账")
-    (resource-endpoint ctx "/standard" "finance-standards" "财务系统" "收费标准")]
+    ["/standard"
+     [""
+      {:swagger {:tags ["财务系统"]}
+       :get {:summary "收费标准列表" :handler (partial finance/list-standards ctx)}
+       :post {:summary "新增收费标准" :handler (partial finance/create-standard ctx)}}]
+     ["/:id"
+      {:swagger {:tags ["财务系统"]}
+       :put {:summary "更新收费标准" :handler (partial finance/update-standard ctx)}}]]]
    ["/score"
     ;; 成绩管理专用路由（含 audit_log + 公示锁定逻辑）
     ["/scoring"
@@ -248,8 +322,11 @@
     ["/print"
      {:post {:summary "标记证书已打印" :handler (partial certificate/mark-certificates-printed ctx)}}]
     ;; 等级映射
-    ["/level-mapping"
+   ["/level-mapping"
      {:get {:summary "等级编码映射" :handler certificate/get-level-mapping}}]
+    ["/plans/:plan-id/generate"
+     {:post {:summary "按认定计划合格成绩生成证书"
+             :handler (partial certificate/generate-plan-certificates ctx)}}]
     ;; 证书列表/详情
     ["/list"
      {:get {:summary "证书列表" :handler (partial certificate/list-certificates ctx)}}]
@@ -289,13 +366,58 @@
     (resource-endpoint ctx "/registration" "exam-registration" "报表档案" "报名报表")
     (resource-endpoint ctx "/arrangement" "exam-arrangement" "报表档案" "编排报表")]
    ["/report"
-    (resource-endpoint ctx "/score" "reports" "报表档案" "成绩报表")
-    (resource-endpoint ctx "/statistics" "certification-statistics" "报表档案" "统计报表")
+    ["/score"
+     {:get {:swagger {:tags ["报表档案"]}
+            :summary "成绩报表"
+            :handler (partial reports/report-data ctx)}}]
+    ["/score/export"
+     {:get {:swagger {:tags ["报表档案"]}
+            :summary "导出成绩报表"
+            :handler (partial reports/export-report ctx)}}]
+    ["/statistics"
+     {:get {:swagger {:tags ["报表档案"]}
+            :summary "统计报表"
+            :handler (partial reports/report-data ctx)}}]
+    ["/statistics/export"
+     {:get {:swagger {:tags ["报表档案"]}
+            :summary "导出统计报表"
+            :handler (partial reports/export-report ctx)}}]
+    ["/data-upload/template"
+     {:get {:swagger {:tags ["报表档案"]}
+            :summary "下载上报模板"
+            :handler (partial reports/upload-template ctx)}}]
+    ["/data-upload/preview"
+     {:get {:swagger {:tags ["报表档案"]}
+            :summary "上报数据预览"
+            :handler (partial reports/upload-preview ctx)}}]
     (resource-endpoint ctx "/data-upload" "report-uploads" "报表档案" "上报数据")
-    (resource-endpoint ctx "/registration" "exam-registration" "报表档案" "报名报表")
-    (resource-endpoint ctx "/arrangement" "exam-arrangement" "报表档案" "编排报表")]
+    ["/registration"
+     {:get {:swagger {:tags ["报表档案"]}
+            :summary "报名报表"
+            :handler (partial reports/report-data ctx)}}]
+    ["/registration/export"
+     {:get {:swagger {:tags ["报表档案"]}
+            :summary "导出报名报表"
+            :handler (partial reports/export-report ctx)}}]
+    ["/arrangement"
+     {:get {:swagger {:tags ["报表档案"]}
+            :summary "编排报表"
+            :handler (partial reports/report-data ctx)}}]
+    ["/arrangement/export"
+     {:get {:swagger {:tags ["报表档案"]}
+            :summary "导出编排报表"
+            :handler (partial reports/export-report ctx)}}]]
    ["/archive"
-    (resource-endpoint ctx "" "archives" "报表档案" "档案")]
+    {:swagger {:tags ["报表档案"]}}
+    [""
+     {:get {:summary "历次认定档案列表"
+            :handler (partial archive/list-archives ctx)}}]
+    ["/:plan-id/candidates"
+     {:get {:summary "档案考生列表"
+            :handler (partial archive/list-candidates ctx)}}]
+    ["/:plan-id/export"
+     {:get {:summary "导出档案数据"
+            :handler (partial archive/export-plan ctx)}}]]
    ["/messages"
     (resource-endpoint ctx "" "messages" "消息中心" "消息")]
    ["/personal"
@@ -325,6 +447,18 @@
       {:get {:summary "查看准考证详情" :handler (partial personal/get-ticket ctx)}}]]]
    ["/file"
     {:swagger {:tags ["文件传输"]}}
+    ["/files"
+     [""
+      {:get {:summary "文件元数据列表" :handler (partial files-ctrl/list-files ctx)}
+       :post {:summary "新增文件元数据" :handler (partial files-ctrl/create-file ctx)}}]
+     ["/upload"
+      {:post {:summary "上传文件并写入元数据" :handler (partial files-ctrl/upload-file ctx)}}]
+     ["/:id"
+      {:get {:summary "查看文件元数据" :handler (partial files-ctrl/get-file ctx)}
+       :put {:summary "更新文件元数据" :handler (partial files-ctrl/update-file ctx)}
+       :delete {:summary "删除文件元数据" :handler (partial files-ctrl/delete-file ctx)}}]
+     ["/:id/download"
+      {:get {:summary "下载文件内容" :handler (partial files-ctrl/download-file ctx)}}]]
     ["/distribute"
      [""
       {:get {:summary "文档分发列表" :handler (partial files-ctrl/list-distribute ctx)}
@@ -332,7 +466,10 @@
      ["/:id"
       {:get {:summary "查看分发详情" :handler (partial files-ctrl/get-distribute ctx)}
        :put {:summary "更新分发信息" :handler (partial files-ctrl/update-distribute ctx)}
-       :delete {:summary "删除分发" :handler (partial files-ctrl/delete-distribute ctx)}}]]
+       :delete {:summary "删除分发" :handler (partial files-ctrl/delete-distribute ctx)}}]
+     ["/:id/send"
+      {:post {:summary "发送文档并生成收文"
+              :handler (partial files-ctrl/send-distribute ctx)}}]]
     ["/receive"
      [""
       {:get {:summary "文档接收列表" :handler (partial files-ctrl/list-receive ctx)}
@@ -340,7 +477,10 @@
      ["/:id"
       {:get {:summary "查看接收详情" :handler (partial files-ctrl/get-receive ctx)}
        :put {:summary "更新接收信息" :handler (partial files-ctrl/update-receive ctx)}
-       :delete {:summary "删除接收" :handler (partial files-ctrl/delete-receive ctx)}}]]
+       :delete {:summary "删除接收" :handler (partial files-ctrl/delete-receive ctx)}}]
+     ["/:id/read"
+      {:post {:summary "标记收文已读并回执"
+              :handler (partial files-ctrl/mark-receive-read ctx)}}]]
     ["/viewer"
      [""
       {:get {:summary "文档阅览列表" :handler (partial files-ctrl/list-viewer ctx)}}]
@@ -424,10 +564,13 @@
     ["/exam-registration"
      {:swagger {:tags ["等级认定"]}}
      [""
-      {:get {:summary "报名计划列表(含报名统计)"
+     {:get {:summary "报名计划列表(含报名统计)"
              :handler (partial exam-registration/list-plans ctx)}
        :post {:summary "新增报名批次"
               :handler (partial exam-registration/create-batch ctx)}}]
+     ["/import-template"
+      {:get {:summary "考生导入标准模板"
+             :handler (partial exam-registration/import-template ctx)}}]
      ["/:plan-id"
       {:get {:summary "报名计划详情(含批次+统计)"
              :handler (partial exam-registration/get-plan ctx)}}]
@@ -575,9 +718,24 @@
     (resource-endpoint ctx "/subjects" "theory-subjects" "题库兼容路径" "科目管理")
     (resource-endpoint ctx "/knowledge" "knowledge-structures" "题库兼容路径" "知识结构")
     (resource-endpoint ctx "/ratio" "structure-ratios" "题库兼容路径" "结构比重")
+    ["/theory/template"
+     {:get {:summary "理论试题标准导入模板"
+            :handler (partial question-bank/template ctx)}}]
+    ["/theory/import"
+     {:post {:summary "理论试题标准模板导入"
+             :handler (partial question-bank/import-theory-questions ctx)}}]
+    ["/theory/export"
+     {:get {:summary "理论试题标准模板导出"
+            :handler (partial question-bank/export-theory-questions ctx)}}]
     (resource-endpoint ctx "/theory" "theory-questions" "题库兼容路径" "理论试题")
+    ["/paper-rules/:id/generate"
+     {:post {:summary "按理论组卷规则生成试卷"
+             :handler (partial question-bank/generate-theory-paper ctx)}}]
     (resource-endpoint ctx "/paper-rules" "theory-paper-rules" "题库兼容路径" "理论组卷规则")
     (resource-endpoint ctx "/paper-require" "theory-paper-requirements" "题库兼容路径" "理论试卷需求")
+    ["/paper-library/:id/questions"
+     {:get {:summary "卷库试题清单"
+            :handler (partial question-bank/paper-questions ctx)}}]
     (resource-endpoint ctx "/paper-library" "paper-library" "题库兼容路径" "卷库")
     (resource-endpoint ctx "/skill-subject-sort" "skill-subject-categories" "题库兼容路径" "技能科目分类")
     (resource-endpoint ctx "/skill-subjects" "skill-subjects" "题库兼容路径" "技能科目")
@@ -652,6 +810,9 @@
    ["/traceability"
     {:swagger {:tags ["溯源中心"]}}
     (resource-endpoint ctx "/cert-records" "trace-cert-records" "溯源中心" "证书溯源记录")
+    ["/audit-events"
+     {:get {:summary "查询系统操作留痕"
+            :handler (partial traceability/list-audit-events ctx)}}]
     ["/audit-logs/:candidate-id"
      {:get {:summary "查询成绩修改记录"
             :handler (partial traceability/get-audit-logs ctx)}}]
@@ -677,6 +838,7 @@
 
 (defn api-routes [opts]
   (let [ctx {:datasource (:datasource opts)
+             :files (:files opts)
              :config {:auth (:auth opts)
                       :integrations (:integrations opts)}}]
     (vec
@@ -685,13 +847,13 @@
         {:get {:no-doc true
                :swagger {:info {:title "职业技能等级认定系统 API"
                                 :description "Kit/Integrant 后端接口，开发使用 SQLite，上线可切换达梦数据库。"
-                                :version "0.1.0"}}
+                                :version "3.1.0"}}
                :handler (swagger/create-swagger-handler)}}]
        ["/docs/swagger.json"
         {:get {:no-doc true
                :swagger {:info {:title "职业技能等级认定系统 API"
                                 :description "Kit/Integrant 后端接口，开发使用 SQLite，上线可切换达梦数据库。"
-                                :version "0.1.0"}}
+                                :version "3.1.0"}}
                :handler (swagger/create-swagger-handler)}}]
        ["/health" {:get #'health/healthcheck!}]
        ["/auth"
@@ -702,11 +864,19 @@
         ["/4a-login"
          {:post {:summary "4A统一认证登录"
                  :handler (partial auth/login-4a ctx)}}]
+        ["/4a-callback"
+         {:get {:summary "4A统一认证回调"
+                :handler (partial auth/callback-4a ctx)}
+          :post {:summary "4A统一认证回调"
+                 :handler (partial auth/callback-4a ctx)}}]
         ["/me"
          {:get {:summary "当前用户"
                 :handler (partial auth/me ctx)}}]]
        ["/integrations"
         {:swagger {:tags ["外部集成"]}}
+        ["/4a/status"
+         {:get {:summary "4A连接状态"
+                :handler (partial integrations/four-a-status ctx)}}]
         ["/4a/users"
          {:get {:summary "4A账号同步结果"
                 :handler (partial integrations/four-a-users ctx)}}]

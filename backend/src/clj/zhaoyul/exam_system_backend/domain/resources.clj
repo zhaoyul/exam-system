@@ -126,6 +126,15 @@
     ["SELECT * FROM resource_item WHERE resource = ? AND id = ?"
      (canonical-resource resource) id])))
 
+(defn- audit! [ds action resource resource-id payload]
+  (try
+    (db/execute!
+     ds
+     ["INSERT INTO audit_log (id, action, resource, resource_id, payload)
+       VALUES (?, ?, ?, ?, ?)"
+      (db/uuid) action resource resource-id (db/json-str payload)])
+    (catch Exception _ nil)))
+
 (defn create-item! [ds resource body]
   (let [resource (canonical-resource resource)
         id (or (:id body) (db/uuid))
@@ -138,6 +147,7 @@
      ["INSERT INTO resource_item (id, resource, code, name, status, org_id, payload)
        VALUES (?, ?, ?, ?, ?, ?, ?)"
       id resource (:code body) name status org-id (db/json-str payload)])
+    (audit! ds "create-resource" resource id {:name name :status status})
     (get-item ds resource id)))
 
 (defn update-item! [ds resource id body]
@@ -155,6 +165,7 @@
          SET code = ?, name = ?, status = ?, org_id = ?, payload = ?, updated_at = CURRENT_TIMESTAMP
          WHERE resource = ? AND id = ?"
         (:code merged) name status org-id (db/json-str payload) resource id])
+      (audit! ds "update-resource" resource id {:name name :status status})
       (get-item ds resource id))))
 
 (defn delete-item! [ds resource id]
@@ -162,6 +173,7 @@
         current (get-item ds resource id)]
     (when current
       (db/execute! ds ["DELETE FROM resource_item WHERE resource = ? AND id = ?" resource id])
+      (audit! ds "delete-resource" resource id {:name (:name current) :status (:status current)})
       current)))
 
 (def action-status
@@ -201,6 +213,7 @@
       (doseq [id ids]
         (when-let [current (get-item ds resource id)]
           (update-item! ds resource id (assoc current :status status :lastAction action)))))
+    (audit! ds (str "action-" action) resource nil action-record)
     action-record))
 
 (defn apply-item-action! [ds resource id action body]
@@ -209,5 +222,9 @@
         current (get-item ds resource id)]
     (when current
       (if status
-        (update-item! ds resource id (merge body {:status status :lastAction action}))
-        (assoc current :lastAction action :actionParams body)))))
+        (let [updated (update-item! ds resource id (merge body {:status status :lastAction action}))]
+          (audit! ds (str "action-" action) resource id {:status status :params body})
+          updated)
+        (do
+          (audit! ds (str "action-" action) resource id {:params body})
+          (assoc current :lastAction action :actionParams body))))))

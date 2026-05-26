@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useBackendResourceList } from '@/hooks/useBackendListState'
 import { apiRequest } from '@/lib/api'
+import { toast } from 'sonner'
 
 const occupations = ['核反应堆运行值班员', '电气试验员', '机械设备检修工', '仪控设备检修工', '焊接工']
 const levels = ['一级', '二级', '三级', '四级', '五级']
@@ -14,18 +15,27 @@ interface CatalogOptions {
   occupations?: string[]
 }
 
+interface PlanOption {
+  id: string
+  name?: string
+  planName?: string
+}
+
 export default function SelfRegistration() {
-  const backendPlans = useBackendResourceList('/certification/exam-registration', [{ id: 'exam-registration-001', name: '2026年第二批技能认定' }])
+  const backendPlans = useBackendResourceList<PlanOption>('/certification/exam-registration', [{ id: 'exam-registration-001', name: '2026年第二批技能认定' }])
   const backendOrgs = useBackendResourceList('/certification/organizations', orgs.map((name, index) => ({ id: `org-${index + 1}`, name })))
   const [catalogOptions, setCatalogOptions] = useState<CatalogOptions>({ occupations, levels })
   const [step, setStep] = useState(1)
   const [form, setForm] = useState({
-    name: '', idCard: '', phone: '', org: '', occupation: '', level: '', workYears: '', edu: '', certNo: '', plan: backendPlans[0]?.name || '2026年第二批技能认定',
+    name: '', idCard: '', phone: '', org: '', occupation: '', level: '', workYears: '', edu: '', certNo: '', planId: backendPlans[0]?.id || '', plan: backendPlans[0]?.name || backendPlans[0]?.planName || '2026年第二批技能认定',
   })
   const [showSuccess, setShowSuccess] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
   const optionState = {
-    plan: backendPlans[0]?.name || '2026年第二批技能认定',
+    planId: backendPlans[0]?.id || '',
+    plan: backendPlans[0]?.name || backendPlans[0]?.planName || '2026年第二批技能认定',
+    plans: backendPlans.map(plan => ({ id: plan.id, name: plan.name || plan.planName || plan.id })),
     occupations: catalogOptions.occupations?.length ? catalogOptions.occupations : occupations,
     levels: catalogOptions.levels?.length ? catalogOptions.levels : levels,
     orgs: backendOrgs.map(item => item.name).filter(Boolean).length ? backendOrgs.map(item => item.name) : orgs,
@@ -41,8 +51,8 @@ export default function SelfRegistration() {
   }, [])
 
   useEffect(() => {
-    setForm(prev => prev.plan === optionState.plan ? prev : { ...prev, plan: optionState.plan })
-  }, [optionState.plan])
+    setForm(prev => prev.planId === optionState.planId ? prev : { ...prev, planId: optionState.planId, plan: optionState.plan })
+  }, [optionState.plan, optionState.planId])
 
   const update = (field: string, val: string) => setForm(prev => ({ ...prev, [field]: val }))
 
@@ -53,7 +63,32 @@ export default function SelfRegistration() {
     return true
   }
 
-  const submit = () => { setShowSuccess(true) }
+  const submit = async () => {
+    setSubmitting(true)
+    try {
+      await apiRequest('/personal/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: form.name,
+          idCard: form.idCard,
+          phone: form.phone,
+          org: form.org,
+          occupation: form.occupation,
+          level: form.level,
+          workYears: form.workYears,
+          edu: form.edu,
+          certNo: form.certNo,
+          planId: form.planId,
+          plan: form.plan,
+        }),
+      })
+      setShowSuccess(true)
+    } catch {
+      toast.error('报名提交失败，请稍后重试')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
     <div>
@@ -101,7 +136,19 @@ export default function SelfRegistration() {
             <div><label className="text-sm font-medium text-gray-700">从事本职业工作年限 <span className="text-red-500">*</span></label><input type="number" value={form.workYears} onChange={e => update('workYears', e.target.value)} className="w-full mt-1 h-10 px-3 border border-gray-200 rounded-md text-sm" placeholder="输入工作年限" /></div>
             <div><label className="text-sm font-medium text-gray-700">最高学历 <span className="text-red-500">*</span></label><select value={form.edu} onChange={e => update('edu', e.target.value)} className="w-full mt-1 h-10 px-3 border border-gray-200 rounded-md text-sm"><option value="">请选择</option><option>高中/中专</option><option>大专</option><option>本科</option><option>硕士及以上</option></select></div>
             <div><label className="text-sm font-medium text-gray-700">已获证书编号（如有）</label><input value={form.certNo} onChange={e => update('certNo', e.target.value)} className="w-full mt-1 h-10 px-3 border border-gray-200 rounded-md text-sm" placeholder="输入已有证书编号，没有请留空" /></div>
-            <div><label className="text-sm font-medium text-gray-700">认定计划</label><input value={form.plan} readOnly className="w-full mt-1 h-10 px-3 border border-gray-200 rounded-md text-sm bg-gray-50" /></div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">认定计划</label>
+              <select
+                value={form.planId}
+                onChange={event => {
+                  const selected = optionState.plans.find(plan => plan.id === event.target.value)
+                  setForm(prev => ({ ...prev, planId: event.target.value, plan: selected?.name || prev.plan }))
+                }}
+                className="w-full mt-1 h-10 px-3 border border-gray-200 rounded-md text-sm bg-white"
+              >
+                {optionState.plans.map(plan => <option key={plan.id} value={plan.id}>{plan.name}</option>)}
+              </select>
+            </div>
           </div>
         )}
 
@@ -121,7 +168,7 @@ export default function SelfRegistration() {
           {step < 4 ? (
             <Button onClick={() => setStep(step + 1)} disabled={!canNext()} className="h-9 bg-[#1A56DB] hover:bg-[#1748B5]">下一步 <ChevronRight className="w-4 h-4 ml-1" /></Button>
           ) : (
-            <Button onClick={submit} className="h-9 bg-green-600 hover:bg-green-700"><Save className="w-4 h-4 mr-1" />确认提交</Button>
+            <Button onClick={submit} disabled={submitting} className="h-9 bg-green-600 hover:bg-green-700"><Save className="w-4 h-4 mr-1" />{submitting ? '提交中' : '确认提交'}</Button>
           )}
         </div>
       </div>
@@ -133,7 +180,7 @@ export default function SelfRegistration() {
             <CheckCircle className="w-14 h-14 text-green-500 mx-auto mb-3" />
             <p className="text-sm text-gray-600">您的报名信息已提交，请等待审核</p>
             <p className="text-xs text-gray-400 mt-1">报名编号：CGN-BM-{Date.now().toString().slice(-6)}</p>
-            <Button onClick={() => { setShowSuccess(false); setStep(1); setForm({ name:'',idCard:'',phone:'',org:'',occupation:'',level:'',workYears:'',edu:'',certNo:'',plan:optionState.plan }) }} className="mt-4 bg-[#1A56DB] h-9 text-xs">继续报名</Button>
+            <Button onClick={() => { setShowSuccess(false); setStep(1); setForm({ name:'',idCard:'',phone:'',org:'',occupation:'',level:'',workYears:'',edu:'',certNo:'',planId:optionState.planId,plan:optionState.plan }) }} className="mt-4 bg-[#1A56DB] h-9 text-xs">继续报名</Button>
           </div>
         </DialogContent>
       </Dialog>

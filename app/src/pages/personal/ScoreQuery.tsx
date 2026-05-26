@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Search, Award, FileText, Eye, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useBackendListState } from '@/hooks/useBackendListState'
+import { apiRequest } from '@/lib/api'
 
 const scoreData = [
   { id: '1', name: '张三', idCard: '440301199001011234', occupation: '核反应堆运行值班员', level: '三级', theory: 85, practical: 88, total: 86.8, result: '合格', plan: '2026年第一批', date: '2026-05-20' },
@@ -10,16 +10,57 @@ const scoreData = [
   { id: '3', name: '王五', idCard: '440301199003033456', occupation: '机械设备检修工', level: '三级', theory: 55, practical: 58, total: 56.8, result: '不合格', plan: '2026年第一批', date: '2026-05-20' },
 ]
 
+type ScoreResult = typeof scoreData[0]
+
+interface ScoreApiItem {
+  id: string
+  candidateName: string
+  idCard: string
+  occupation: string
+  level: string
+  theoryScore: number
+  skillScore: number
+  totalScore: number
+  planName: string
+  updatedAt?: string
+  createdAt?: string
+}
+
+interface ScoreApiResponse {
+  items: ScoreApiItem[]
+}
+
 export default function ScoreQuery() {
-  const [scores] = useBackendListState(scoreData)
   const [searchId, setSearchId] = useState('')
   const [searched, setSearched] = useState(false)
-  const [result, setResult] = useState<typeof scoreData[0] | null>(null)
+  const [result, setResult] = useState<ScoreResult | null>(null)
   const [showDetail, setShowDetail] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     setSearched(true)
-    setResult(scores.find(d => d.idCard === searchId) || null)
+    setLoading(true)
+    try {
+      const data = await apiRequest<ScoreApiResponse>(`/personal/score?q=${encodeURIComponent(searchId)}`)
+      const item = data.items?.[0]
+      setResult(item ? {
+        id: item.id,
+        name: item.candidateName,
+        idCard: item.idCard,
+        occupation: item.occupation,
+        level: item.level,
+        theory: item.theoryScore,
+        practical: item.skillScore,
+        total: item.totalScore,
+        result: item.totalScore >= 60 ? '合格' : '不合格',
+        plan: item.planName,
+        date: (item.updatedAt || item.createdAt || '').slice(0, 10),
+      } : null)
+    } catch {
+      setResult(scoreData.find(d => d.idCard === searchId) || null)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const reset = () => { setSearchId(''); setSearched(false); setResult(null) }
@@ -40,7 +81,7 @@ export default function ScoreQuery() {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input value={searchId} onChange={e => setSearchId(e.target.value)} placeholder="请输入身份证号" className="w-full h-10 pl-9 pr-4 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#1A56DB]" />
             </div>
-            <Button onClick={handleSearch} className="h-10 px-6 bg-[#1A56DB] hover:bg-[#1748B5]">查询</Button>
+            <Button onClick={handleSearch} disabled={loading} className="h-10 px-6 bg-[#1A56DB] hover:bg-[#1748B5]">{loading ? '查询中' : '查询'}</Button>
             <Button onClick={reset} variant="outline" className="h-10">重置</Button>
           </div>
           <p className="text-xs text-gray-400 mt-2">示例身份证号：440301199001011234</p>

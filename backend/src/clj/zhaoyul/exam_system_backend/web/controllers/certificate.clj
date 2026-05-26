@@ -58,6 +58,18 @@
     (catch Exception e
       (response/bad-request (.getMessage e)))))
 
+(defn generate-plan-certificates
+  [{:keys [datasource]} request]
+  (try
+    (let [plan-id (get-in request [:path-params :plan-id])
+          body (:body-params request)
+          result (svc/generate-plan-certificates!
+                  datasource
+                  (merge body {:plan-id plan-id}))]
+      (response/ok result))
+    (catch Exception e
+      (response/bad-request (.getMessage e)))))
+
 ;; ─── 标记批次已打印 POST /api/certificate/batches/:id/print ───
 
 (defn mark-batch-printed

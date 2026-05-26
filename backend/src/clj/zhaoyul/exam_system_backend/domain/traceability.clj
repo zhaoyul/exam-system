@@ -2,6 +2,7 @@
   "溯源中心 — 溯源案例/溯源预警/时间轴聚合"
   (:require
    [cheshire.core :as json]
+   [clojure.string :as str]
    [zhaoyul.exam-system-backend.domain.resources :as resources]
    [zhaoyul.exam-system-backend.infra.db :as db]))
 
@@ -228,3 +229,126 @@
                :candidateId (:candidate_id payload)
                :planId (:plan_id payload)}))
           rows)))
+
+;; ─── 通用操作留痕 ───
+
+(def action-labels
+  {"create-resource" "新增业务数据"
+   "update-resource" "修改业务数据"
+   "delete-resource" "删除业务数据"
+   "action-submit" "提交"
+   "action-audit" "审核"
+   "action-approve" "审核通过"
+   "action-reject" "退回"
+   "action-reply" "批复"
+   "action-report" "上报"
+   "action-upload" "上传"
+   "action-cancel" "取消"
+   "action-cancel-upload" "撤销上报"
+   "action-push" "推送"
+   "action-end" "结束"
+   "action-finish" "完成"
+   "action-generate" "生成"
+   "action-print" "打印"
+   "action-configure" "配置"
+   "action-assign" "分配"
+   "action-publish" "发布"
+   "action-unpublish" "取消发布"
+   "action-archive" "归档"
+   "action-restore" "恢复"
+   "update_score" "成绩修改"
+   "create_user" "开通用户"
+   "update_user" "修改用户"
+   "lock_user" "锁定用户"
+   "unlock_user" "解锁用户"
+   "reset_password" "重置密码"
+   "authorize_user" "授权用户"})
+
+(defn- parse-int-param [value default max-value]
+  (let [parsed (try
+                 (Integer/parseInt (str value))
+                 (catch Exception _ default))]
+    (min max-value (max 1 parsed))))
+
+(defn- audit-title [resource action payload]
+  (let [label (get action-labels action action)
+        name (or (:name payload) (:title payload) (:planName payload) (:orgName payload) (:candidateName payload))]
+    (str label (when (seq resource) (str " · " resource)) (when (seq name) (str " · " name)))))
+
+(defn- audit-detail [payload]
+  (let [parts (cond-> []
+                (:status payload) (conj (str "状态：" (:status payload)))
+                (:affectedCount payload) (conj (str "影响数量：" (:affectedCount payload)))
+                (:reason payload) (conj (str "原因：" (:reason payload)))
+                (:requestedIds payload) (conj (str "对象：" (str/join "、" (:requestedIds payload))))
+                (:params payload) (conj (str "参数：" (json/generate-string (:params payload))))
+                (:old_score payload) (conj (str "原成绩：" (:old_score payload)))
+                (:new_score payload) (conj (str "新成绩：" (:new_score payload))))]
+    (if (seq parts)
+      (str/join "；" parts)
+      (json/generate-string payload))))
+
+(defn- audit-type [action]
+  (cond
+    (= action "update_score") :score
+    (str/includes? action "approve") :review
+    (str/includes? action "reject") :review
+    (str/includes? action "audit") :review
+    (str/includes? action "upload") :material
+    (str/includes? action "generate") :certificate
+    (str/includes? action "print") :certificate
+    :else :operation))
+
+(defn- row->audit-event [row]
+  (let [payload (db/parse-json (:payload row))
+        action (:action row)
+        resource (:resource row)]
+    {:id (:id row)
+     :type (audit-type action)
+     :time (:created_at row)
+     :operator (or (:actor_name row) "系统")
+     :title (audit-title resource action payload)
+     :detail (audit-detail payload)
+     :status "completed"
+     :action action
+     :resource resource
+     :resourceId (:resource_id row)
+     :actorId (:actor_id row)
+     :payload payload}))
+
+(defn list-audit-events
+  "查询系统操作留痕，可按 resource/resourceId/q 过滤。"
+  [ds params]
+  (let [param #(or (get params %) (get params (keyword %)))
+        resource (some-> (param "resource") str/trim)
+        resource-id (or (some-> (param "resourceId") str/trim)
+                        (some-> (param "resource-id") str/trim))
+        q (some-> (param "q") str/trim)
+        limit (parse-int-param (or (param "limit") 50) 50 200)
+        offset (max 0 (try
+                        (Integer/parseInt (str (or (param "offset") 0)))
+                        (catch Exception _ 0)))
+        filters (cond-> ["1 = 1"]
+                  (seq resource) (conj "a.resource = ?")
+                  (seq resource-id) (conj "a.resource_id = ?")
+                  (seq q) (conj "(a.action LIKE ? OR a.resource LIKE ? OR a.resource_id LIKE ? OR a.payload LIKE ? OR u.display_name LIKE ?)"))
+        args (cond-> []
+               (seq resource) (conj resource)
+               (seq resource-id) (conj resource-id)
+               (seq q) (into (repeat 5 (str "%" q "%"))))
+        where (str/join " AND " filters)
+        select-sql (str "SELECT a.id, a.created_at, a.actor_id, a.action, a.resource, a.resource_id, a.payload,"
+                        " COALESCE(u.display_name, '系统') AS actor_name"
+                        " FROM audit_log a"
+                        " LEFT JOIN app_user u ON a.actor_id = u.id"
+                        " WHERE " where
+                        " ORDER BY a.created_at DESC, a.id DESC LIMIT ? OFFSET ?")
+        count-sql (str "SELECT COUNT(*) AS total FROM audit_log a"
+                       " LEFT JOIN app_user u ON a.actor_id = u.id"
+                       " WHERE " where)
+        rows (db/query ds (into [select-sql] (conj args limit offset)))
+        total (:total (db/execute-one! ds (into [count-sql] args)))]
+    {:items (mapv row->audit-event rows)
+     :total total
+     :limit limit
+     :offset offset}))

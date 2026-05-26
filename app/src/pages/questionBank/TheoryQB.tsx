@@ -1,10 +1,17 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { BarChart3, Edit3, FileUp, MoveRight, Plus, Search, Trash2 } from 'lucide-react'
+import { BarChart3, Download, Edit3, FileUp, MoveRight, Plus, Search, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { knowledgeNodes, questionTypes, subjectName, theoryQuestions, theorySubjects, type QuestionStatus, type TheoryQuestion } from '@/pages/question/theoryData'
 import { useBackendListState } from '@/hooks/useBackendListState'
+import { apiRequest } from '@/lib/api'
+
+interface ImportResult {
+  imported: number
+  failed: number
+  errors: Array<{ row: number; message: string }>
+}
 
 export default function TheoryQB() {
   const [items, setItems] = useBackendListState<TheoryQuestion>(theoryQuestions)
@@ -14,6 +21,7 @@ export default function TheoryQB() {
   const [dialog, setDialog] = useState<'add' | 'import' | 'stats' | 'transfer' | null>(null)
   const [editing, setEditing] = useState<TheoryQuestion | null>(null)
   const [selected, setSelected] = useState<string[]>([])
+  const [importText, setImportText] = useState('')
 
   const selectedSubject = theorySubjects.find(subject => subject.id === subjectId)
   const subjectRows = useMemo(() => theorySubjects.filter(subject => !search || subject.name.includes(search) || subject.code.includes(search)), [search])
@@ -70,6 +78,32 @@ export default function TheoryQB() {
     setDialog('transfer')
   }
 
+  const downloadCsv = async (path: string, filename: string) => {
+    const csv = await apiRequest<string>(path, { headers: { Accept: 'text/csv' } })
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const importQuestions = async () => {
+    if (!importText.trim()) {
+      toast.error('请粘贴标准模板内容')
+      return
+    }
+    const result = await apiRequest<ImportResult>('/question/theory/import', {
+      method: 'POST',
+      body: JSON.stringify({ content: importText, subjectId: subjectId || undefined }),
+    })
+    setDialog(null)
+    setImportText('')
+    toast.success(`已导入 ${result.imported} 道试题${result.failed ? `，失败 ${result.failed} 行` : ''}`)
+    window.setTimeout(() => window.location.reload(), 300)
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
@@ -83,6 +117,8 @@ export default function TheoryQB() {
           <Button className="h-8 bg-[#1A56DB] px-3 text-xs hover:bg-[#1748B5]" onClick={() => { setEditing(null); setDialog('add') }}><Plus className="mr-1.5 h-3.5 w-3.5" />新增试题</Button>
           <Button variant="outline" className="h-8 px-3 text-xs" onClick={transferSelected}><MoveRight className="mr-1.5 h-3.5 w-3.5" />转移内容</Button>
           <Button variant="outline" className="h-8 px-3 text-xs" onClick={() => setDialog('import')}><FileUp className="mr-1.5 h-3.5 w-3.5" />文本导入</Button>
+          <Button variant="outline" className="h-8 px-3 text-xs" onClick={() => downloadCsv('/question/theory/template', '理论试题导入模板.csv')}><Download className="mr-1.5 h-3.5 w-3.5" />模板</Button>
+          <Button variant="outline" className="h-8 px-3 text-xs" onClick={() => downloadCsv('/question/theory/export', '理论试题导出.csv')}><Download className="mr-1.5 h-3.5 w-3.5" />导出</Button>
           <Button variant="outline" className="h-8 px-3 text-xs" onClick={deleteSelected}><Trash2 className="mr-1.5 h-3.5 w-3.5" />删除</Button>
           <Button variant="outline" className="h-8 px-3 text-xs" onClick={setValidity}>有效性</Button>
           <Button variant="outline" className="h-8 px-3 text-xs" onClick={() => setDialog('stats')}><BarChart3 className="mr-1.5 h-3.5 w-3.5" />题量统计</Button>
@@ -192,8 +228,11 @@ export default function TheoryQB() {
       <Dialog open={dialog === 'import'} onOpenChange={() => setDialog(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>文本导入</DialogTitle></DialogHeader>
-          <textarea placeholder="粘贴按模板整理的试题文本" className="h-44 w-full rounded-md border border-gray-200 px-3 py-2 text-sm" />
-          <div className="flex justify-end"><Button onClick={() => { setDialog(null); toast.success('已导入试题') }}>导入</Button></div>
+          <textarea value={importText} onChange={event => setImportText(event.target.value)} placeholder="粘贴按标准 CSV 模板整理的试题内容" className="h-44 w-full rounded-md border border-gray-200 px-3 py-2 text-sm" />
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => downloadCsv('/question/theory/template', '理论试题导入模板.csv')}>下载模板</Button>
+            <Button onClick={importQuestions}>导入</Button>
+          </div>
         </DialogContent>
       </Dialog>
 

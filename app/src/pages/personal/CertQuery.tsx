@@ -2,24 +2,61 @@ import { useState } from 'react'
 import { Search, Award, Eye, Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useBackendListState } from '@/hooks/useBackendListState'
+import { apiRequest } from '@/lib/api'
 
 const certData = [
   { id: '1', name: '张三', idCard: '440301199001011234', occupation: '核反应堆运行值班员', level: '三级', certNo: 'CGN-2026-001', issueDate: '2026-06-01', org: '大亚湾核电', status: '有效' },
   { id: '2', name: '李四', idCard: '440301199002022345', occupation: '电气试验员', level: '四级', certNo: 'CGN-2026-002', issueDate: '2026-06-01', org: '大亚湾核电', status: '有效' },
 ]
 
+type CertResult = typeof certData[0]
+
+interface CertApiItem {
+  id: string
+  candidateName: string
+  idCard: string
+  occupation: string
+  level: string
+  certNo: string
+  issueDate: string
+  orgId?: string
+  status: string
+}
+
+interface CertApiResponse {
+  items: CertApiItem[]
+}
+
 export default function CertQuery() {
-  const [certs] = useBackendListState(certData)
   const [searchId, setSearchId] = useState('')
   const [searched, setSearched] = useState(false)
-  const [result, setResult] = useState<typeof certData[0] | null>(null)
+  const [result, setResult] = useState<CertResult | null>(null)
   const [showDetail, setShowDetail] = useState(false)
   const [showVerify, setShowVerify] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     setSearched(true)
-    setResult(certs.find(d => d.idCard === searchId || d.certNo === searchId) || null)
+    setLoading(true)
+    try {
+      const data = await apiRequest<CertApiResponse>(`/personal/cert?q=${encodeURIComponent(searchId)}`)
+      const item = data.items?.[0]
+      setResult(item ? {
+        id: item.id,
+        name: item.candidateName,
+        idCard: item.idCard,
+        occupation: item.occupation,
+        level: item.level,
+        certNo: item.certNo,
+        issueDate: item.issueDate,
+        org: item.orgId || '中广核集团',
+        status: item.status === 'revoked' ? '已撤销' : '有效',
+      } : null)
+    } catch {
+      setResult(certData.find(d => d.idCard === searchId || d.certNo === searchId) || null)
+    } finally {
+      setLoading(false)
+    }
   }
   const reset = () => { setSearchId(''); setSearched(false); setResult(null) }
 
@@ -39,7 +76,7 @@ export default function CertQuery() {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input value={searchId} onChange={e => setSearchId(e.target.value)} placeholder="身份证号 / 证书编号" className="w-full h-10 pl-9 pr-4 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#1A56DB]" />
             </div>
-            <Button onClick={handleSearch} className="h-10 px-6 bg-[#1A56DB] hover:bg-[#1748B5]">查询</Button>
+            <Button onClick={handleSearch} disabled={loading} className="h-10 px-6 bg-[#1A56DB] hover:bg-[#1748B5]">{loading ? '查询中' : '查询'}</Button>
             <Button onClick={reset} variant="outline" className="h-10">重置</Button>
           </div>
           <p className="text-xs text-gray-400 mt-2">示例：440301199001011234 或 CGN-2026-001</p>

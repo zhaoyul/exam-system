@@ -2,13 +2,14 @@
   "等级认定业务审核 — 数据访问层
    从 resource_item 表查询各模块待审核数据，以及 audit_log 审核历史。"
   (:require
+   [clojure.string :as str]
    [zhaoyul.exam-system-backend.infra.db :as db]))
 
 ;; ----------------------------------------------------------------
 ;; 覆盖的 11 个业务模块（resource 名称）
 ;; ----------------------------------------------------------------
 (def review-resources
-  ["exam-registration" "exam-arrangement" "exam-sessions"
+  ["certification-plans" "exam-registration" "exam-arrangement" "exam-sessions"
    "certificates" "certificate-print-jobs"
    "approval-settings" "approvals" "certificate-reports"
    "trace-alerts" "special-applications" "historical-certifications"])
@@ -17,53 +18,50 @@
 ;; 审核状态集
 ;; ----------------------------------------------------------------
 (def pending-statuses ["待审核" "submitted" "pending" "processing"])
+(def done-statuses ["已通过" "已退回" "已完成" "已发布" "approved" "rejected" "done" "completed"])
+
+(defn- param [params & keys]
+  (some (fn [k]
+          (or (get params k)
+              (get params (keyword k))
+              (get params (str k))))
+        keys))
+
+(defn- parse-int [value fallback]
+  (try
+    (Integer/parseInt (str (or value fallback)))
+    (catch Exception _ fallback)))
+
+(defn- placeholders [items]
+  (str/join "," (repeat (count items) "?")))
 
 ;; ----------------------------------------------------------------
 ;; 待审核列表
 ;; ----------------------------------------------------------------
 (defn list-pending-items
   "分页查询待审核记录，支持按模块、状态、关键词筛选。"
-  [ds {:keys [resource status q org-id limit offset]
-       :or {limit 20 offset 0}}]
-  (let [limit  (min 500 (max 1 (int (or limit 20))))
-        offset (max 0 (int (or offset 0)))
-        resource-filter (if (seq resource)
-                          ["resource = ?" resource]
-                          [(str "resource IN ("
-                                (->> review-resources
-                                     (map (fn [r] (str "'" r "'")))
-                                     (clojure.string/join ","))
-                                ")")])
-        status-filter (if (seq status)
-                        ["status = ?" status]
-                        [(str "status IN ("
-                              (->> pending-statuses
-                                   (map (fn [s] (str "'" s "'")))
-                                   (clojure.string/join ","))
-                              ")")])
-        q-parts (if (seq q)
-                  ["(name LIKE ? OR code LIKE ?)"]
-                  [])
-        org-parts (if (seq org-id)
-                    ["org_id = ?" org-id]
-                    [])
-        filters (remove #(= "1 = 1" %)
-                        (concat ["1 = 1"]
-                                [(first resource-filter)]
-                                [(first status-filter)]
-                                q-parts
-                                org-parts))
-        where-clause (clojure.string/join " AND " filters)
+  [ds params]
+  (let [resource (param params :resource "resource" :module "module")
+        status (param params :status "status")
+        q (some-> (param params :q "q") str/trim)
+        org-id (param params :org-id "org-id" :orgId "orgId" :org_id "org_id")
+        limit  (min 500 (max 1 (parse-int (param params :limit "limit") 20)))
+        offset (max 0 (parse-int (param params :offset "offset") 0))
+        filters (cond-> []
+                  (seq resource) (conj "resource = ?")
+                  (not (seq resource)) (conj (str "resource IN (" (placeholders review-resources) ")"))
+                  (seq status) (conj "status = ?")
+                  (not (seq status)) (conj (str "status IN (" (placeholders pending-statuses) ")"))
+                  (seq q) (conj "(name LIKE ? OR code LIKE ? OR payload LIKE ?)")
+                  (seq org-id) (conj "org_id = ?"))
+        where-clause (str/join " AND " filters)
         args (vec
-              (filter some?
-                      (concat
-                       (when-not (= "resource = ?" (first resource-filter))
-                         (rest resource-filter))
-                       (when-not (= "status = ?" (first status-filter))
-                         (rest status-filter))
-                       (when (seq q) [(str "%" q "%") (str "%" q "%")])
-                       (when (seq org-id) [org-id])
-                       [limit offset])))
+              (concat
+               (if (seq resource) [resource] review-resources)
+               (if (seq status) [status] pending-statuses)
+               (when (seq q) [(str "%" q "%") (str "%" q "%") (str "%" q "%")])
+               (when (seq org-id) [org-id])
+               [limit offset]))
         sql (str "SELECT * FROM resource_item WHERE " where-clause
                  " ORDER BY updated_at DESC LIMIT ? OFFSET ?")
         count-sql (str "SELECT COUNT(*) AS total FROM resource_item WHERE " where-clause)
@@ -74,6 +72,24 @@
      :total (:total total-row)
      :limit  limit
      :offset offset}))
+
+(defn list-work-items
+  "按 todo/done/all 查询业务待办/已办。"
+  [ds params]
+  (let [scope (or (param params :scope "scope") "todo")
+        statuses (case scope
+                   "done" done-statuses
+                   "all" nil
+                   pending-statuses)
+        q (some-> (param params :q "q") str/trim)
+        filters (cond-> [(str "resource IN (" (placeholders review-resources) ")")]
+                  (seq statuses) (conj (str "status IN (" (placeholders statuses) ")"))
+                  (seq q) (conj "(name LIKE ? OR code LIKE ? OR payload LIKE ?)"))
+        args (vec (concat review-resources
+                          statuses
+                          (when (seq q) [(str "%" q "%") (str "%" q "%") (str "%" q "%")])))
+        sql (str "SELECT * FROM resource_item WHERE " (str/join " AND " filters) " ORDER BY updated_at DESC LIMIT 100")]
+    {:items (db/query ds (into [sql] args))}))
 
 ;; ----------------------------------------------------------------
 ;; 单条详情
@@ -116,6 +132,7 @@
    ds
    ["SELECT * FROM audit_log
      WHERE resource = ? AND resource_id = ?
+       AND action LIKE 'review_%'
      ORDER BY created_at DESC"
     resource resource-id]))
 

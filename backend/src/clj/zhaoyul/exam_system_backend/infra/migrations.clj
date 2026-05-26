@@ -16,13 +16,32 @@
    "005-paper-demand.up.sql"
    "006-v3.0-core.up.sql"
    "007-paper-demand-v3-fields.up.sql"
-   "008-exam-staff-eval-occupations.up.sql"])
+   "008-exam-staff-eval-occupations.up.sql"
+   "009-file-storage.up.sql"
+   "010-system-users-mdm-permissions.up.sql"
+   "011-exam-registration-import.up.sql"
+   "012-finance-fees.up.sql"
+   "013-file-workflow-fields.up.sql"])
 
 (defn- split-statements [sql]
   (->> (str/split sql #"(?m)^\s*--;;\s*$")
        (map str/trim)
        (map #(str/replace % #";\s*$" ""))
        (remove str/blank?)))
+
+(defn- ignorable-migration-error? [^Exception ex]
+  (let [message (str/lower-case (or (.getMessage ex) ""))]
+    (or (str/includes? message "duplicate column")
+        (str/includes? message "already exists")
+        (str/includes? message "重复")
+        (str/includes? message "已存在"))))
+
+(defn- execute-migration-statement! [ds statement]
+  (try
+    (db/execute! ds [statement])
+    (catch Exception ex
+      (when-not (ignorable-migration-error? ex)
+        (throw ex)))))
 
 (defn- migration-applied? [ds migration]
   (try
@@ -44,7 +63,7 @@
           :when (not (migration-applied? ds migration))]
     (let [sql (slurp (io/resource resource-path))]
       (doseq [statement (split-statements sql)]
-        (db/execute! ds [statement]))
+        (execute-migration-statement! ds statement))
       (db/execute! ds ["INSERT INTO schema_migrations (id) VALUES (?)" migration])))
   {:status :migrated :count (count migrations)})
 

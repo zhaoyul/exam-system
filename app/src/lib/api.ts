@@ -75,7 +75,8 @@ export async function apiRequest<T>(
   const token = getAuthToken()
   const requestHeaders = new Headers(headers)
 
-  if (fetchOptions.body && !requestHeaders.has('Content-Type')) {
+  const isFormData = typeof FormData !== 'undefined' && fetchOptions.body instanceof FormData
+  if (fetchOptions.body && !isFormData && !requestHeaders.has('Content-Type')) {
     requestHeaders.set('Content-Type', 'application/json')
   }
   if (token && !requestHeaders.has('Authorization')) {

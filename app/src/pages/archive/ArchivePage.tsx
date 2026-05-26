@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import { Search, FolderOpen, Users, Calendar, FileText, Award, Clock, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react'
+import { Fragment, useCallback, useEffect, useState } from 'react'
+import { Search, FolderOpen, Users, Calendar, FileText, Award, Clock, ChevronDown, ChevronUp, ArrowRight, Download } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useBackendListState, useBackendResourceList } from '@/hooks/useBackendListState'
+import { apiRequest } from '@/lib/api'
+import { downloadTextEndpoint } from '@/lib/download'
 
 interface Candidate {
   id: string
@@ -33,6 +34,27 @@ interface TimelineEvent {
   title: string
   details: string[]
   links?: { text: string; url: string }[]
+}
+
+interface ArchiveListResponse {
+  items: ArchiveItem[]
+}
+
+interface CandidateListResponse {
+  planId: string
+  items: Candidate[]
+}
+
+interface TimelineApiEvent {
+  time: string
+  operator: string
+  title: string
+  detail?: string
+}
+
+interface TimelineApiResponse {
+  candidateId: string
+  events: TimelineApiEvent[]
 }
 
 const archives: ArchiveItem[] = [
@@ -77,27 +99,73 @@ const mockTimeline: TimelineEvent[] = [
 
 export default function ArchivePage() {
   const [search, setSearch] = useState('')
-  const [items] = useBackendListState(archives)
+  const [items, setItems] = useState<ArchiveItem[]>(archives)
+  const [loading, setLoading] = useState(false)
   const [viewItem, setViewItem] = useState<ArchiveItem | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [showCandidates, setShowCandidates] = useState(false)
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null)
   const [showTimeline, setShowTimeline] = useState(false)
-  const timelineEvents = useBackendResourceList('/traceability/cases', mockTimeline)
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>(mockTimeline)
+  const [candidateLoading, setCandidateLoading] = useState(false)
 
   const filtered = items.filter(i =>
     !search || i.name.includes(search) || i.planNo.includes(search) || i.org.includes(search)
   )
 
-  const openCandidates = (item: ArchiveItem) => {
-    setViewItem(item)
+  const loadArchives = useCallback(async () => {
+    setLoading(true)
+    try {
+      const params = new URLSearchParams()
+      if (search.trim()) params.set('q', search.trim())
+      const data = await apiRequest<ArchiveListResponse>(`/archive${params.toString() ? `?${params.toString()}` : ''}`)
+      setItems(data.items?.length ? data.items : archives)
+    } catch {
+      setItems(archives)
+    } finally {
+      setLoading(false)
+    }
+  }, [search])
+
+  useEffect(() => {
+    loadArchives()
+  }, [loadArchives])
+
+  const openCandidates = async (item: ArchiveItem) => {
+    setViewItem({ ...item, candidates: item.candidates || [] })
     setShowCandidates(true)
+    setCandidateLoading(true)
+    try {
+      const data = await apiRequest<CandidateListResponse>(`/archive/${encodeURIComponent(item.id)}/candidates`)
+      setViewItem({ ...item, candidates: data.items?.length ? data.items : item.candidates || [] })
+    } catch {
+      setViewItem({ ...item, candidates: item.candidates || [] })
+    } finally {
+      setCandidateLoading(false)
+    }
   }
 
-  const openTimeline = (candidate: Candidate) => {
+  const openTimeline = async (candidate: Candidate) => {
     setSelectedCandidate(candidate)
     setShowCandidates(false)
     setShowTimeline(true)
+    try {
+      const data = await apiRequest<TimelineApiResponse>(`/traceability/timeline/${encodeURIComponent(candidate.id)}`)
+      setTimelineEvents(data.events?.length
+        ? data.events.map(event => ({
+            time: event.time,
+            operator: event.operator,
+            title: event.title,
+            details: event.detail ? [event.detail] : [],
+          }))
+        : mockTimeline)
+    } catch {
+      setTimelineEvents(mockTimeline)
+    }
+  }
+
+  const exportArchive = async (item: ArchiveItem) => {
+    await downloadTextEndpoint(`/archive/${encodeURIComponent(item.id)}/export`, `${item.planNo || item.id}-archive.csv`)
   }
 
   return (
@@ -118,6 +186,7 @@ export default function ArchivePage() {
             className="h-9 pl-9 pr-4 border border-gray-200 rounded-md text-sm w-64 focus:outline-none focus:border-[#1A56DB]"
           />
         </div>
+        <button onClick={loadArchives} className="h-9 rounded-md border border-gray-200 px-4 text-sm text-gray-700 hover:bg-gray-50">刷新</button>
       </div>
 
       {/* Archive Table */}
@@ -137,8 +206,12 @@ export default function ArchivePage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filtered.map((item, idx) => (
-              <>
+            {loading ? (
+              <tr>
+                <td colSpan={9} className="px-4 py-8 text-center text-gray-400">正在加载档案数据...</td>
+              </tr>
+            ) : filtered.map((item, idx) => (
+              <Fragment key={item.id}>
                 <tr key={item.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}>
                   <td className="px-4 py-3">
                     <button className="text-gray-400 hover:text-gray-600">
@@ -158,6 +231,9 @@ export default function ArchivePage() {
                     <div className="flex items-center gap-2">
                       <button onClick={(e) => { e.stopPropagation(); openCandidates(item); }} className="text-[#1A56DB] hover:underline text-xs flex items-center gap-0.5">
                         <Users className="w-3.5 h-3.5" />考生
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); exportArchive(item); }} className="text-gray-600 hover:text-[#1A56DB] text-xs flex items-center gap-0.5">
+                        <Download className="w-3.5 h-3.5" />导出
                       </button>
                     </div>
                   </td>
@@ -195,7 +271,7 @@ export default function ArchivePage() {
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>
@@ -224,7 +300,11 @@ export default function ArchivePage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {viewItem?.candidates?.length ? (
+                {candidateLoading ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-gray-400">正在加载考生数据...</td>
+                  </tr>
+                ) : viewItem?.candidates?.length ? (
                   viewItem.candidates.map((c, idx) => (
                     <tr key={c.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-gray-600">{idx + 1}</td>

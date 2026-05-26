@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Search, CheckCircle, Eye, FileText, Trash2 } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useBackendListState } from '@/hooks/useBackendListState'
+import { useBackendResourceState } from '@/hooks/useBackendListState'
+import { apiRequest } from '@/lib/api'
 
 const items_init = [
   { id: '1', title: '2026年第一批认定申请', org: '阳江核电', date: '2026-05-05', type: '申请', status: 'unread' },
@@ -10,12 +11,19 @@ const items_init = [
 ]
 
 export default function ReceivePage() {
-  const [items, setItems] = useBackendListState(items_init)
+  const [items, setItems] = useBackendResourceState('/file/receive', items_init)
   const [search, setSearch] = useState('')
   const [viewItem, setViewItem] = useState<any>(null)
 
   const filtered = items.filter(i => !search || i.title.includes(search) || i.org.includes(search))
-  const markRead = (id: string) => { setItems(prev => prev.map(i => i.id === id ? { ...i, status: 'read' } : i)) }
+  const markRead = async (id: string) => {
+    try {
+      const updated = await apiRequest<typeof items_init[number]>(`/file/receive/${encodeURIComponent(id)}/read`, { method: 'POST' })
+      setItems(prev => prev.map(i => i.id === id ? { ...i, ...updated, status: 'read' } : i))
+    } catch {
+      setItems(prev => prev.map(i => i.id === id ? { ...i, status: 'read' } : i))
+    }
+  }
   const del = (id: string) => { setItems(prev => prev.filter(i => i.id !== id)) }
 
   return (

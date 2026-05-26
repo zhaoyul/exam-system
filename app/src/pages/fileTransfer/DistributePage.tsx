@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Search, Plus, Edit3, Trash2, Save, Send, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useBackendListState } from '@/hooks/useBackendListState'
+import { useBackendResourceState } from '@/hooks/useBackendListState'
+import { apiRequest } from '@/lib/api'
 
 const items_init = [
   { id: '1', title: '2026年第一批认定通知', org: '大亚湾核电', date: '2026-05-01', type: '通知', status: 'sent' },
@@ -10,7 +11,7 @@ const items_init = [
 ]
 
 export default function DistributePage() {
-  const [items, setItems] = useBackendListState(items_init)
+  const [items, setItems] = useBackendResourceState('/file/distribute', items_init)
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showEdit, setShowEdit] = useState<any>(null)
@@ -26,7 +27,14 @@ export default function DistributePage() {
     else { setItems(prev => [{ ...form, id: Date.now().toString(), date: new Date().toISOString().slice(0,10) }, ...prev]); setShowAdd(false) }
   }
   const handleDelete = (id: string) => { setItems(prev => prev.filter(i => i.id !== id)); setShowDelete(null) }
-  const send = (id: string) => { setItems(prev => prev.map(i => i.id === id ? { ...i, status: 'sent' } : i)) }
+  const send = async (id: string) => {
+    try {
+      const updated = await apiRequest<typeof items_init[number]>(`/file/distribute/${encodeURIComponent(id)}/send`, { method: 'POST' })
+      setItems(prev => prev.map(i => i.id === id ? { ...i, ...updated, status: 'sent' } : i))
+    } catch {
+      setItems(prev => prev.map(i => i.id === id ? { ...i, status: 'sent' } : i))
+    }
+  }
 
   return (
     <div>

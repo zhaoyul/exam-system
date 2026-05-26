@@ -21,6 +21,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC
 .module-head { padding: .95rem 1.1rem; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; gap: 1rem; align-items: center; }
 .module-head h2 { font-size: 1rem; font-weight: 700; letter-spacing: 0; }
 .badge { font-size: .74rem; color: #067647; background: #dcfae6; border: 1px solid #abefc6; border-radius: 999px; padding: .12rem .55rem; white-space: nowrap; }
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .75rem; padding: 1rem 1.1rem; }
+.summary-grid div { border: 1px solid #e5e7eb; border-radius: 8px; padding: .85rem; background: #f8fafc; }
+.summary-grid strong, .feature strong, .test-step strong { display: block; color: #182230; font-size: .88rem; margin-bottom: .22rem; }
+.summary-grid span, .feature span, .test-step span { color: #475467; font-size: .82rem; }
+.feature-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: .75rem; padding: 1rem 1.1rem; }
+.feature { border: 1px solid #e5e7eb; border-radius: 8px; padding: .85rem; background: #fff; }
+.test-list { display: grid; gap: .65rem; padding: 1rem 1.1rem; }
+.test-step { display: grid; grid-template-columns: 2rem 1fr; gap: .65rem; align-items: start; border: 1px solid #e5e7eb; border-radius: 8px; padding: .8rem; background: #f8fafc; }
+.test-step em { width: 2rem; height: 2rem; border-radius: 50%; background: #eff8ff; color: #175cd3; border: 1px solid #b2ddff; display: flex; align-items: center; justify-content: center; font-style: normal; font-weight: 700; font-size: .78rem; }
 .req { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr); gap: .75rem; padding: 1rem 1.1rem; border-bottom: 1px solid #f1f5f9; }
 .req:last-child { border-bottom: 0; }
 .idx { width: 2.25rem; height: 1.55rem; border-radius: 5px; background: #dcfae6; color: #067647; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .78rem; }
@@ -46,21 +55,53 @@ footer { color: #98a2b3; text-align: center; font-size: .82rem; padding: 2rem 1r
 <body>
 <section class="hero">
   <h1>v3.0 修改验收报告</h1>
-  <p>中广核职业技能等级认定管理系统 - 功能修改对照与截图证明</p>
+  <p>中广核职业技能等级认定管理系统 - 功能修改对照、V1.0主流程补齐与截图证明</p>
   <div class="meta">
-    <span>文档对照：v3.0修改.docx</span>
-    <span>验收时间：2026-05-25 20:08</span>
+    <span>文档对照：v3.0修改.docx / 需求规格说明书V1.0</span>
+    <span>验收时间：2026/5/26 13:14:52</span>
     <span>服务器：http://106.12.6.24:29527/</span>
   </div>
 </section>
 <section class="stats">
-  <div class="stat"><span class="num">22</span><span class="label">截图证明点</span></div>
-  <div class="stat"><span class="num">7</span><span class="label">覆盖模块</span></div>
+  <div class="stat"><span class="num">49</span><span class="label">截图证明点</span></div>
+  <div class="stat"><span class="num">14</span><span class="label">覆盖模块</span></div>
   <div class="stat"><span class="num">100%</span><span class="label">证明清单完成率</span></div>
   <div class="stat"><span class="num">200</span><span class="label">远端健康检查</span></div>
 </section>
 <main class="container">
-  <div class="notice">本页由 v3.0 证明目录自动生成，覆盖标准题库、机构备案、等级认定、个人端、溯源中心、4A/MDM 对接等修改点。点击截图可放大查看。</div>
+  <div class="notice">本页由 v3.0 证明目录自动生成，覆盖标准题库、题库组卷、机构备案、等级认定、报表上报、文件流转、财务收费、个人端、溯源中心、4A/MDM 对接等修改点。点击截图可放大查看。</div>
+  <section class="module">
+    <div class="module-head"><h2>交付概览</h2><span class="badge">14 个模块</span></div>
+    <div class="summary-grid">
+      <div><strong>交付版本</strong><span>3.1.0</span></div>
+      <div><strong>证明点数量</strong><span>49 个</span></div>
+      <div><strong>后端测试</strong><span>19 个测试 / 137 个断言 / 0 失败</span></div>
+      <div><strong>前端验证</strong><span>TypeScript 编译 + Vite 生产构建</span></div>
+    </div>
+  </section>
+  <section class="module">
+    <div class="module-head"><h2>新增功能说明</h2><span class="badge">8 类能力</span></div>
+    <div class="feature-list">
+      <div class="feature"><strong>登录与基础数据</strong><span>补齐 4A 回调、本地用户映射、MDM 人员同步、系统用户角色和权限状态维护。</span></div>
+<div class="feature"><strong>标准题库与组卷</strong><span>补齐理论题导入导出、模板下载、组卷规则生成试卷、卷库管理和题库流转页面。</span></div>
+<div class="feature"><strong>认定主流程</strong><span>补齐报名导入、资格审核、准考证号、证书生成/查看/打印、工作台入口和流程状态联动。</span></div>
+<div class="feature"><strong>报表与上报</strong><span>补齐成绩、统计、报名、编排报表，以及上报数据批次、校验结果、回执记录。</span></div>
+<div class="feature"><strong>文件流转</strong><span>补齐文件阅览、分发、接收已读回执、私有文档和分发反馈统计。</span></div>
+<div class="feature"><strong>财务收费</strong><span>补齐收费标准、缴费登记、应收实收统计、缴费清单、票据号和导出入口。</span></div>
+<div class="feature"><strong>阅卷、档案与溯源</strong><span>补齐阅卷进度、复核状态、档案归档、审计日志和关键操作留痕。</span></div>
+<div class="feature"><strong>个人端</strong><span>补齐个人报名、准考证、成绩查询、证书查询等候选人自助能力。</span></div>
+    </div>
+  </section>
+  <section class="module">
+    <div class="module-head"><h2>测试方法</h2><span class="badge">5 步验证</span></div>
+    <div class="test-list">
+      <div class="test-step"><em>1</em><div><strong>后端自动化测试</strong><span>使用独立 SQLite 数据库运行 clojure -M:test，覆盖迁移、领域服务、控制器和关键 API 闭环。</span></div></div>
+<div class="test-step"><em>2</em><div><strong>前端构建测试</strong><span>运行 npm run build，覆盖 TypeScript 编译和 Vite 生产构建。</span></div></div>
+<div class="test-step"><em>3</em><div><strong>页面截图验证</strong><span>启动本地前后端，使用 Playwright 逐页访问 49 个证明路由并生成截图。</span></div></div>
+<div class="test-step"><em>4</em><div><strong>静态证明发布</strong><span>运行 node app/scripts/generate-v3-proof-html.mjs，生成 docs/v3-proof/index.html 与 app/public/v3.0-proof/index.html。</span></div></div>
+<div class="test-step"><em>5</em><div><strong>远端部署验证</strong><span>使用项目部署脚本发布到 GPU 服务器后访问 /v3.0-proof/index.html，确认证明页和图片资源可打开。</span></div></div>
+    </div>
+  </section>
   <section class="module">
     <div class="module-head"><h2>登录认证</h2><span class="badge">1 项已完成</span></div>
     <article class="req">
@@ -161,7 +202,7 @@ footer { color: #98a2b3; text-align: center; font-size: .82rem; padding: 2rem 1r
   </article>
   </section>
 <section class="module">
-    <div class="module-head"><h2>等级认定</h2><span class="badge">9 项已完成</span></div>
+    <div class="module-head"><h2>等级认定</h2><span class="badge">14 项已完成</span></div>
     <article class="req">
     <div class="idx">11</div>
     <div>
@@ -243,9 +284,54 @@ footer { color: #98a2b3; text-align: center; font-size: .82rem; padding: 2rem 1r
       <div class="shot"><img src="21-historical.png" alt="历次认定：按计划和备案地区聚合历史档案" loading="lazy" onclick="showModal(this.src)"><div class="cap">21-historical.png</div></div>
     </div>
   </article>
+<article class="req">
+    <div class="idx">27</div>
+    <div>
+      <div class="text">已完成：考试报名：报名导入、资格审核、准考证号生成和报名状态</div>
+      <div class="route">/cert/exam-registration</div>
+      <div class="proof-links"><a href="27-cert-registration-import.png" target="_blank">截图：27-cert-registration-import.png</a></div>
+      <div class="shot"><img src="27-cert-registration-import.png" alt="考试报名：报名导入、资格审核、准考证号生成和报名状态" loading="lazy" onclick="showModal(this.src)"><div class="cap">27-cert-registration-import.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">28</div>
+    <div>
+      <div class="text">已完成：证书核发：批量生成、证书编号规则、电子证书和核发状态</div>
+      <div class="route">/certificate/issue</div>
+      <div class="proof-links"><a href="28-certificate-issue.png" target="_blank">截图：28-certificate-issue.png</a></div>
+      <div class="shot"><img src="28-certificate-issue.png" alt="证书核发：批量生成、证书编号规则、电子证书和核发状态" loading="lazy" onclick="showModal(this.src)"><div class="cap">28-certificate-issue.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">29</div>
+    <div>
+      <div class="text">已完成：证书查看：证书查询、证书详情、打印和补发入口</div>
+      <div class="route">/certificate/view</div>
+      <div class="proof-links"><a href="29-certificate-view.png" target="_blank">截图：29-certificate-view.png</a></div>
+      <div class="shot"><img src="29-certificate-view.png" alt="证书查看：证书查询、证书详情、打印和补发入口" loading="lazy" onclick="showModal(this.src)"><div class="cap">29-certificate-view.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">41</div>
+    <div>
+      <div class="text">已完成：个人端证书查询：电子证书、证书编号和下载入口</div>
+      <div class="route">/personal/cert</div>
+      <div class="proof-links"><a href="41-personal-cert.png" target="_blank">截图：41-personal-cert.png</a></div>
+      <div class="shot"><img src="41-personal-cert.png" alt="个人端证书查询：电子证书、证书编号和下载入口" loading="lazy" onclick="showModal(this.src)"><div class="cap">41-personal-cert.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">48</div>
+    <div>
+      <div class="text">已完成：认定工作台：计划、报名、考务、证书等主流程快捷入口</div>
+      <div class="route">/wb/cert</div>
+      <div class="proof-links"><a href="48-wb-cert.png" target="_blank">截图：48-wb-cert.png</a></div>
+      <div class="shot"><img src="48-wb-cert.png" alt="认定工作台：计划、报名、考务、证书等主流程快捷入口" loading="lazy" onclick="showModal(this.src)"><div class="cap">48-wb-cert.png</div></div>
+    </div>
+  </article>
   </section>
 <section class="module">
-    <div class="module-head"><h2>个人端</h2><span class="badge">1 项已完成</span></div>
+    <div class="module-head"><h2>个人端</h2><span class="badge">4 项已完成</span></div>
     <article class="req">
     <div class="idx">19</div>
     <div>
@@ -255,9 +341,36 @@ footer { color: #98a2b3; text-align: center; font-size: .82rem; padding: 2rem 1r
       <div class="shot"><img src="19-admission-ticket.png" alt="准考证：准考证编号与员工号规则" loading="lazy" onclick="showModal(this.src)"><div class="cap">19-admission-ticket.png</div></div>
     </div>
   </article>
+<article class="req">
+    <div class="idx">39</div>
+    <div>
+      <div class="text">已完成：个人端报名：个人网报、报名材料、提交记录和审核结果</div>
+      <div class="route">/personal/register</div>
+      <div class="proof-links"><a href="39-personal-register.png" target="_blank">截图：39-personal-register.png</a></div>
+      <div class="shot"><img src="39-personal-register.png" alt="个人端报名：个人网报、报名材料、提交记录和审核结果" loading="lazy" onclick="showModal(this.src)"><div class="cap">39-personal-register.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">40</div>
+    <div>
+      <div class="text">已完成：个人端成绩查询：按身份证/准考证查询成绩与合格状态</div>
+      <div class="route">/personal/score</div>
+      <div class="proof-links"><a href="40-personal-score.png" target="_blank">截图：40-personal-score.png</a></div>
+      <div class="shot"><img src="40-personal-score.png" alt="个人端成绩查询：按身份证/准考证查询成绩与合格状态" loading="lazy" onclick="showModal(this.src)"><div class="cap">40-personal-score.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">42</div>
+    <div>
+      <div class="text">已完成：个人端准考证：准考证查询、考点考场、座位和打印入口</div>
+      <div class="route">/personal/ticket</div>
+      <div class="proof-links"><a href="42-personal-ticket.png" target="_blank">截图：42-personal-ticket.png</a></div>
+      <div class="shot"><img src="42-personal-ticket.png" alt="个人端准考证：准考证查询、考点考场、座位和打印入口" loading="lazy" onclick="showModal(this.src)"><div class="cap">42-personal-ticket.png</div></div>
+    </div>
+  </article>
   </section>
 <section class="module">
-    <div class="module-head"><h2>溯源中心</h2><span class="badge">1 项已完成</span></div>
+    <div class="module-head"><h2>溯源中心</h2><span class="badge">2 项已完成</span></div>
     <article class="req">
     <div class="idx">20</div>
     <div>
@@ -265,6 +378,15 @@ footer { color: #98a2b3; text-align: center; font-size: .82rem; padding: 2rem 1r
       <div class="route">/traceability</div>
       <div class="proof-links"><a href="20-traceability.png" target="_blank">截图：20-traceability.png</a></div>
       <div class="shot"><img src="20-traceability.png" alt="溯源中心：认定过程、地区筛选和修改成绩记录禁用态" loading="lazy" onclick="showModal(this.src)"><div class="cap">20-traceability.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">49</div>
+    <div>
+      <div class="text">已完成：溯源中心：接口同步、操作审计、成绩修改和证书全链路追踪</div>
+      <div class="route">/traceability</div>
+      <div class="proof-links"><a href="49-traceability-audit.png" target="_blank">截图：49-traceability-audit.png</a></div>
+      <div class="shot"><img src="49-traceability-audit.png" alt="溯源中心：接口同步、操作审计、成绩修改和证书全链路追踪" loading="lazy" onclick="showModal(this.src)"><div class="cap">49-traceability-audit.png</div></div>
     </div>
   </article>
   </section>
@@ -280,8 +402,191 @@ footer { color: #98a2b3; text-align: center; font-size: .82rem; padding: 2rem 1r
     </div>
   </article>
   </section>
+<section class="module">
+    <div class="module-head"><h2>基础数据</h2><span class="badge">1 项已完成</span></div>
+    <article class="req">
+    <div class="idx">23</div>
+    <div>
+      <div class="text">已完成：系统用户：MDM人员同步、4A账号映射、角色授权和本地禁用</div>
+      <div class="route">/system/users</div>
+      <div class="proof-links"><a href="23-system-users-mdm.png" target="_blank">截图：23-system-users-mdm.png</a></div>
+      <div class="shot"><img src="23-system-users-mdm.png" alt="系统用户：MDM人员同步、4A账号映射、角色授权和本地禁用" loading="lazy" onclick="showModal(this.src)"><div class="cap">23-system-users-mdm.png</div></div>
+    </div>
+  </article>
+  </section>
+<section class="module">
+    <div class="module-head"><h2>题库组卷</h2><span class="badge">3 项已完成</span></div>
+    <article class="req">
+    <div class="idx">24</div>
+    <div>
+      <div class="text">已完成：理论题库：试题导入导出、模板下载、审核状态和题型结构</div>
+      <div class="route">/question/theory</div>
+      <div class="proof-links"><a href="24-question-theory-import.png" target="_blank">截图：24-question-theory-import.png</a></div>
+      <div class="shot"><img src="24-question-theory-import.png" alt="理论题库：试题导入导出、模板下载、审核状态和题型结构" loading="lazy" onclick="showModal(this.src)"><div class="cap">24-question-theory-import.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">25</div>
+    <div>
+      <div class="text">已完成：组卷规则：跨科目规则、题型比例和一键生成试卷</div>
+      <div class="route">/question/paper-rules</div>
+      <div class="proof-links"><a href="25-question-paper-rules.png" target="_blank">截图：25-question-paper-rules.png</a></div>
+      <div class="shot"><img src="25-question-paper-rules.png" alt="组卷规则：跨科目规则、题型比例和一键生成试卷" loading="lazy" onclick="showModal(this.src)"><div class="cap">25-question-paper-rules.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">26</div>
+    <div>
+      <div class="text">已完成：卷库管理：固定卷、抽卷记录、推送状态和试卷详情</div>
+      <div class="route">/question/paper-library</div>
+      <div class="proof-links"><a href="26-question-paper-library.png" target="_blank">截图：26-question-paper-library.png</a></div>
+      <div class="shot"><img src="26-question-paper-library.png" alt="卷库管理：固定卷、抽卷记录、推送状态和试卷详情" loading="lazy" onclick="showModal(this.src)"><div class="cap">26-question-paper-library.png</div></div>
+    </div>
+  </article>
+  </section>
+<section class="module">
+    <div class="module-head"><h2>报表上报</h2><span class="badge">5 项已完成</span></div>
+    <article class="req">
+    <div class="idx">30</div>
+    <div>
+      <div class="text">已完成：成绩报表：成绩统计、合格率分析、职业等级筛选和导出</div>
+      <div class="route">/report/score</div>
+      <div class="proof-links"><a href="30-report-score.png" target="_blank">截图：30-report-score.png</a></div>
+      <div class="shot"><img src="30-report-score.png" alt="成绩报表：成绩统计、合格率分析、职业等级筛选和导出" loading="lazy" onclick="showModal(this.src)"><div class="cap">30-report-score.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">31</div>
+    <div>
+      <div class="text">已完成：统计报表：认定人数、机构覆盖、通过率和趋势图</div>
+      <div class="route">/report/statistics</div>
+      <div class="proof-links"><a href="31-report-statistics.png" target="_blank">截图：31-report-statistics.png</a></div>
+      <div class="shot"><img src="31-report-statistics.png" alt="统计报表：认定人数、机构覆盖、通过率和趋势图" loading="lazy" onclick="showModal(this.src)"><div class="cap">31-report-statistics.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">32</div>
+    <div>
+      <div class="text">已完成：报名报表：报名人数、资格审核状态、机构/工种维度统计</div>
+      <div class="route">/report/registration</div>
+      <div class="proof-links"><a href="32-report-registration.png" target="_blank">截图：32-report-registration.png</a></div>
+      <div class="shot"><img src="32-report-registration.png" alt="报名报表：报名人数、资格审核状态、机构/工种维度统计" loading="lazy" onclick="showModal(this.src)"><div class="cap">32-report-registration.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">33</div>
+    <div>
+      <div class="text">已完成：编排报表：考点考场、监考安排、座位编排和导出</div>
+      <div class="route">/report/arrangement</div>
+      <div class="proof-links"><a href="33-report-arrangement.png" target="_blank">截图：33-report-arrangement.png</a></div>
+      <div class="shot"><img src="33-report-arrangement.png" alt="编排报表：考点考场、监考安排、座位编排和导出" loading="lazy" onclick="showModal(this.src)"><div class="cap">33-report-arrangement.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">34</div>
+    <div>
+      <div class="text">已完成：数据上报：人社平台上报批次、校验结果和回执记录</div>
+      <div class="route">/report/data-upload</div>
+      <div class="proof-links"><a href="34-report-data-upload.png" target="_blank">截图：34-report-data-upload.png</a></div>
+      <div class="shot"><img src="34-report-data-upload.png" alt="数据上报：人社平台上报批次、校验结果和回执记录" loading="lazy" onclick="showModal(this.src)"><div class="cap">34-report-data-upload.png</div></div>
+    </div>
+  </article>
+  </section>
+<section class="module">
+    <div class="module-head"><h2>文件流转</h2><span class="badge">4 项已完成</span></div>
+    <article class="req">
+    <div class="idx">35</div>
+    <div>
+      <div class="text">已完成：文件阅览：制度文件在线查看、分类检索和阅读记录</div>
+      <div class="route">/file/viewer</div>
+      <div class="proof-links"><a href="35-file-viewer.png" target="_blank">截图：35-file-viewer.png</a></div>
+      <div class="shot"><img src="35-file-viewer.png" alt="文件阅览：制度文件在线查看、分类检索和阅读记录" loading="lazy" onclick="showModal(this.src)"><div class="cap">35-file-viewer.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">36</div>
+    <div>
+      <div class="text">已完成：文件分发：分发范围、发布动作、阅读数和反馈数闭环</div>
+      <div class="route">/file/distribute</div>
+      <div class="proof-links"><a href="36-file-distribute.png" target="_blank">截图：36-file-distribute.png</a></div>
+      <div class="shot"><img src="36-file-distribute.png" alt="文件分发：分发范围、发布动作、阅读数和反馈数闭环" loading="lazy" onclick="showModal(this.src)"><div class="cap">36-file-distribute.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">37</div>
+    <div>
+      <div class="text">已完成：文件接收：收文列表、已读回执和接收状态</div>
+      <div class="route">/file/receive</div>
+      <div class="proof-links"><a href="37-file-receive.png" target="_blank">截图：37-file-receive.png</a></div>
+      <div class="shot"><img src="37-file-receive.png" alt="文件接收：收文列表、已读回执和接收状态" loading="lazy" onclick="showModal(this.src)"><div class="cap">37-file-receive.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">38</div>
+    <div>
+      <div class="text">已完成：私有文档：个人文档上传、标签分类和权限隔离</div>
+      <div class="route">/file/private</div>
+      <div class="proof-links"><a href="38-file-private.png" target="_blank">截图：38-file-private.png</a></div>
+      <div class="shot"><img src="38-file-private.png" alt="私有文档：个人文档上传、标签分类和权限隔离" loading="lazy" onclick="showModal(this.src)"><div class="cap">38-file-private.png</div></div>
+    </div>
+  </article>
+  </section>
+<section class="module">
+    <div class="module-head"><h2>财务收费</h2><span class="badge">3 项已完成</span></div>
+    <article class="req">
+    <div class="idx">43</div>
+    <div>
+      <div class="text">已完成：收费标准：职业等级收费项、启停状态和标准维护</div>
+      <div class="route">/finance/standard</div>
+      <div class="proof-links"><a href="43-finance-standard.png" target="_blank">截图：43-finance-standard.png</a></div>
+      <div class="shot"><img src="43-finance-standard.png" alt="收费标准：职业等级收费项、启停状态和标准维护" loading="lazy" onclick="showModal(this.src)"><div class="cap">43-finance-standard.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">44</div>
+    <div>
+      <div class="text">已完成：收费管理：应收实收统计、缴费登记和欠费筛选</div>
+      <div class="route">/finance/charge</div>
+      <div class="proof-links"><a href="44-finance-charge.png" target="_blank">截图：44-finance-charge.png</a></div>
+      <div class="shot"><img src="44-finance-charge.png" alt="收费管理：应收实收统计、缴费登记和欠费筛选" loading="lazy" onclick="showModal(this.src)"><div class="cap">44-finance-charge.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">45</div>
+    <div>
+      <div class="text">已完成：缴费清单：缴费明细、批量确认、票据号和导出</div>
+      <div class="route">/finance/list</div>
+      <div class="proof-links"><a href="45-finance-list.png" target="_blank">截图：45-finance-list.png</a></div>
+      <div class="shot"><img src="45-finance-list.png" alt="缴费清单：缴费明细、批量确认、票据号和导出" loading="lazy" onclick="showModal(this.src)"><div class="cap">45-finance-list.png</div></div>
+    </div>
+  </article>
+  </section>
+<section class="module">
+    <div class="module-head"><h2>阅卷评分</h2><span class="badge">1 项已完成</span></div>
+    <article class="req">
+    <div class="idx">46</div>
+    <div>
+      <div class="text">已完成：阅卷管理：阅卷任务、评分进度、复核状态和留痕</div>
+      <div class="route">/grading/marking</div>
+      <div class="proof-links"><a href="46-grading-marking.png" target="_blank">截图：46-grading-marking.png</a></div>
+      <div class="shot"><img src="46-grading-marking.png" alt="阅卷管理：阅卷任务、评分进度、复核状态和留痕" loading="lazy" onclick="showModal(this.src)"><div class="cap">46-grading-marking.png</div></div>
+    </div>
+  </article>
+  </section>
+<section class="module">
+    <div class="module-head"><h2>档案管理</h2><span class="badge">1 项已完成</span></div>
+    <article class="req">
+    <div class="idx">47</div>
+    <div>
+      <div class="text">已完成：档案管理：认定档案、证书档案、文件档案和归档状态</div>
+      <div class="route">/archive</div>
+      <div class="proof-links"><a href="47-archive.png" target="_blank">截图：47-archive.png</a></div>
+      <div class="shot"><img src="47-archive.png" alt="档案管理：认定档案、证书档案、文件档案和归档状态" loading="lazy" onclick="showModal(this.src)"><div class="cap">47-archive.png</div></div>
+    </div>
+  </article>
+  </section>
 </main>
-<footer>v3.0 修改验收报告 - 生成于 2026-05-25 20:08</footer>
+<footer>v3.0 修改验收报告 - 生成于 2026/5/26 13:14:52</footer>
 <div class="modal" id="modal" onclick="this.classList.remove('show')"><img id="modalImg" alt=""></div>
 <script>
 function showModal(src) {

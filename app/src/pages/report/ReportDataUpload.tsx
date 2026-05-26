@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { Upload, Download, FileText, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useBackendListState } from '@/hooks/useBackendListState'
+import { downloadTextEndpoint } from '@/lib/download'
+import { apiRequest } from '@/lib/api'
+import { toast } from 'sonner'
 
 const uploads = [
   { id: '1', name: '2026年第一批认定数据', org: '大亚湾核电', date: '2026-05-25', status: 'uploaded' },
@@ -11,9 +14,15 @@ const uploads = [
 export default function ReportDataUpload() {
   const [items, setItems] = useBackendListState(uploads)
   const [dragOver, setDragOver] = useState(false)
+  const [preview, setPreview] = useState<{ scoreRows: number; registrationRows: number; certificateRows: number } | null>(null)
 
   const upload = (id: string) => { setItems(prev => prev.map(i => i.id === id ? { ...i, status: 'uploaded' } : i)) }
   const del = (id: string) => { setItems(prev => prev.filter(i => i.id !== id)) }
+  const loadPreview = async () => {
+    const result = await apiRequest<{ summary: { scoreRows: number; registrationRows: number; certificateRows: number } }>('/report/data-upload/preview')
+    setPreview(result.summary)
+    toast.success('上报数据预览已生成')
+  }
 
   return (
     <div>
@@ -29,8 +38,16 @@ export default function ReportDataUpload() {
           <p className="text-xs text-gray-400 mt-1">支持 Excel、CSV 格式</p>
         </div>
         <div className="mt-3 flex items-center gap-2">
-          <Button variant="outline" className="h-9 text-xs"><Download className="w-3.5 h-3.5 mr-1" />下载上报模板</Button>
+          <Button variant="outline" className="h-9 text-xs" onClick={() => downloadTextEndpoint('/report/data-upload/template', '上报数据模板.csv')}><Download className="w-3.5 h-3.5 mr-1" />下载上报模板</Button>
+          <Button variant="outline" className="h-9 text-xs" onClick={loadPreview}><FileText className="w-3.5 h-3.5 mr-1" />生成预览</Button>
         </div>
+        {preview && (
+          <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
+            <div className="rounded-md border border-gray-100 px-3 py-2">成绩行数 <span className="font-semibold">{preview.scoreRows}</span></div>
+            <div className="rounded-md border border-gray-100 px-3 py-2">报名行数 <span className="font-semibold">{preview.registrationRows}</span></div>
+            <div className="rounded-md border border-gray-100 px-3 py-2">证书行数 <span className="font-semibold">{preview.certificateRows}</span></div>
+          </div>
+        )}
       </div>
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         <h2 className="text-base font-semibold text-gray-900 mb-3">上报记录</h2>

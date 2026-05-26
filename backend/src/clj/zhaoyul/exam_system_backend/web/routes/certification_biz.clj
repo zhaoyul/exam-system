@@ -13,6 +13,14 @@
      {:get {:summary "待审核列表"
             :handler (partial biz/list-pending ctx)}}]
 
+    ["/work-items"
+     {:get {:summary "待办/已办事项列表"
+            :handler (partial biz/list-work-items ctx)}}]
+
+    ["/workbench"
+     {:get {:summary "等级认定工作台汇总"
+            :handler (partial biz/workbench-summary ctx)}}]
+
     ;; 审核详情（查看单个审核项）
     ["/detail/:module/:id"
      {:get {:summary "审核项详情"

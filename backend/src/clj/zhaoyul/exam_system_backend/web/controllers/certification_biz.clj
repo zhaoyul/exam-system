@@ -14,6 +14,14 @@
         result (svc/list-pending datasource params)]
     (response/ok result)))
 
+(defn list-work-items
+  [{:keys [datasource]} request]
+  (response/ok (svc/list-work-items datasource (:query-params request))))
+
+(defn workbench-summary
+  [{:keys [datasource]} _request]
+  (response/ok (svc/workbench-summary datasource)))
+
 ;; ----------------------------------------------------------------
 ;; GET /api/certification/biz/detail/:module/:id
 ;; ----------------------------------------------------------------

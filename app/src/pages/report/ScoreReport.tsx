@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Search, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useBackendListState } from '@/hooks/useBackendListState'
+import { downloadTextEndpoint } from '@/lib/download'
 
 const data = [
   { id: '1', org: '大亚湾核电', total: 120, pass: 105, fail: 15, avg: 82.5 },
@@ -20,7 +21,7 @@ export default function ScoreReport() {
       <h1 className="text-xl font-bold text-gray-900 mb-4">成绩报表</h1>
       <div className="flex items-center justify-between mb-3">
         <div className="relative"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="搜索机构..." className="h-9 pl-9 pr-4 border border-gray-200 rounded-md text-sm w-64 focus:outline-none focus:border-[#1A56DB]" /></div>
-        <Button variant="outline" className="h-9"><Download className="w-4 h-4 mr-1" />导出</Button>
+        <Button variant="outline" className="h-9" onClick={() => downloadTextEndpoint('/report/score/export', '成绩报表.csv')}><Download className="w-4 h-4 mr-1" />导出</Button>
       </div>
       <div className="bg-white rounded-lg border border-gray-200 overflow-auto">
         <table className="w-full text-sm">

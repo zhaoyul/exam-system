@@ -163,6 +163,73 @@
        :certificates certificates
        :count        (count certificates)})))
 
+(defn- passed-score-candidates [ds plan-id]
+  (db/query
+   ds
+   ["SELECT s.id AS score_id,
+           s.org_id,
+           s.plan_id,
+           s.candidate_id,
+           s.candidate_name,
+           s.total_score,
+           c.id_card,
+           c.occupation,
+           c.profession,
+           c.level
+     FROM cgn_score s
+     LEFT JOIN cgn_candidate c ON c.id = s.candidate_id
+     WHERE s.plan_id = ? AND s.total_score >= 60
+     ORDER BY s.candidate_name"
+    plan-id]))
+
+(defn- existing-cert-id-cards [ds plan-id]
+  (->> (db/query ds ["SELECT id_card FROM cgn_certificate WHERE plan_id = ?" plan-id])
+       (map :id_card)
+       (remove nil?)
+       set))
+
+(defn generate-plan-certificates!
+  "按计划从通过成绩生成证书批次和证书，自动跳过已生成证书的身份证号。"
+  [ds {:keys [plan-id issue-date site-code year org-id batch-no name]
+       :or {site-code "GD"}
+       :as _params}]
+  (when-not (seq (str plan-id))
+    (throw (ex-info "plan-id不能为空" {})))
+  (let [plan (db/execute-one! ds ["SELECT * FROM cgn_recog_plan WHERE id = ?" plan-id])
+        _ (when-not plan (throw (ex-info "认定计划不存在" {:plan-id plan-id})))
+        existing-id-cards (existing-cert-id-cards ds plan-id)
+        candidates (->> (passed-score-candidates ds plan-id)
+                        (remove #(contains? existing-id-cards (:id_card %)))
+                        (mapv (fn [row]
+                                {:name (:candidate_name row)
+                                 :id-card (:id_card row)
+                                 :occupation (or (:profession row) (:occupation row) (:occupation plan))
+                                 :level (or (:level row) (:level plan))
+                                 :code (:score_id row)})))
+        batch (create-batch!
+               ds
+               {:org-id (or org-id (:org_id plan))
+                :plan-id plan-id
+                :batch-no (or batch-no (str "CERT-" (:code plan)))
+                :name (or name (str (:name plan) "证书批次"))
+                :issue-date issue-date})]
+    (if (seq candidates)
+      (assoc (generate-batch-certificates!
+              ds
+              {:batch-id (:id batch)
+               :candidates candidates
+               :site-code site-code
+               :year (or year (.getYear (java.time.LocalDate/now)))
+               :issue-date issue-date
+               :plan-id plan-id
+               :org-id (or org-id (:org_id plan))})
+             :skipped (count existing-id-cards))
+      {:batch-id (:id batch)
+       :certificates []
+       :count 0
+       :skipped (count existing-id-cards)
+       :message "没有新的合格成绩可生成证书"})))
+
 ;; ═══════════════════════════════════════════════════════════════
 ;; 证书查询
 ;; ═══════════════════════════════════════════════════════════════

@@ -22,6 +22,31 @@
 (defn list-pending [ds params]
   (repo/list-pending-items ds params))
 
+(defn- row->work-item [row]
+  (let [payload (db/parse-json (:payload row))]
+    (merge (dissoc row :payload :created_at :updated_at)
+           payload
+           {:title (or (:name row) (:title payload) (:planName payload))
+            :module (:resource row)
+            :createdAt (:created_at row)
+            :updatedAt (:updated_at row)})))
+
+(defn list-work-items [ds params]
+  (let [result (repo/list-work-items ds params)]
+    (update result :items #(mapv row->work-item %))))
+
+(defn workbench-summary [ds]
+  (let [todo (:items (list-work-items ds {:scope "todo"}))
+        done (:items (list-work-items ds {:scope "done"}))
+        stats (repo/review-statistics ds)]
+    {:stats [{:label "待办事项" :value (count todo) :unit "条"}
+             {:label "已办事项" :value (count done) :unit "条"}
+             {:label "覆盖模块" :value (count stats) :unit "个"}
+             {:label "审核记录" :value (reduce + 0 (map #(reduce + 0 (vals (:counts %))) stats)) :unit "条"}]
+     :todos (take 10 todo)
+     :done (take 10 done)
+     :statistics stats}))
+
 ;; ----------------------------------------------------------------
 ;; 审核详情
 ;; ----------------------------------------------------------------

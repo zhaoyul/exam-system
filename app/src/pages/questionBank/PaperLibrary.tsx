@@ -17,6 +17,10 @@ interface PaperLibraryItem {
   validUntil: string
   authorizedOrgs: string[]
   published: boolean
+  questionCount?: number
+  totalScore?: number
+  questions?: Array<{ id: string; type?: string; content?: string; paperScore?: number }>
+  status?: string
 }
 
 const initialPapers: PaperLibraryItem[] = [
@@ -60,7 +64,8 @@ export default function PaperLibrary() {
 
   const toggleAuth = (org: string) => {
     if (!active) return
-    const authorizedOrgs = active.authorizedOrgs.includes(org) ? active.authorizedOrgs.filter(item => item !== org) : [...active.authorizedOrgs, org]
+    const currentOrgs = active.authorizedOrgs || []
+    const authorizedOrgs = currentOrgs.includes(org) ? currentOrgs.filter(item => item !== org) : [...currentOrgs, org]
     setActive({ ...active, authorizedOrgs })
     setPapers(prev => prev.map(item => item.id === active.id ? { ...item, authorizedOrgs } : item))
   }
@@ -153,7 +158,7 @@ export default function PaperLibrary() {
       <Dialog open={dialog === 'auth'} onOpenChange={() => setDialog(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>授权 - {active?.name}</DialogTitle></DialogHeader>
-          <div className="grid grid-cols-2 gap-2 text-sm">{orgOptions.map(org => <label key={org} className="rounded-md border border-gray-100 px-3 py-2"><input type="checkbox" checked={active?.authorizedOrgs.includes(org) || false} onChange={() => toggleAuth(org)} className="mr-2" />{org}</label>)}</div>
+          <div className="grid grid-cols-2 gap-2 text-sm">{orgOptions.map(org => <label key={org} className="rounded-md border border-gray-100 px-3 py-2"><input type="checkbox" checked={active?.authorizedOrgs?.includes(org) || false} onChange={() => toggleAuth(org)} className="mr-2" />{org}</label>)}</div>
         </DialogContent>
       </Dialog>
 
@@ -164,7 +169,17 @@ export default function PaperLibrary() {
             <Info label="卷库名称" value={active?.name || ''} />
             <Info label="科目名称" value={active ? subjectName(active.subjectId) : ''} />
             <Info label="试卷编号" value={active?.paperNo || '未生成'} />
-            <Info label="授权机构" value={active?.authorizedOrgs.join('、') || '未授权'} />
+            <Info label="题量/总分" value={`${active?.questionCount || active?.questions?.length || 0} 题 / ${active?.totalScore || 0} 分`} />
+            <Info label="授权机构" value={(active?.authorizedOrgs || []).join('、') || '未授权'} />
+            <div className="max-h-64 overflow-auto rounded-md border border-gray-100">
+              {(active?.questions || []).map((question, index) => (
+                <div key={question.id || index} className="border-b border-gray-100 px-3 py-2 last:border-b-0">
+                  <div className="text-xs text-gray-500">{index + 1}. {question.type || '试题'} / {question.paperScore || 0} 分</div>
+                  <div className="mt-1 text-gray-900">{question.content || question.id}</div>
+                </div>
+              ))}
+              {(!active?.questions || active.questions.length === 0) && <div className="px-3 py-6 text-center text-gray-400">暂无试题清单</div>}
+            </div>
             <div className="flex justify-end"><Button onClick={() => setDialog(null)}>确定</Button></div>
           </div>
         </DialogContent>

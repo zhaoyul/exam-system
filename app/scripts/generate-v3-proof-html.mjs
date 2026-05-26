@@ -113,6 +113,18 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC
 .summary-grid span, .feature span, .test-step span { color: #475467; font-size: .82rem; }
 .feature-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: .75rem; padding: 1rem 1.1rem; }
 .feature { border: 1px solid #e5e7eb; border-radius: 8px; padding: .85rem; background: #fff; }
+.matrix { display: grid; gap: .55rem; padding: 1rem 1.1rem; }
+.matrix-row { display: grid; grid-template-columns: 150px minmax(0, 1.2fr) minmax(0, 1fr); gap: .75rem; align-items: start; border: 1px solid #e5e7eb; border-radius: 8px; padding: .75rem .85rem; background: #fff; }
+.matrix-row strong { color: #182230; font-size: .84rem; }
+.matrix-row span { color: #475467; font-size: .82rem; }
+.matrix-row em { color: #175cd3; font-size: .8rem; font-style: normal; }
+.batch-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: .55rem; padding: 1rem 1.1rem; }
+.batch-list div { border: 1px solid #e5e7eb; border-radius: 8px; padding: .72rem .8rem; background: #f8fafc; color: #475467; font-size: .82rem; }
+.batch-list.deferred div { background: #fffbeb; border-color: #fedf89; color: #92400e; }
+.api-list { display: grid; gap: .55rem; padding: 1rem 1.1rem; }
+.api-row { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: .75rem; align-items: start; border: 1px solid #e5e7eb; border-radius: 8px; padding: .72rem .8rem; background: #fff; }
+.api-row strong { color: #182230; font-size: .84rem; }
+.api-row code { white-space: normal; overflow-wrap: anywhere; color: #344054; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 5px; padding: .2rem .35rem; font-size: .76rem; }
 .test-list { display: grid; gap: .65rem; padding: 1rem 1.1rem; }
 .test-step { display: grid; grid-template-columns: 2rem 1fr; gap: .65rem; align-items: start; border: 1px solid #e5e7eb; border-radius: 8px; padding: .8rem; background: #f8fafc; }
 .test-step em { width: 2rem; height: 2rem; border-radius: 50%; background: #eff8ff; color: #175cd3; border: 1px solid #b2ddff; display: flex; align-items: center; justify-content: center; font-style: normal; font-weight: 700; font-size: .78rem; }
@@ -135,6 +147,7 @@ footer { color: #98a2b3; text-align: center; font-size: .82rem; padding: 2rem 1r
   .stats { padding: .8rem 1rem; }
   .container { padding: 1rem; }
   .req { grid-template-columns: 1fr; }
+  .matrix-row, .api-row { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -155,10 +168,15 @@ footer { color: #98a2b3; text-align: center; font-size: .82rem; padding: 2rem 1r
   <div class="stat"><span class="num">200</span><span class="label">远端健康检查</span></div>
 </section>
 <main class="container">
-  <div class="notice">本页由 v3.0 证明目录自动生成，覆盖标准题库、题库组卷、机构备案、等级认定、报表上报、文件流转、财务收费、个人端、溯源中心、4A/MDM 对接等修改点。点击截图可放大查看。</div>
+  <div class="notice">本页由 v3.0 + V1.0 主流程证明目录自动生成，覆盖标准题库、题库组卷、机构备案、等级认定、报表上报、文件流转、财务收费、个人端、溯源中心、4A/MDM 对接等修改点。点击截图可放大查看。</div>
   ${renderDeliverySummary(total, modules.length)}
+  ${renderScopeMatrix()}
+  ${renderPlanClosure()}
+  ${renderBatchEvidence()}
+  ${renderApiEvidence()}
+  ${renderDeferredScope()}
   ${renderFeatureSummary()}
-  ${renderTestMethod()}
+  ${renderTestMethod(total)}
   ${modules.map((module) => renderModule(module, requirements.filter((item) => item.module === module))).join('\n')}
 </main>
 <footer>v3.0 修改验收报告 - 生成于 ${now}</footer>
@@ -185,6 +203,107 @@ function renderDeliverySummary(total, moduleCount) {
   </section>`
 }
 
+function renderScopeMatrix() {
+  const rows = [
+    ['v3.0 修改点', '保持可用并纳入历史证明', '1-22 号截图'],
+    ['V1.0 主流程闭环', '机构用户、备案、等级认定、题库模板、最小组卷、成绩、证书、溯源、文件、报表、收费', '23-68 号截图、接口清单、自动化测试'],
+    ['4A/MDM', '做适配层、mock 兜底、配置化切换', '登录、数据中心、系统用户截图与接口说明'],
+    ['题库导入导出', '不兼容原系统资源包，采用系统标准 CSV 模板', '理论题库、组卷规则、卷库截图与接口说明'],
+    ['Pad 端', '本期不做，列入二期 backlog', '二期排除项说明'],
+    ['外部正式上报', '本期做系统内计算、导出、预览，不做正式接口推送', '报表、上报数据截图与接口说明'],
+  ]
+
+  return `<section class="module">
+    <div class="module-head"><h2>V1.0 冻结范围对照</h2><span class="badge">${rows.length} 类范围</span></div>
+    <div class="matrix">
+      ${rows.map(([scope, handling, proof]) => `<div class="matrix-row"><strong>${esc(scope)}</strong><span>${esc(handling)}</span><em>${esc(proof)}</em></div>`).join('\n')}
+    </div>
+  </section>`
+}
+
+function renderPlanClosure() {
+  const rows = [
+    ['P0 需求矩阵', '建立需求点、路由、接口、状态、证据截图矩阵', '本证明截图点和范围对照表'],
+    ['P1 基础能力', '4A、MDM、权限、审计、文件能力', '4A 回调、MDM 开通、用户授权、审计时间线、文件上传下载'],
+    ['P2 主业务闭环', '备案、计划、报名、编排、考务、成绩、证书', '认定工作台、报名导入、证书生成、档案归集、流程截图'],
+    ['P3 题库与标准', '理论/技能题库、导入导出、组卷、卷库', 'CSV 模板导入导出、最小组卷、卷库详情、技能题库截图'],
+    ['P4 专家与阅卷', '专家基础数据、阅卷评分、复核', '专家档案、派遣基础数据、阅卷评分持久化'],
+    ['P5 报表与证明', '报表、档案、上报预览、自动化证明', '报表导出、上报预览、档案导出、GPU 证明页'],
+  ]
+
+  return `<section class="module">
+    <div class="module-head"><h2>开发计划闭环</h2><span class="badge">P0-P5</span></div>
+    <div class="matrix">
+      ${rows.map(([stage, need, proof]) => `<div class="matrix-row"><strong>${esc(stage)}</strong><span>${esc(need)}</span><em>${esc(proof)}</em></div>`).join('\n')}
+    </div>
+  </section>`
+}
+
+function renderBatchEvidence() {
+  const batches = [
+    '第一批：文件存储配置、文件元数据、上传下载接口、FormData 请求兼容。',
+    '第二批：MDM 人员开通、系统用户授权、题库 CSV 模板导入导出、最小真实组卷、卷库查看。',
+    '第三批：成绩、统计、报名、编排报表计算，CSV 导出，上报模板和上报预览。',
+    '第四批：通用资源 CRUD 和业务动作审计，覆盖提交、审核、退回、推送、归档等动作。',
+    '第五批：文档阅览接入真实文件元数据、上传、下载和删除。',
+    '第六批：等级认定待办/已办、工作台汇总、认定计划审核历史。',
+    '第七批：报名批次、考生导入、照片状态、报名模板下载和错误行反馈。',
+    '第八批：按计划从合格成绩生成证书，重复生成保护，证书号规则复用。',
+    '第九批：溯源审计事件接口和系统操作留痕时间线。',
+    '第十批：历次认定档案归集、考生一人一档、档案 CSV 导出。',
+    '第十一批：个人报名、成绩、证书、准考证查询接入真实业务链路。',
+    '第十二批：阅卷评分、复核通过、退回修改切换到后端持久化。',
+    '第十三批：收费标准、应收记录、缴费退款、收费汇总和审计留痕。',
+    '第十四批：4A 登录和回调适配、MDM 自动开通、配置化 mock/external 切换。',
+    '第十五批：文件分发、收文已读回执、反馈统计和审计留痕。',
+  ]
+
+  return `<section class="module">
+    <div class="module-head"><h2>批次交付记录</h2><span class="badge">${batches.length} 批</span></div>
+    <div class="batch-list">
+      ${batches.map((item) => `<div>${esc(item)}</div>`).join('\n')}
+    </div>
+  </section>`
+}
+
+function renderApiEvidence() {
+  const groups = [
+    ['4A/MDM', 'POST /api/auth/4a-login, GET/POST /api/auth/4a-callback, GET /api/integrations/4a/status, GET /api/system/users/mdm-persons'],
+    ['系统用户', 'GET/POST/PUT /api/system/users, 锁定/解锁, 重置密码, 模块授权'],
+    ['题库组卷', 'GET /api/question/theory/import-template, POST /api/question/theory/import, GET /api/question/theory/export, POST /api/question/paper-rules/:id/generate'],
+    ['报名证书', 'GET /api/certification/exam-registration/import-template, POST /api/certification/exam-registration/:plan-id/import, POST /api/certificate/plans/:plan-id/generate'],
+    ['报表上报', 'GET /api/report/score, GET /api/report/statistics, GET /api/report/registration, GET /api/report/arrangement, GET /api/report/data-upload/preview'],
+    ['文件流转', 'POST /api/file/files/upload, GET /api/file/files/:id/download, POST /api/file/distribute/:id/send, POST /api/file/receive/:id/read'],
+    ['财务收费', 'GET/POST/PUT /api/finance/standard, GET /api/finance/charge, POST /api/finance/charge/:id/pay, GET /api/finance/charge/summary, GET /api/finance/list'],
+    ['溯源档案', 'GET /api/traceability/audit-events, GET /api/archive, GET /api/archive/:plan-id/candidates, GET /api/archive/:plan-id/export'],
+    ['个人端', 'POST /api/personal/register, GET /api/personal/score, GET /api/personal/cert, GET /api/personal/ticket'],
+  ]
+
+  return `<section class="module">
+    <div class="module-head"><h2>关键接口验证清单</h2><span class="badge">${groups.length} 组接口</span></div>
+    <div class="api-list">
+      ${groups.map(([title, apis]) => `<div class="api-row"><strong>${esc(title)}</strong><code>${esc(apis)}</code></div>`).join('\n')}
+    </div>
+  </section>`
+}
+
+function renderDeferredScope() {
+  const items = [
+    '真实 4A/MDM 外部环境联调：本期已预留配置化适配层和 mock 兜底，真实接口到位后做小范围联调。',
+    '原系统题库资源包兼容：本期不兼容原格式，只做系统标准 CSV 模板。',
+    '考评员/督导员 Pad 端：本期不做移动端专项适配、签名提交、离线或弱网策略。',
+    '外部正式上报接口：本期做系统内计算、Excel/CSV 导出和上报预览，不做正式接口推送。',
+    '对象存储、病毒扫描、Office 在线协同编辑：本期采用服务器本地磁盘存储，预留替换接口。',
+  ]
+
+  return `<section class="module">
+    <div class="module-head"><h2>二期/待联调范围</h2><span class="badge">${items.length} 项说明</span></div>
+    <div class="batch-list deferred">
+      ${items.map((item) => `<div>${esc(item)}</div>`).join('\n')}
+    </div>
+  </section>`
+}
+
 function renderFeatureSummary() {
   const features = [
     ['登录与基础数据', '补齐 4A 回调、本地用户映射、MDM 人员同步、系统用户角色和权限状态维护。'],
@@ -205,11 +324,11 @@ function renderFeatureSummary() {
   </section>`
 }
 
-function renderTestMethod() {
+function renderTestMethod(total) {
   const methods = [
     ['后端自动化测试', '使用独立 SQLite 数据库运行 clojure -M:test，覆盖迁移、领域服务、控制器和关键 API 闭环。'],
     ['前端构建测试', '运行 npm run build，覆盖 TypeScript 编译和 Vite 生产构建。'],
-    ['页面截图验证', '启动本地前后端，使用 Playwright 逐页访问 49 个证明路由并生成截图。'],
+    ['页面截图验证', `启动本地前后端，使用 Playwright 逐页访问 ${total} 个证明路由并生成截图。`],
     ['静态证明发布', '运行 node app/scripts/generate-v3-proof-html.mjs，生成 docs/v3-proof/index.html 与 app/public/v3.0-proof/index.html。'],
     ['远端部署验证', '使用项目部署脚本发布到 GPU 服务器后访问 /v3.0-proof/index.html，确认证明页和图片资源可打开。'],
   ]

@@ -27,6 +27,18 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC
 .summary-grid span, .feature span, .test-step span { color: #475467; font-size: .82rem; }
 .feature-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: .75rem; padding: 1rem 1.1rem; }
 .feature { border: 1px solid #e5e7eb; border-radius: 8px; padding: .85rem; background: #fff; }
+.matrix { display: grid; gap: .55rem; padding: 1rem 1.1rem; }
+.matrix-row { display: grid; grid-template-columns: 150px minmax(0, 1.2fr) minmax(0, 1fr); gap: .75rem; align-items: start; border: 1px solid #e5e7eb; border-radius: 8px; padding: .75rem .85rem; background: #fff; }
+.matrix-row strong { color: #182230; font-size: .84rem; }
+.matrix-row span { color: #475467; font-size: .82rem; }
+.matrix-row em { color: #175cd3; font-size: .8rem; font-style: normal; }
+.batch-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: .55rem; padding: 1rem 1.1rem; }
+.batch-list div { border: 1px solid #e5e7eb; border-radius: 8px; padding: .72rem .8rem; background: #f8fafc; color: #475467; font-size: .82rem; }
+.batch-list.deferred div { background: #fffbeb; border-color: #fedf89; color: #92400e; }
+.api-list { display: grid; gap: .55rem; padding: 1rem 1.1rem; }
+.api-row { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: .75rem; align-items: start; border: 1px solid #e5e7eb; border-radius: 8px; padding: .72rem .8rem; background: #fff; }
+.api-row strong { color: #182230; font-size: .84rem; }
+.api-row code { white-space: normal; overflow-wrap: anywhere; color: #344054; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 5px; padding: .2rem .35rem; font-size: .76rem; }
 .test-list { display: grid; gap: .65rem; padding: 1rem 1.1rem; }
 .test-step { display: grid; grid-template-columns: 2rem 1fr; gap: .65rem; align-items: start; border: 1px solid #e5e7eb; border-radius: 8px; padding: .8rem; background: #f8fafc; }
 .test-step em { width: 2rem; height: 2rem; border-radius: 50%; background: #eff8ff; color: #175cd3; border: 1px solid #b2ddff; display: flex; align-items: center; justify-content: center; font-style: normal; font-weight: 700; font-size: .78rem; }
@@ -49,6 +61,7 @@ footer { color: #98a2b3; text-align: center; font-size: .82rem; padding: 2rem 1r
   .stats { padding: .8rem 1rem; }
   .container { padding: 1rem; }
   .req { grid-template-columns: 1fr; }
+  .matrix-row, .api-row { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -58,25 +71,91 @@ footer { color: #98a2b3; text-align: center; font-size: .82rem; padding: 2rem 1r
   <p>中广核职业技能等级认定管理系统 - 功能修改对照、V1.0主流程补齐与截图证明</p>
   <div class="meta">
     <span>文档对照：v3.0修改.docx / 需求规格说明书V1.0</span>
-    <span>验收时间：2026/5/26 13:14:52</span>
+    <span>验收时间：2026/5/26 13:32:56</span>
     <span>服务器：http://106.12.6.24:29527/</span>
   </div>
 </section>
 <section class="stats">
-  <div class="stat"><span class="num">49</span><span class="label">截图证明点</span></div>
-  <div class="stat"><span class="num">14</span><span class="label">覆盖模块</span></div>
+  <div class="stat"><span class="num">68</span><span class="label">截图证明点</span></div>
+  <div class="stat"><span class="num">15</span><span class="label">覆盖模块</span></div>
   <div class="stat"><span class="num">100%</span><span class="label">证明清单完成率</span></div>
   <div class="stat"><span class="num">200</span><span class="label">远端健康检查</span></div>
 </section>
 <main class="container">
-  <div class="notice">本页由 v3.0 证明目录自动生成，覆盖标准题库、题库组卷、机构备案、等级认定、报表上报、文件流转、财务收费、个人端、溯源中心、4A/MDM 对接等修改点。点击截图可放大查看。</div>
+  <div class="notice">本页由 v3.0 + V1.0 主流程证明目录自动生成，覆盖标准题库、题库组卷、机构备案、等级认定、报表上报、文件流转、财务收费、个人端、溯源中心、4A/MDM 对接等修改点。点击截图可放大查看。</div>
   <section class="module">
-    <div class="module-head"><h2>交付概览</h2><span class="badge">14 个模块</span></div>
+    <div class="module-head"><h2>交付概览</h2><span class="badge">15 个模块</span></div>
     <div class="summary-grid">
       <div><strong>交付版本</strong><span>3.1.0</span></div>
-      <div><strong>证明点数量</strong><span>49 个</span></div>
+      <div><strong>证明点数量</strong><span>68 个</span></div>
       <div><strong>后端测试</strong><span>19 个测试 / 137 个断言 / 0 失败</span></div>
       <div><strong>前端验证</strong><span>TypeScript 编译 + Vite 生产构建</span></div>
+    </div>
+  </section>
+  <section class="module">
+    <div class="module-head"><h2>V1.0 冻结范围对照</h2><span class="badge">6 类范围</span></div>
+    <div class="matrix">
+      <div class="matrix-row"><strong>v3.0 修改点</strong><span>保持可用并纳入历史证明</span><em>1-22 号截图</em></div>
+<div class="matrix-row"><strong>V1.0 主流程闭环</strong><span>机构用户、备案、等级认定、题库模板、最小组卷、成绩、证书、溯源、文件、报表、收费</span><em>23-68 号截图、接口清单、自动化测试</em></div>
+<div class="matrix-row"><strong>4A/MDM</strong><span>做适配层、mock 兜底、配置化切换</span><em>登录、数据中心、系统用户截图与接口说明</em></div>
+<div class="matrix-row"><strong>题库导入导出</strong><span>不兼容原系统资源包，采用系统标准 CSV 模板</span><em>理论题库、组卷规则、卷库截图与接口说明</em></div>
+<div class="matrix-row"><strong>Pad 端</strong><span>本期不做，列入二期 backlog</span><em>二期排除项说明</em></div>
+<div class="matrix-row"><strong>外部正式上报</strong><span>本期做系统内计算、导出、预览，不做正式接口推送</span><em>报表、上报数据截图与接口说明</em></div>
+    </div>
+  </section>
+  <section class="module">
+    <div class="module-head"><h2>开发计划闭环</h2><span class="badge">P0-P5</span></div>
+    <div class="matrix">
+      <div class="matrix-row"><strong>P0 需求矩阵</strong><span>建立需求点、路由、接口、状态、证据截图矩阵</span><em>本证明截图点和范围对照表</em></div>
+<div class="matrix-row"><strong>P1 基础能力</strong><span>4A、MDM、权限、审计、文件能力</span><em>4A 回调、MDM 开通、用户授权、审计时间线、文件上传下载</em></div>
+<div class="matrix-row"><strong>P2 主业务闭环</strong><span>备案、计划、报名、编排、考务、成绩、证书</span><em>认定工作台、报名导入、证书生成、档案归集、流程截图</em></div>
+<div class="matrix-row"><strong>P3 题库与标准</strong><span>理论/技能题库、导入导出、组卷、卷库</span><em>CSV 模板导入导出、最小组卷、卷库详情、技能题库截图</em></div>
+<div class="matrix-row"><strong>P4 专家与阅卷</strong><span>专家基础数据、阅卷评分、复核</span><em>专家档案、派遣基础数据、阅卷评分持久化</em></div>
+<div class="matrix-row"><strong>P5 报表与证明</strong><span>报表、档案、上报预览、自动化证明</span><em>报表导出、上报预览、档案导出、GPU 证明页</em></div>
+    </div>
+  </section>
+  <section class="module">
+    <div class="module-head"><h2>批次交付记录</h2><span class="badge">15 批</span></div>
+    <div class="batch-list">
+      <div>第一批：文件存储配置、文件元数据、上传下载接口、FormData 请求兼容。</div>
+<div>第二批：MDM 人员开通、系统用户授权、题库 CSV 模板导入导出、最小真实组卷、卷库查看。</div>
+<div>第三批：成绩、统计、报名、编排报表计算，CSV 导出，上报模板和上报预览。</div>
+<div>第四批：通用资源 CRUD 和业务动作审计，覆盖提交、审核、退回、推送、归档等动作。</div>
+<div>第五批：文档阅览接入真实文件元数据、上传、下载和删除。</div>
+<div>第六批：等级认定待办/已办、工作台汇总、认定计划审核历史。</div>
+<div>第七批：报名批次、考生导入、照片状态、报名模板下载和错误行反馈。</div>
+<div>第八批：按计划从合格成绩生成证书，重复生成保护，证书号规则复用。</div>
+<div>第九批：溯源审计事件接口和系统操作留痕时间线。</div>
+<div>第十批：历次认定档案归集、考生一人一档、档案 CSV 导出。</div>
+<div>第十一批：个人报名、成绩、证书、准考证查询接入真实业务链路。</div>
+<div>第十二批：阅卷评分、复核通过、退回修改切换到后端持久化。</div>
+<div>第十三批：收费标准、应收记录、缴费退款、收费汇总和审计留痕。</div>
+<div>第十四批：4A 登录和回调适配、MDM 自动开通、配置化 mock/external 切换。</div>
+<div>第十五批：文件分发、收文已读回执、反馈统计和审计留痕。</div>
+    </div>
+  </section>
+  <section class="module">
+    <div class="module-head"><h2>关键接口验证清单</h2><span class="badge">9 组接口</span></div>
+    <div class="api-list">
+      <div class="api-row"><strong>4A/MDM</strong><code>POST /api/auth/4a-login, GET/POST /api/auth/4a-callback, GET /api/integrations/4a/status, GET /api/system/users/mdm-persons</code></div>
+<div class="api-row"><strong>系统用户</strong><code>GET/POST/PUT /api/system/users, 锁定/解锁, 重置密码, 模块授权</code></div>
+<div class="api-row"><strong>题库组卷</strong><code>GET /api/question/theory/import-template, POST /api/question/theory/import, GET /api/question/theory/export, POST /api/question/paper-rules/:id/generate</code></div>
+<div class="api-row"><strong>报名证书</strong><code>GET /api/certification/exam-registration/import-template, POST /api/certification/exam-registration/:plan-id/import, POST /api/certificate/plans/:plan-id/generate</code></div>
+<div class="api-row"><strong>报表上报</strong><code>GET /api/report/score, GET /api/report/statistics, GET /api/report/registration, GET /api/report/arrangement, GET /api/report/data-upload/preview</code></div>
+<div class="api-row"><strong>文件流转</strong><code>POST /api/file/files/upload, GET /api/file/files/:id/download, POST /api/file/distribute/:id/send, POST /api/file/receive/:id/read</code></div>
+<div class="api-row"><strong>财务收费</strong><code>GET/POST/PUT /api/finance/standard, GET /api/finance/charge, POST /api/finance/charge/:id/pay, GET /api/finance/charge/summary, GET /api/finance/list</code></div>
+<div class="api-row"><strong>溯源档案</strong><code>GET /api/traceability/audit-events, GET /api/archive, GET /api/archive/:plan-id/candidates, GET /api/archive/:plan-id/export</code></div>
+<div class="api-row"><strong>个人端</strong><code>POST /api/personal/register, GET /api/personal/score, GET /api/personal/cert, GET /api/personal/ticket</code></div>
+    </div>
+  </section>
+  <section class="module">
+    <div class="module-head"><h2>二期/待联调范围</h2><span class="badge">5 项说明</span></div>
+    <div class="batch-list deferred">
+      <div>真实 4A/MDM 外部环境联调：本期已预留配置化适配层和 mock 兜底，真实接口到位后做小范围联调。</div>
+<div>原系统题库资源包兼容：本期不兼容原格式，只做系统标准 CSV 模板。</div>
+<div>考评员/督导员 Pad 端：本期不做移动端专项适配、签名提交、离线或弱网策略。</div>
+<div>外部正式上报接口：本期做系统内计算、Excel/CSV 导出和上报预览，不做正式接口推送。</div>
+<div>对象存储、病毒扫描、Office 在线协同编辑：本期采用服务器本地磁盘存储，预留替换接口。</div>
     </div>
   </section>
   <section class="module">
@@ -97,7 +176,7 @@ footer { color: #98a2b3; text-align: center; font-size: .82rem; padding: 2rem 1r
     <div class="test-list">
       <div class="test-step"><em>1</em><div><strong>后端自动化测试</strong><span>使用独立 SQLite 数据库运行 clojure -M:test，覆盖迁移、领域服务、控制器和关键 API 闭环。</span></div></div>
 <div class="test-step"><em>2</em><div><strong>前端构建测试</strong><span>运行 npm run build，覆盖 TypeScript 编译和 Vite 生产构建。</span></div></div>
-<div class="test-step"><em>3</em><div><strong>页面截图验证</strong><span>启动本地前后端，使用 Playwright 逐页访问 49 个证明路由并生成截图。</span></div></div>
+<div class="test-step"><em>3</em><div><strong>页面截图验证</strong><span>启动本地前后端，使用 Playwright 逐页访问 68 个证明路由并生成截图。</span></div></div>
 <div class="test-step"><em>4</em><div><strong>静态证明发布</strong><span>运行 node app/scripts/generate-v3-proof-html.mjs，生成 docs/v3-proof/index.html 与 app/public/v3.0-proof/index.html。</span></div></div>
 <div class="test-step"><em>5</em><div><strong>远端部署验证</strong><span>使用项目部署脚本发布到 GPU 服务器后访问 /v3.0-proof/index.html，确认证明页和图片资源可打开。</span></div></div>
     </div>
@@ -181,7 +260,7 @@ footer { color: #98a2b3; text-align: center; font-size: .82rem; padding: 2rem 1r
   </article>
   </section>
 <section class="module">
-    <div class="module-head"><h2>机构备案</h2><span class="badge">2 项已完成</span></div>
+    <div class="module-head"><h2>机构备案</h2><span class="badge">4 项已完成</span></div>
     <article class="req">
     <div class="idx">9</div>
     <div>
@@ -200,9 +279,27 @@ footer { color: #98a2b3; text-align: center; font-size: .82rem; padding: 2rem 1r
       <div class="shot"><img src="10-system-filing-branch.png" alt="机构备案基础数据：备案地、子站点、认定项目、考场类型" loading="lazy" onclick="showModal(this.src)"><div class="cap">10-system-filing-branch.png</div></div>
     </div>
   </article>
+<article class="req">
+    <div class="idx">67</div>
+    <div>
+      <div class="text">已完成：集团备案查看：备案采集表、评价范围和机构详情</div>
+      <div class="route">/filing/group</div>
+      <div class="proof-links"><a href="67-filing-group-view.png" target="_blank">截图：67-filing-group-view.png</a></div>
+      <div class="shot"><img src="67-filing-group-view.png" alt="集团备案查看：备案采集表、评价范围和机构详情" loading="lazy" onclick="showModal(this.src)"><div class="cap">67-filing-group-view.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">68</div>
+    <div>
+      <div class="text">已完成：分支备案申报：申报数据、审核状态和通过后只读基础</div>
+      <div class="route">/system/filing-branch/apply</div>
+      <div class="proof-links"><a href="68-filing-branch-apply.png" target="_blank">截图：68-filing-branch-apply.png</a></div>
+      <div class="shot"><img src="68-filing-branch-apply.png" alt="分支备案申报：申报数据、审核状态和通过后只读基础" loading="lazy" onclick="showModal(this.src)"><div class="cap">68-filing-branch-apply.png</div></div>
+    </div>
+  </article>
   </section>
 <section class="module">
-    <div class="module-head"><h2>等级认定</h2><span class="badge">14 项已完成</span></div>
+    <div class="module-head"><h2>等级认定</h2><span class="badge">17 项已完成</span></div>
     <article class="req">
     <div class="idx">11</div>
     <div>
@@ -329,6 +426,33 @@ footer { color: #98a2b3; text-align: center; font-size: .82rem; padding: 2rem 1r
       <div class="shot"><img src="48-wb-cert.png" alt="认定工作台：计划、报名、考务、证书等主流程快捷入口" loading="lazy" onclick="showModal(this.src)"><div class="cap">48-wb-cert.png</div></div>
     </div>
   </article>
+<article class="req">
+    <div class="idx">56</div>
+    <div>
+      <div class="text">已完成：认定执行报名：批量报名、导入入口和资格审核流程</div>
+      <div class="route">/cert/exec/registration</div>
+      <div class="proof-links"><a href="56-cert-exec-registration.png" target="_blank">截图：56-cert-exec-registration.png</a></div>
+      <div class="shot"><img src="56-cert-exec-registration.png" alt="认定执行报名：批量报名、导入入口和资格审核流程" loading="lazy" onclick="showModal(this.src)"><div class="cap">56-cert-exec-registration.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">57</div>
+    <div>
+      <div class="text">已完成：认定执行编排：考点考场、座位编排和监考安排入口</div>
+      <div class="route">/cert/exec/arrangement</div>
+      <div class="proof-links"><a href="57-cert-exec-arrangement.png" target="_blank">截图：57-cert-exec-arrangement.png</a></div>
+      <div class="shot"><img src="57-cert-exec-arrangement.png" alt="认定执行编排：考点考场、座位编排和监考安排入口" loading="lazy" onclick="showModal(this.src)"><div class="cap">57-cert-exec-arrangement.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">58</div>
+    <div>
+      <div class="text">已完成：认定执行成绩：成绩录入、审核、公示前置状态和流程入口</div>
+      <div class="route">/cert/exec/score</div>
+      <div class="proof-links"><a href="58-cert-exec-score.png" target="_blank">截图：58-cert-exec-score.png</a></div>
+      <div class="shot"><img src="58-cert-exec-score.png" alt="认定执行成绩：成绩录入、审核、公示前置状态和流程入口" loading="lazy" onclick="showModal(this.src)"><div class="cap">58-cert-exec-score.png</div></div>
+    </div>
+  </article>
   </section>
 <section class="module">
     <div class="module-head"><h2>个人端</h2><span class="badge">4 项已完成</span></div>
@@ -415,7 +539,7 @@ footer { color: #98a2b3; text-align: center; font-size: .82rem; padding: 2rem 1r
   </article>
   </section>
 <section class="module">
-    <div class="module-head"><h2>题库组卷</h2><span class="badge">3 项已完成</span></div>
+    <div class="module-head"><h2>题库组卷</h2><span class="badge">9 项已完成</span></div>
     <article class="req">
     <div class="idx">24</div>
     <div>
@@ -441,6 +565,60 @@ footer { color: #98a2b3; text-align: center; font-size: .82rem; padding: 2rem 1r
       <div class="route">/question/paper-library</div>
       <div class="proof-links"><a href="26-question-paper-library.png" target="_blank">截图：26-question-paper-library.png</a></div>
       <div class="shot"><img src="26-question-paper-library.png" alt="卷库管理：固定卷、抽卷记录、推送状态和试卷详情" loading="lazy" onclick="showModal(this.src)"><div class="cap">26-question-paper-library.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">50</div>
+    <div>
+      <div class="text">已完成：理论科目：科目分类、授权范围、状态维护和题库入口</div>
+      <div class="route">/question/subjects</div>
+      <div class="proof-links"><a href="50-question-subjects.png" target="_blank">截图：50-question-subjects.png</a></div>
+      <div class="shot"><img src="50-question-subjects.png" alt="理论科目：科目分类、授权范围、状态维护和题库入口" loading="lazy" onclick="showModal(this.src)"><div class="cap">50-question-subjects.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">51</div>
+    <div>
+      <div class="text">已完成：知识结构：知识点层级、细目表和题量分布维护</div>
+      <div class="route">/question/knowledge</div>
+      <div class="proof-links"><a href="51-question-knowledge.png" target="_blank">截图：51-question-knowledge.png</a></div>
+      <div class="shot"><img src="51-question-knowledge.png" alt="知识结构：知识点层级、细目表和题量分布维护" loading="lazy" onclick="showModal(this.src)"><div class="cap">51-question-knowledge.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">52</div>
+    <div>
+      <div class="text">已完成：结构比重：题型、难度、知识点比例和组卷参数</div>
+      <div class="route">/question/ratio</div>
+      <div class="proof-links"><a href="52-question-ratio.png" target="_blank">截图：52-question-ratio.png</a></div>
+      <div class="shot"><img src="52-question-ratio.png" alt="结构比重：题型、难度、知识点比例和组卷参数" loading="lazy" onclick="showModal(this.src)"><div class="cap">52-question-ratio.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">53</div>
+    <div>
+      <div class="text">已完成：技能题库：技能试题、评分标准、模块归属和审核状态</div>
+      <div class="route">/question/skill</div>
+      <div class="proof-links"><a href="53-question-skill.png" target="_blank">截图：53-question-skill.png</a></div>
+      <div class="shot"><img src="53-question-skill.png" alt="技能题库：技能试题、评分标准、模块归属和审核状态" loading="lazy" onclick="showModal(this.src)"><div class="cap">53-question-skill.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">54</div>
+    <div>
+      <div class="text">已完成：技能组卷规则：模块、题型、分值和数量规则</div>
+      <div class="route">/question/skill-rules</div>
+      <div class="proof-links"><a href="54-question-skill-rules.png" target="_blank">截图：54-question-skill-rules.png</a></div>
+      <div class="shot"><img src="54-question-skill-rules.png" alt="技能组卷规则：模块、题型、分值和数量规则" loading="lazy" onclick="showModal(this.src)"><div class="cap">54-question-skill-rules.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">55</div>
+    <div>
+      <div class="text">已完成：技能试卷需求：需求申请、抽卷方式、附件和回推状态</div>
+      <div class="route">/question/skill-require</div>
+      <div class="proof-links"><a href="55-question-skill-require.png" target="_blank">截图：55-question-skill-require.png</a></div>
+      <div class="shot"><img src="55-question-skill-require.png" alt="技能试卷需求：需求申请、抽卷方式、附件和回推状态" loading="lazy" onclick="showModal(this.src)"><div class="cap">55-question-skill-require.png</div></div>
     </div>
   </article>
   </section>
@@ -493,7 +671,7 @@ footer { color: #98a2b3; text-align: center; font-size: .82rem; padding: 2rem 1r
   </article>
   </section>
 <section class="module">
-    <div class="module-head"><h2>文件流转</h2><span class="badge">4 项已完成</span></div>
+    <div class="module-head"><h2>文件流转</h2><span class="badge">5 项已完成</span></div>
     <article class="req">
     <div class="idx">35</div>
     <div>
@@ -530,9 +708,18 @@ footer { color: #98a2b3; text-align: center; font-size: .82rem; padding: 2rem 1r
       <div class="shot"><img src="38-file-private.png" alt="私有文档：个人文档上传、标签分类和权限隔离" loading="lazy" onclick="showModal(this.src)"><div class="cap">38-file-private.png</div></div>
     </div>
   </article>
+<article class="req">
+    <div class="idx">64</div>
+    <div>
+      <div class="text">已完成：文件参数设置：文件类型、权限参数、存储规则和模板配置</div>
+      <div class="route">/file/settings</div>
+      <div class="proof-links"><a href="64-file-settings.png" target="_blank">截图：64-file-settings.png</a></div>
+      <div class="shot"><img src="64-file-settings.png" alt="文件参数设置：文件类型、权限参数、存储规则和模板配置" loading="lazy" onclick="showModal(this.src)"><div class="cap">64-file-settings.png</div></div>
+    </div>
+  </article>
   </section>
 <section class="module">
-    <div class="module-head"><h2>财务收费</h2><span class="badge">3 项已完成</span></div>
+    <div class="module-head"><h2>财务收费</h2><span class="badge">5 项已完成</span></div>
     <article class="req">
     <div class="idx">43</div>
     <div>
@@ -560,6 +747,24 @@ footer { color: #98a2b3; text-align: center; font-size: .82rem; padding: 2rem 1r
       <div class="shot"><img src="45-finance-list.png" alt="缴费清单：缴费明细、批量确认、票据号和导出" loading="lazy" onclick="showModal(this.src)"><div class="cap">45-finance-list.png</div></div>
     </div>
   </article>
+<article class="req">
+    <div class="idx">62</div>
+    <div>
+      <div class="text">已完成：财务工作台：收费统计、待缴提醒和收费流程入口</div>
+      <div class="route">/finance/workbench</div>
+      <div class="proof-links"><a href="62-finance-workbench.png" target="_blank">截图：62-finance-workbench.png</a></div>
+      <div class="shot"><img src="62-finance-workbench.png" alt="财务工作台：收费统计、待缴提醒和收费流程入口" loading="lazy" onclick="showModal(this.src)"><div class="cap">62-finance-workbench.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">63</div>
+    <div>
+      <div class="text">已完成：财务台账：收费流水、退款记录和账务汇总</div>
+      <div class="route">/finance/ledger</div>
+      <div class="proof-links"><a href="63-finance-ledger.png" target="_blank">截图：63-finance-ledger.png</a></div>
+      <div class="shot"><img src="63-finance-ledger.png" alt="财务台账：收费流水、退款记录和账务汇总" loading="lazy" onclick="showModal(this.src)"><div class="cap">63-finance-ledger.png</div></div>
+    </div>
+  </article>
   </section>
 <section class="module">
     <div class="module-head"><h2>阅卷评分</h2><span class="badge">1 项已完成</span></div>
@@ -585,8 +790,56 @@ footer { color: #98a2b3; text-align: center; font-size: .82rem; padding: 2rem 1r
     </div>
   </article>
   </section>
+<section class="module">
+    <div class="module-head"><h2>其他</h2><span class="badge">5 项已完成</span></div>
+    <article class="req">
+    <div class="idx">59</div>
+    <div>
+      <div class="text">已完成：成绩录入：按计划录入成绩、保存提交和异常标记</div>
+      <div class="route">/score/entry</div>
+      <div class="proof-links"><a href="59-score-entry.png" target="_blank">截图：59-score-entry.png</a></div>
+      <div class="shot"><img src="59-score-entry.png" alt="成绩录入：按计划录入成绩、保存提交和异常标记" loading="lazy" onclick="showModal(this.src)"><div class="cap">59-score-entry.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">60</div>
+    <div>
+      <div class="text">已完成：成绩审核：复核、通过、退回和审核状态</div>
+      <div class="route">/score/review</div>
+      <div class="proof-links"><a href="60-score-review.png" target="_blank">截图：60-score-review.png</a></div>
+      <div class="shot"><img src="60-score-review.png" alt="成绩审核：复核、通过、退回和审核状态" loading="lazy" onclick="showModal(this.src)"><div class="cap">60-score-review.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">61</div>
+    <div>
+      <div class="text">已完成：成绩更正：更正申请、审批记录和留痕追溯</div>
+      <div class="route">/score/correction</div>
+      <div class="proof-links"><a href="61-score-correction.png" target="_blank">截图：61-score-correction.png</a></div>
+      <div class="shot"><img src="61-score-correction.png" alt="成绩更正：更正申请、审批记录和留痕追溯" loading="lazy" onclick="showModal(this.src)"><div class="cap">61-score-correction.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">65</div>
+    <div>
+      <div class="text">已完成：评价专家基础数据：专家档案、资格状态、培训聘用信息</div>
+      <div class="route">/supervision/expert-info</div>
+      <div class="proof-links"><a href="65-supervision-expert-info.png" target="_blank">截图：65-supervision-expert-info.png</a></div>
+      <div class="shot"><img src="65-supervision-expert-info.png" alt="评价专家基础数据：专家档案、资格状态、培训聘用信息" loading="lazy" onclick="showModal(this.src)"><div class="cap">65-supervision-expert-info.png</div></div>
+    </div>
+  </article>
+<article class="req">
+    <div class="idx">66</div>
+    <div>
+      <div class="text">已完成：专家派遣基础数据：派遣任务、回评状态和督导记录入口</div>
+      <div class="route">/supervision/dispatch</div>
+      <div class="proof-links"><a href="66-supervision-dispatch.png" target="_blank">截图：66-supervision-dispatch.png</a></div>
+      <div class="shot"><img src="66-supervision-dispatch.png" alt="专家派遣基础数据：派遣任务、回评状态和督导记录入口" loading="lazy" onclick="showModal(this.src)"><div class="cap">66-supervision-dispatch.png</div></div>
+    </div>
+  </article>
+  </section>
 </main>
-<footer>v3.0 修改验收报告 - 生成于 2026/5/26 13:14:52</footer>
+<footer>v3.0 修改验收报告 - 生成于 2026/5/26 13:32:56</footer>
 <div class="modal" id="modal" onclick="this.classList.remove('show')"><img id="modalImg" alt=""></div>
 <script>
 function showModal(src) {

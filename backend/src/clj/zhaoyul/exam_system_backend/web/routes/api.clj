@@ -6,6 +6,7 @@
    [reitit.swagger :as swagger]
    [zhaoyul.exam-system-backend.web.controllers.auth :as auth]
    [zhaoyul.exam-system-backend.web.controllers.archive :as archive]
+   [zhaoyul.exam-system-backend.web.controllers.branch-filing :as branch-filing]
    [zhaoyul.exam-system-backend.web.controllers.candidates :as candidates]
    [zhaoyul.exam-system-backend.web.controllers.certificate :as certificate]
    [zhaoyul.exam-system-backend.web.controllers.catalog :as catalog]
@@ -211,7 +212,7 @@
       {:get {:summary "查看集团备案" :handler (partial filing/get-filing-group ctx)}
        :put {:summary "更新集团备案" :handler (partial filing/update-filing-group ctx)}
        :delete {:summary "删除集团备案" :handler (partial filing/delete-filing-group ctx)}}]]
-    ["/branch"
+   ["/branch"
      [""
       {:get {:summary "分支备案列表" :handler (partial filing/list-filing-branch ctx)}
        :post {:summary "新增分支备案" :handler (partial filing/create-filing-branch ctx)}}]
@@ -219,6 +220,17 @@
       {:get {:summary "查看分支备案" :handler (partial filing/get-filing-branch ctx)}
        :put {:summary "更新分支备案" :handler (partial filing/update-filing-branch ctx)}
        :delete {:summary "删除分支备案" :handler (partial filing/delete-filing-branch ctx)}}]]
+    ["/branch-current"
+     [""
+      {:get {:summary "当前分支机构备案信息" :handler (partial branch-filing/get-current ctx)}}]
+     ["/basic"
+      {:put {:summary "保存当前分支机构基本信息" :handler (partial branch-filing/save-basic ctx)}}]
+     ["/staff"
+      [""
+       {:get {:summary "当前分支机构备案人员列表" :handler (partial branch-filing/list-staff ctx)}
+        :post {:summary "新增当前分支机构备案人员" :handler (partial branch-filing/create-staff ctx)}}]
+      ["/:id"
+       {:delete {:summary "删除当前分支机构备案人员" :handler (partial branch-filing/delete-staff ctx)}}]]]
     ["/province"
      [""
       {:get {:summary "省级备案列表" :handler (partial filing/list-filing-province ctx)}
@@ -847,13 +859,13 @@
         {:get {:no-doc true
                :swagger {:info {:title "职业技能等级认定系统 API"
                                 :description "Kit/Integrant 后端接口，开发使用 SQLite，上线可切换达梦数据库。"
-                                :version "3.1.0"}}
+                                :version "3.1.1"}}
                :handler (swagger/create-swagger-handler)}}]
        ["/docs/swagger.json"
         {:get {:no-doc true
                :swagger {:info {:title "职业技能等级认定系统 API"
                                 :description "Kit/Integrant 后端接口，开发使用 SQLite，上线可切换达梦数据库。"
-                                :version "3.1.0"}}
+                                :version "3.1.1"}}
                :handler (swagger/create-swagger-handler)}}]
        ["/health" {:get #'health/healthcheck!}]
        ["/auth"

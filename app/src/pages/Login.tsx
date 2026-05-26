@@ -105,6 +105,11 @@ export default function Login() {
       role === 'proctor' ? '监考组' : '个人'
   }
 
+  const resolveOrgName = (role: UserRole, orgId?: string, displayName?: string) => {
+    if (role === 'branch_admin' && displayName) return displayName
+    return getOrgName(role, orgId)
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -137,7 +142,7 @@ export default function Login() {
       login({
         name: result.user.displayName || result.user.username || username,
         role,
-        org: getOrgName(role, result.user.orgId),
+        org: resolveOrgName(role, result.user.orgId, result.user.displayName),
       })
       navigate(getRolePortal(role), { replace: true })
     } catch (err) {
@@ -165,7 +170,7 @@ export default function Login() {
       login({
         name: result.user.displayName || result.user.username || username,
         role,
-        org: getOrgName(role, result.user.orgId),
+        org: resolveOrgName(role, result.user.orgId, result.user.displayName),
       })
       navigate(getRolePortal(role), { replace: true })
     } catch (err) {

@@ -98,3 +98,83 @@
     (is (= 200 (:status (PUT handler (str "/api/certification/organizations/" id) {:email "api@example.com"} headers))))
     (is (= 204 (:status (DELETE handler (str "/api/certification/organizations/" id) headers))))
     (is (= 404 (:status (GET handler (str "/api/certification/organizations/" id) {} headers))))))
+
+(deftest branch-filing-current-org-isolated-and-persistent-test
+  (let [handler (:handler/ring (system-state))
+        headers {}
+        org-a-response (POST handler
+                             "/api/certification/organizations"
+                             {:name "分支备案测试机构A"
+                              :orgType "branch"
+                              :creditCode "BRANCH-FILING-A"
+                              :contactName "初始联系人"
+                              :loginName "branch-filing-a"
+                              :password "branch-pass-a"
+                              :registerMobile "13900001001"}
+                             headers)
+        org-a (json/parse-string (:body org-a-response) true)
+        org-b-response (POST handler
+                             "/api/certification/organizations"
+                             {:name "分支备案测试机构B"
+                              :orgType "branch"
+                              :creditCode "BRANCH-FILING-B"
+                              :contactName "其他联系人"
+                              :loginName "branch-filing-b"
+                              :password "branch-pass-b"
+                              :registerMobile "13900001002"}
+                             headers)
+        org-b (json/parse-string (:body org-b-response) true)
+        login-response (POST handler "/api/auth/login" {:username "branch-filing-a" :password "branch-pass-a"} headers)
+        token (:token (json/parse-string (:body login-response) true))
+        auth-headers {"authorization" (str "Bearer " token)}
+        initial (json/parse-string (:body (GET handler "/api/filing/branch-current" {} auth-headers)) true)
+        saved-response (PUT handler
+                            "/api/filing/branch-current/basic"
+                            {:name "分支备案测试机构A"
+                             :code "BRANCH-FILING-A"
+                             :nature "分支机构"
+                             :group "测试集团"
+                             :contact "持久化联系人"
+                             :phone "13900009999"
+                             :email "persist@example.com"
+                             :address "持久化地址"}
+                            auth-headers)
+        reloaded (json/parse-string (:body (GET handler "/api/filing/branch-current" {} auth-headers)) true)
+        _ (POST handler "/api/staff"
+                {:name "其他机构人员"
+                 :idCard "440301199001011111"
+                 :phone "13800001111"
+                 :staffType "exam_staff"
+                 :orgId (:id org-b)
+                 :position "其他人员"}
+                headers)
+        created-exam (json/parse-string
+                      (:body (POST handler "/api/filing/branch-current/staff"
+                                   {:name "机构A工作人员"
+                                    :idCard "440301199001012222"
+                                    :phone "13800002222"
+                                    :staffType "exam_staff"
+                                    :position "考务人员"}
+                                   auth-headers))
+                      true)
+        _ (POST handler "/api/filing/branch-current/staff"
+                {:name "机构A考评人员"
+                 :idCard "440301199001013333"
+                 :phone "13800003333"
+                 :staffType "evaluator"
+                 :position "考评人员"}
+                auth-headers)
+        exam-list (json/parse-string (:body (GET handler "/api/filing/branch-current/staff" {"staffType" "exam_staff"} auth-headers)) true)
+        evaluator-list (json/parse-string (:body (GET handler "/api/filing/branch-current/staff" {"staffType" "evaluator"} auth-headers)) true)]
+    (is (= 201 (:status org-a-response)))
+    (is (= 201 (:status org-b-response)))
+    (is (= 200 (:status login-response)))
+    (is (= (:id org-a) (:orgId initial)))
+    (is (= "分支备案测试机构A" (get-in initial [:basicInfo :name])))
+    (is (= 200 (:status saved-response)))
+    (is (= "持久化地址" (get-in reloaded [:basicInfo :address])))
+    (is (= "持久化联系人" (get-in reloaded [:basicInfo :contact])))
+    (is (= (:id org-a) (:orgId created-exam)))
+    (is (= ["机构A工作人员"] (mapv :name (:items exam-list))))
+    (is (= ["机构A考评人员"] (mapv :name (:items evaluator-list))))
+    (is (not-any? #(= "其他机构人员" (:name %)) (:items exam-list)))))

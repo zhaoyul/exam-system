@@ -1,15 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Plus, Upload, FileCheck, ChevronRight, X, Trash2, Edit3, Save } from 'lucide-react'
 import { useBackendListState } from '@/hooks/useBackendListState'
+import { apiRequest } from '@/lib/api'
 import { parseIdCard } from '@/lib/idCard'
 
 const tabs = ['基本信息', '备案材料', '站点信息', '认定项目', '工作人员', '督导人员', '考评人员', '考点信息']
-const staffMock = [
-  { id: '1', name: '张三', idCard: '440301198001011234', gender: '男', birthDate: '1980-01-01', phone: '13800138001', role: '考务负责人' },
-  { id: '2', name: '李四', idCard: '440301198002021567', gender: '女', birthDate: '1980-02-02', phone: '13800138002', role: '考务人员' },
-  { id: '3', name: '王五', idCard: '440301198003031890', gender: '男', birthDate: '1980-03-03', phone: '13800138003', role: '考务人员' },
-]
 const examSites = [
   { id: '1', name: '大亚湾基地考点', type: '笔试', site: '大亚湾基地', capacityLabel: '笔试考场座位 80' },
   { id: '2', name: '实操考试中心A', type: '实操', site: '大亚湾基地', capacityLabel: '实操科目 主泵检修' },
@@ -38,6 +34,13 @@ const projects = [
   { id: '2', name: '电气试验员', level: '四级', code: '4-07-03-05', theoryEnabled: true, skillEnabled: true, defenseEnabled: true, theoryPass: 60, skillPass: 60, defensePass: 60, conditions: ['集团授权条件：累计从事本职业或相关职业工作满4年'], locked: true },
 ]
 type TabKey = typeof tabs[number]
+type StaffType = 'exam_staff' | 'proctor' | 'evaluator'
+type BasicInfo = { name: string; code: string; nature: string; group: string; contact: string; phone: string; email: string; address: string }
+type StaffRow = { id: string; name: string; idCard: string; gender?: string; birthDate?: string; phone?: string; role?: string; position?: string; staffType?: StaffType }
+
+const emptyBasicInfo: BasicInfo = { name: '', code: '', nature: '', group: '', contact: '', phone: '', email: '', address: '' }
+const staffTypeByTab: Partial<Record<TabKey, StaffType>> = { 工作人员: 'exam_staff', 督导人员: 'proctor', 考评人员: 'evaluator' }
+const staffRoleByType: Record<StaffType, string> = { exam_staff: '考务人员', proctor: '督导人员', evaluator: '考评人员' }
 
 export default function FilingBranchPage() {
   const location = useLocation()
@@ -47,7 +50,7 @@ export default function FilingBranchPage() {
     if (location.pathname.endsWith('/modify')) return 'modify'
     return 'info'
   })
-  const [staff, setStaff] = useBackendListState(staffMock)
+  const [staffByType, setStaffByType] = useState<Record<StaffType, StaffRow[]>>({ exam_staff: [], proctor: [], evaluator: [] })
   const [rooms, setRooms] = useBackendListState(examSites)
   const [docsList, setDocsList] = useBackendListState(docs)
   const [sitesList, setSitesList] = useBackendListState(sites)
@@ -62,7 +65,9 @@ export default function FilingBranchPage() {
   const [showAddProject, setShowAddProject] = useState(false)
   const [showAddApply, setShowAddApply] = useState(false)
   const [editBasic, setEditBasic] = useState(false)
-  const [basicInfo, setBasicInfo] = useState({ name: '大亚湾核电运营管理有限责任公司', code: '91440300192351234X', nature: '国有企业', group: '中国广核集团', contact: '张经理', phone: '0755-84212345', email: 'dayawan@cgnpc.com.cn', address: '广东省深圳市大鹏新区大亚湾核电站' })
+  const [basicInfo, setBasicInfo] = useState<BasicInfo>(emptyBasicInfo)
+  const [basicLoading, setBasicLoading] = useState(false)
+  const [basicSaving, setBasicSaving] = useState(false)
   const [sForm, setSForm] = useState({ name: '', idCard: '', phone: '', role: '考务人员' })
   const [rForm, setRForm] = useState({ name: '', type: '笔试', site: '大亚湾基地', seats: 40, computers: 40, subject: '' })
   const [dForm, setDForm] = useState({ name: '' })
@@ -70,8 +75,53 @@ export default function FilingBranchPage() {
   const [pForm, setPForm] = useState({ name: '', level: '三级', code: '', theoryEnabled: true, skillEnabled: true, defenseEnabled: false, theoryPass: 60, skillPass: 60, defensePass: 60, conditions: '' })
   const [aForm, setAForm] = useState({ batch: '', type: '初始备案' })
   const [importFile, setImportFile] = useState('')
+  const activeStaffType = useMemo(() => staffTypeByTab[activeTab] || 'exam_staff', [activeTab])
+  const staff = staffByType[activeStaffType] || []
 
-  const doAddStaff = () => { if (!sForm.name || !sForm.idCard) return; const parsed = parseIdCard(sForm.idCard); setStaff(p => [...p, { ...sForm, gender: parsed?.gender || '', birthDate: parsed?.birthDate || '', id: Date.now().toString() }]); setSForm({ name: '', idCard: '', phone: '', role: '考务人员' }); setShowAddStaff(false) }
+  const loadBasicInfo = useCallback(async () => {
+    setBasicLoading(true)
+    try {
+      const result = await apiRequest<{ basicInfo?: Partial<BasicInfo> }>('/filing/branch-current')
+      setBasicInfo({ ...emptyBasicInfo, ...(result.basicInfo || {}) })
+    } finally {
+      setBasicLoading(false)
+    }
+  }, [])
+
+  const loadStaff = useCallback(async (staffType: StaffType) => {
+    const result = await apiRequest<{ items?: StaffRow[] }>('/filing/branch-current/staff', { query: { staffType } })
+    setStaffByType(prev => ({ ...prev, [staffType]: (result.items || []).map(item => ({ ...item, role: item.role || item.position })) }))
+  }, [])
+
+  const saveBasicInfo = async () => {
+    setBasicSaving(true)
+    try {
+      const result = await apiRequest<{ basicInfo?: Partial<BasicInfo> }>('/filing/branch-current/basic', {
+        method: 'PUT',
+        body: JSON.stringify(basicInfo),
+      })
+      setBasicInfo({ ...emptyBasicInfo, ...(result.basicInfo || basicInfo) })
+      setEditBasic(false)
+    } finally {
+      setBasicSaving(false)
+    }
+  }
+
+  const doAddStaff = async () => {
+    if (!sForm.name || !sForm.idCard) return
+    const parsed = parseIdCard(sForm.idCard)
+    const role = sForm.role || staffRoleByType[activeStaffType]
+    const created = await apiRequest<StaffRow>('/filing/branch-current/staff', {
+      method: 'POST',
+      body: JSON.stringify({ ...sForm, role, position: role, staffType: activeStaffType, gender: parsed?.gender, birthDate: parsed?.birthDate }),
+    })
+    setStaffByType(prev => ({
+      ...prev,
+      [activeStaffType]: [...(prev[activeStaffType] || []), { ...created, role: created.role || created.position || role }],
+    }))
+    setSForm({ name: '', idCard: '', phone: '', role: staffRoleByType[activeStaffType] })
+    setShowAddStaff(false)
+  }
   const doAddRoom = () => { if (!rForm.name) return; const capacityLabel = rForm.type === '笔试' ? `笔试考场座位 ${rForm.seats}` : rForm.type === '机考' ? `机考电脑数量 ${rForm.computers}` : `${rForm.type}科目 ${rForm.subject || '-'}`; setRooms(p => [...p, { ...rForm, capacityLabel, id: Date.now().toString() }]); setRForm({ name: '', type: '笔试', site: '大亚湾基地', seats: 40, computers: 40, subject: '' }); setShowAddRoom(false) }
   const doAddDoc = () => { if (!dForm.name) return; setDocsList(p => [...p, { name: dForm.name, type: 'pdf', size: '1.0MB', id: Date.now().toString() }]); setDForm({ name: '' }); setShowAddDoc(false) }
   const doAddSite = () => { if (!siForm.name) return; setSitesList(p => [...p, { ...siForm, subSites: [], id: Date.now().toString() }]); setSiForm({ name: '', filingPlace: '', address: '', rooms: 1 }); setShowAddSite(false) }
@@ -83,8 +133,21 @@ export default function FilingBranchPage() {
   }
   const toggleProjectSubject = (id: string, key: 'theoryEnabled' | 'skillEnabled' | 'defenseEnabled') => setProjectList(prev => prev.map(item => item.id === id ? { ...item, [key]: !item[key] } : item))
   const doAddApply = () => { if (!aForm.batch) return; setApplyData(p => [{ ...aForm, date: new Date().toISOString().split('T')[0], status: 'pending', id: Date.now().toString() }, ...p]); setAForm({ batch: '', type: '初始备案' }); setShowAddApply(false) }
-  const doImportStaff = () => { setStaff(p => [...p, { id: Date.now().toString(), name: '导入人员A', idCard: '440301199909091234', gender: '男', birthDate: '1999-09-09', phone: '13800138999', role: '考务人员' }]); setImportFile('') }
-  const delStaff = (id: string) => setStaff(p => p.filter(s => s.id !== id))
+  const doImportStaff = async () => {
+    const idCard = `44030119990909${String(Date.now()).slice(-4)}`
+    const parsed = parseIdCard(idCard)
+    const role = staffRoleByType[activeStaffType]
+    const created = await apiRequest<StaffRow>('/filing/branch-current/staff', {
+      method: 'POST',
+      body: JSON.stringify({ name: '导入人员A', idCard, gender: parsed?.gender, birthDate: parsed?.birthDate, phone: '13800138999', role, position: role, staffType: activeStaffType }),
+    })
+    setStaffByType(prev => ({ ...prev, [activeStaffType]: [...(prev[activeStaffType] || []), { ...created, role: created.role || created.position || role }] }))
+    setImportFile('')
+  }
+  const delStaff = async (id: string) => {
+    await apiRequest(`/filing/branch-current/staff/${id}`, { method: 'DELETE' })
+    setStaffByType(prev => ({ ...prev, [activeStaffType]: (prev[activeStaffType] || []).filter(s => s.id !== id) }))
+  }
   const delRoom = (id: string) => setRooms(p => p.filter(r => r.id !== id))
   const delDoc = (id: string) => setDocsList(p => p.filter(d => d.id !== id))
   const delSite = (id: string) => setSitesList(p => p.filter(s => s.id !== id))
@@ -97,11 +160,22 @@ export default function FilingBranchPage() {
     else setSubNav('info')
   }, [location.pathname])
 
+  useEffect(() => {
+    loadBasicInfo()
+  }, [loadBasicInfo])
+
+  useEffect(() => {
+    if (staffTypeByTab[activeTab]) {
+      loadStaff(activeStaffType)
+      setSForm(prev => ({ ...prev, role: staffRoleByType[activeStaffType] }))
+    }
+  }, [activeTab, activeStaffType, loadStaff])
+
   const renderStaffTable = (_title: string) => (
     <div>
       <div className="flex justify-between items-center mb-3"><span className="text-sm text-gray-500">共 {staff.length} 人</span><div className="flex gap-2">
         <button onClick={() => setImportFile('ready')} className="h-9 px-3 border border-gray-200 rounded-md text-sm flex items-center gap-1.5 hover:bg-gray-50"><Upload className="w-4 h-4" /> 批量导入</button>
-        <button onClick={() => setShowAddStaff(true)} className="h-9 px-4 bg-[#1A56DB] text-white rounded-md text-sm flex items-center gap-1.5 hover:bg-[#1748B5]"><Plus className="w-4 h-4" /> 新增</button>
+        <button onClick={() => { setSForm(prev => ({ ...prev, role: staffRoleByType[activeStaffType] })); setShowAddStaff(true) }} className="h-9 px-4 bg-[#1A56DB] text-white rounded-md text-sm flex items-center gap-1.5 hover:bg-[#1748B5]"><Plus className="w-4 h-4" /> 新增</button>
       </div></div>
       <div className="bg-white rounded-lg border border-gray-200 overflow-auto">
         <table className="w-full text-sm"><thead className="bg-[#F9FAFB] text-gray-600 font-medium"><tr><th className="px-4 py-3 text-left">姓名</th><th className="px-4 py-3 text-left">身份证号</th><th className="px-4 py-3 text-left">性别</th><th className="px-4 py-3 text-left">出生年月</th><th className="px-4 py-3 text-left">手机号</th><th className="px-4 py-3 text-left">职务</th><th className="px-4 py-3 text-left">操作</th></tr></thead>
@@ -128,12 +202,13 @@ export default function FilingBranchPage() {
         <div className="flex gap-1 border-b border-gray-200 mb-4 overflow-x-auto">{tabs.map(tab => (<button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === tab ? 'border-[#1A56DB] text-[#1A56DB]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>{tab}</button>))}</div>
         {activeTab === '基本信息' && (<div className="bg-white rounded-lg border border-gray-200 p-6 max-w-2xl">
           <div className="flex justify-between items-center mb-4"><h3 className="text-sm font-semibold text-gray-900">机构基本信息</h3>{!editBasic ? (<button onClick={() => setEditBasic(true)} className="h-8 px-3 border border-gray-200 rounded-md text-xs flex items-center gap-1 hover:bg-gray-50"><Edit3 className="w-3.5 h-3.5" /> 编辑</button>) : null}</div>
+          {basicLoading && <div className="mb-3 text-xs text-gray-400">正在加载机构备案信息...</div>}
           <div className="grid grid-cols-2 gap-4">
             {[{ key: 'name', label: '机构名称' }, { key: 'code', label: '统一社会信用代码' }, { key: 'nature', label: '机构性质' }, { key: 'group', label: '所属集团' }, { key: 'contact', label: '联系人' }, { key: 'phone', label: '联系电话' }, { key: 'email', label: '邮箱' }, { key: 'address', label: '地址' }].map(item => (
               <div key={item.key}><div className="text-xs text-gray-500 mb-1">{item.label}</div>{editBasic ? (<input value={(basicInfo as any)[item.key]} onChange={e => setBasicInfo({ ...basicInfo, [item.key]: e.target.value })} className="w-full h-9 px-3 border border-gray-200 rounded-md text-sm" />) : (<div className="text-sm text-gray-900 font-medium">{(basicInfo as any)[item.key]}</div>)}</div>
             ))}
           </div>
-          {editBasic && (<div className="mt-4 flex gap-2"><button onClick={() => setEditBasic(false)} className="h-9 px-4 border border-gray-200 rounded-md text-sm hover:bg-gray-100">取消</button><button onClick={() => setEditBasic(false)} className="h-9 px-4 bg-[#1A56DB] text-white rounded-md text-sm flex items-center gap-1"><Save className="w-4 h-4" /> 保存</button></div>)}
+          {editBasic && (<div className="mt-4 flex gap-2"><button onClick={() => { setEditBasic(false); loadBasicInfo() }} className="h-9 px-4 border border-gray-200 rounded-md text-sm hover:bg-gray-100">取消</button><button onClick={saveBasicInfo} disabled={basicSaving} className="h-9 px-4 bg-[#1A56DB] text-white rounded-md text-sm flex items-center gap-1 disabled:opacity-50"><Save className="w-4 h-4" /> {basicSaving ? '保存中' : '保存'}</button></div>)}
         </div>)}
         {activeTab === '备案材料' && (<div><div className="flex justify-end mb-3"><button onClick={() => setShowAddDoc(true)} className="h-9 px-4 bg-[#1A56DB] text-white rounded-md text-sm flex items-center gap-1.5 hover:bg-[#1748B5]"><Plus className="w-4 h-4" /> 添加备案材料</button></div><div className="space-y-2">{docsList.map(d => (<div key={d.id} className="bg-white rounded-lg border border-gray-200 p-4 flex items-center gap-3"><FileCheck className="w-8 h-8 text-[#1A56DB]" /><div className="flex-1"><div className="text-sm font-medium text-gray-900">{d.name}</div><div className="text-xs text-gray-500">{d.type.toUpperCase()} · {d.size}</div></div><button onClick={() => delDoc(d.id)} className="p-1.5 hover:bg-red-100 rounded-md text-red-500"><Trash2 className="w-4 h-4" /></button></div>))}</div></div>)}
         {activeTab === '站点信息' && (<div><div className="flex justify-end mb-3"><button onClick={() => setShowAddSite(true)} className="h-9 px-4 bg-[#1A56DB] text-white rounded-md text-sm flex items-center gap-1.5 hover:bg-[#1748B5]"><Plus className="w-4 h-4" /> 增加备案地</button></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{sitesList.map(s => (<div key={s.id} className="bg-white rounded-lg border border-gray-200 p-4"><div className="flex justify-between"><div className="text-base font-semibold text-gray-900">{s.name}</div><button onClick={() => delSite(s.id)} className="p-1.5 hover:bg-red-100 rounded-md text-red-500"><Trash2 className="w-4 h-4" /></button></div><div className="text-sm text-gray-500 mt-1">备案地：{s.filingPlace || '-'}</div><div className="text-sm text-gray-500 mt-1">{s.address}</div><div className="text-sm text-gray-600 mt-2">子站点：{(s.subSites || []).join('、') || '暂无'}</div><div className="mt-3 flex gap-2"><button className="h-8 rounded-md border border-gray-200 px-3 text-xs hover:bg-gray-50">新增站点</button><span className="text-sm text-gray-600">考点数量: {s.rooms}个</span></div></div>))}</div></div>)}

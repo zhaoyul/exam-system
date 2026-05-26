@@ -11,6 +11,7 @@
   (when row
     (-> row
         (assoc :loginName (:login_name row)
+               :orgId (:org_id row)
                :idCard (:id_card row)
                :staffType (:staff_type row)
                :unitName (:unit_name row)
@@ -18,7 +19,7 @@
                :evalOccupations (:eval_occupations row)
                :createdAt (:created_at row)
                :updatedAt (:updated_at row))
-        (dissoc :login_name :id_card :staff_type :unit_name :photo_url :eval_occupations :created_at :updated_at))))
+        (dissoc :login_name :org_id :id_card :staff_type :unit_name :photo_url :eval_occupations :created_at :updated_at))))
 
 ;; ─── ID card parsing ───
 

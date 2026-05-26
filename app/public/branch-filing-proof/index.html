@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>分支机构备案数据隔离与持久化修复证明</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif; background: #f5f7fb; color: #182230; }
+.hero { background: #17468f; color: #fff; padding: 32px; }
+.hero h1 { margin: 0 0 8px; font-size: 28px; }
+.hero p { margin: 0; color: #dbeafe; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 24px; }
+.notice { background: #ecfdf3; border: 1px solid #abefc6; color: #067647; border-radius: 8px; padding: 14px 16px; margin-bottom: 18px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 18px; }
+.card, .proof, .fixes div { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; }
+.card strong { display: block; font-size: 13px; color: #667085; margin-bottom: 4px; }
+code, .card span { overflow-wrap: anywhere; }
+.fixes { display: grid; gap: 8px; margin-bottom: 18px; }
+.proof { margin-bottom: 18px; }
+.proof h2 { margin: 0 0 10px; font-size: 18px; }
+.proof img { width: 100%; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; }
+</style>
+</head>
+<body>
+<section class="hero">
+  <h1>分支机构备案数据隔离与持久化修复证明</h1>
+  <p>修复分支账号显示其他公司数据、基础信息刷新丢失、工作人员/督导人员/考评人员切换无效的问题</p>
+</section>
+<main class="wrap">
+  <div class="notice">本证明基于公网环境 http://106.12.6.24:29527 生成，创建证明机构和证明账号后完成真实登录、页面保存、刷新校验和 API 校验。</div>
+  <section class="grid">
+    <div class="card"><strong>生成时间</strong><span>2026/5/26 16:30:03</span></div>
+    <div class="card"><strong>发布版本</strong><code>3.1.1 / 7dc0f651-f781-48a3-a8c7-d99c16751074</code></div>
+    <div class="card"><strong>证明机构</strong><span>分支隔离证明机构26082958</span></div>
+    <div class="card"><strong>登录账号</strong><code>branchfix26082958</code></div>
+    <div class="card"><strong>登录密码</strong><code>Fix@26082958</code></div>
+    <div class="card"><strong>登录验证</strong><code>POST /api/auth/login → 200 / branch_admin</code></div>
+    <div class="card"><strong>基础信息验证</strong><code>GET /api/filing/branch-current → 证明持久化地址-26082958</code></div>
+    <div class="card"><strong>人员隔离验证</strong><code>exam_staff / evaluator 按 staffType 分离</code></div>
+  </section>
+  <section class="fixes">
+    <div>修复 1：分支备案页改为调用当前登录机构接口，后端从 token 的 org_id 取数，禁止读取其他机构备案资料。</div>
+    <div>修复 2：基本信息保存写入 organization 与分支备案 profile，刷新页面后从数据库重新加载。</div>
+    <div>修复 3：工作人员、督导人员、考评人员分别按 staffType 查询和保存，三类页签不再共用本地数组。</div>
+    <div>修复 4：登录后的机构名称优先使用账号所属机构名称，避免分支账号显示“测试有限公司”等兜底名称。</div>
+  </section>
+  <section class="proof"><h2>1. 证明账号真实登录成功</h2><img src="01-proof-account-login.png" alt="证明账号真实登录成功"></section>
+  <section class="proof"><h2>2. 分支备案基础信息按当前登录机构显示，不再显示其他公司数据</h2><img src="02-current-org-basic-info.png" alt="分支备案基础信息按当前登录机构显示，不再显示其他公司数据"></section>
+  <section class="proof"><h2>3. 基础信息通过保存接口写入数据库，刷新后仍保留</h2><img src="03-basic-info-persisted-after-refresh.png" alt="基础信息通过保存接口写入数据库，刷新后仍保留"></section>
+  <section class="proof"><h2>4. 工作人员页签新增人员后保存到当前机构</h2><img src="04-exam-staff-saved.png" alt="工作人员页签新增人员后保存到当前机构"></section>
+  <section class="proof"><h2>5. 切换到考评人员页签不再复用工作人员数据</h2><img src="05-evaluator-tab-isolated.png" alt="切换到考评人员页签不再复用工作人员数据"></section>
+  <section class="proof"><h2>6. 考评人员页签新增人员独立保存</h2><img src="06-evaluator-staff-saved.png" alt="考评人员页签新增人员独立保存"></section>
+  <section class="proof"><h2>7. 刷新后考评人员仍存在，证明写入数据库</h2><img src="07-staff-persisted-after-refresh.png" alt="刷新后考评人员仍存在，证明写入数据库"></section>
+</main>
+</body>
+</html>
